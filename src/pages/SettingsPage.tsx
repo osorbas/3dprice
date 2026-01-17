@@ -395,14 +395,14 @@ const SettingsPage = () => {
     <div className="space-y-6 p-4">
       <h1 className="text-3xl font-bold">Definições</h1>
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-2 gap-2 w-full p-1 md:grid md:w-fit md:grid-cols-5">
+        <TabsList className="flex flex-wrap gap-2 w-full p-1 mb-4 md:grid md:w-fit md:grid-cols-5 md:mb-0">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="printers">Impressoras</TabsTrigger>
           <TabsTrigger value="filaments">Filamentos</TabsTrigger>
           <TabsTrigger value="extras">Extras</TabsTrigger>
           <TabsTrigger value="electricity">Eletricidade</TabsTrigger>
         </TabsList>
-        <TabsContent value="general" className="mt-6">
+        <TabsContent value="general" className="mt-4 min-h-[400px]">
           <Card>
             <CardHeader>
               <CardTitle>Definições da Aplicação</CardTitle>
@@ -520,7 +520,7 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="printers" className="mt-6">
+        <TabsContent value="printers" className="mt-4 min-h-[400px]">
           <Card>
             <CardHeader>
               <CardTitle>Configurações de Impressoras</CardTitle>
@@ -586,7 +586,7 @@ const SettingsPage = () => {
             <PrintersPage />
           </div>
         </TabsContent>
-        <TabsContent value="filaments" className="mt-6">
+        <TabsContent value="filaments" className="mt-4 min-h-[400px]">
           <Card>
             <CardHeader>
               <CardTitle>Configurações de Filamentos</CardTitle>
@@ -651,10 +651,10 @@ const SettingsPage = () => {
             <FilamentsPage />
           </div>
         </TabsContent>
-        <TabsContent value="extras" className="mt-6">
+        <TabsContent value="extras" className="mt-4 min-h-[400px]">
           <ExtrasPage />
         </TabsContent>
-        <TabsContent value="electricity" className="mt-6">
+        <TabsContent value="electricity" className="mt-4 min-h-[400px]">
           <Card>
             <CardHeader>
               <CardTitle>Configurações de Eletricidade</CardTitle>
