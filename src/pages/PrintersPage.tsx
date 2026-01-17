@@ -87,50 +87,56 @@ const PrintersPage = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Removido key={refreshKey} */}
-          {printers.map((printer) => (
-            <Card key={printer.id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-medium">{printer.name}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <EditPrinterDialog printer={printer} /> {/* Não é mais necessário passar onSuccess */}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                        <span className="sr-only">Excluir Impressora</span>
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. Isso removerá permanentemente a impressora "{printer.name}".
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeletePrinter(printer.id)}>
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                  <PrinterIcon className="h-6 w-6 text-muted-foreground" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{printer.brand} {printer.model}</p>
-                <Separator className="my-2" />
-                <div className="grid grid-cols-2 gap-1 text-sm">
-                  <p>Horas de Trabalho:</p>
-                  <p className="text-right font-medium">{printer.workingHours} h</p> {/* Exibe as horas de trabalho */}
-                </div>
-                <p className="col-span-2 text-xs text-muted-foreground mt-2">
-                  Adicionada em: {format(new Date(printer.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {printers.map((printer) => {
+            const totalHours = Math.floor(printer.workingHours);
+            const remainingMinutes = Math.round((printer.workingHours - totalHours) * 60);
+            const formattedWorkingHours = `${totalHours}h ${remainingMinutes}min`;
+
+            return (
+              <Card key={printer.id}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-xl font-medium">{printer.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <EditPrinterDialog printer={printer} /> {/* Não é mais necessário passar onSuccess */}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <span className="sr-only">Excluir Impressora</span>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. Isso removerá permanentemente a impressora "{printer.name}".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeletePrinter(printer.id)}>
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <PrinterIcon className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{printer.brand} {printer.model}</p>
+                  <Separator className="my-2" />
+                  <div className="grid grid-cols-2 gap-1 text-sm">
+                    <p>Horas de Trabalho:</p>
+                    <p className="text-right font-medium">{formattedWorkingHours}</p> {/* Exibe as horas de trabalho formatadas */}
+                  </div>
+                  <p className="col-span-2 text-xs text-muted-foreground mt-2">
+                    Adicionada em: {format(new Date(printer.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  </p>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
