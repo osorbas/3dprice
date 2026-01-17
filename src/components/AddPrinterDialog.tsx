@@ -199,6 +199,11 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                       step="1"
                       placeholder="0"
                       {...field}
+                      value={field.value === 0 ? "" : field.value}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? 0 : value);
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
