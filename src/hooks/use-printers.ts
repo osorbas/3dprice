@@ -6,6 +6,7 @@ export interface Printer {
   name: string;
   brand: string;
   model: string;
+  workingHours: number; // Adicionado: Horas de trabalho
   timestamp: number;
 }
 
@@ -17,7 +18,15 @@ export function usePrinters() {
     if (typeof window !== "undefined") {
       try {
         const storedPrinters = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return storedPrinters ? JSON.parse(storedPrinters) : [];
+        if (storedPrinters) {
+          const parsedPrinters: Printer[] = JSON.parse(storedPrinters);
+          // Garante que 'workingHours' tenha um valor padrão para dados existentes
+          return parsedPrinters.map(printer => ({
+            ...printer,
+            workingHours: printer.workingHours ?? 0 // Valor padrão 0
+          }));
+        }
+        return [];
       } catch (error) {
         console.error("Failed to parse printers from localStorage:", error);
         return [];
@@ -74,7 +83,10 @@ export function usePrinters() {
   };
 
   const importPrinters = (data: Printer[]) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.map(printer => ({
+      ...printer,
+      workingHours: printer.workingHours ?? 0 // Garante que dados importados também tenham valor padrão
+    }))));
     notifyUpdate();
   };
 

@@ -16,6 +16,7 @@ const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
+  workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0), // Adicionado
 });
 
 interface EditPrinterDialogProps {
@@ -24,7 +25,7 @@ interface EditPrinterDialogProps {
 }
 
 // Predefined list of popular 3D printers (used for select options)
-const predefinedPrinters: Omit<Printer, "id" | "timestamp">[] = [
+const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] = [ // Atualizado para omitir workingHours
   { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2" },
   { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE" },
   { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE" },
@@ -65,6 +66,7 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
       name: printer.name,
       brand: printer.brand,
       model: printer.model,
+      workingHours: printer.workingHours, // Inicializa o novo campo
     },
   });
 
@@ -184,6 +186,25 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="workingHours"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Horas de Trabalho (h)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

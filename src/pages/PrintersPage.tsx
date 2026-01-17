@@ -121,11 +121,13 @@ const PrintersPage = () => {
               <CardContent>
                 <p className="text-sm text-muted-foreground">{printer.brand} {printer.model}</p>
                 <Separator className="my-2" />
-                <div className="grid grid-cols-1 gap-1 text-sm">
-                  <p className="col-span-2 text-xs text-muted-foreground mt-2">
-                    Adicionada em: {format(new Date(printer.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                  </p>
+                <div className="grid grid-cols-2 gap-1 text-sm">
+                  <p>Horas de Trabalho:</p>
+                  <p className="text-right font-medium">{printer.workingHours} h</p> {/* Exibe as horas de trabalho */}
                 </div>
+                <p className="col-span-2 text-xs text-muted-foreground mt-2">
+                  Adicionada em: {format(new Date(printer.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                </p>
               </CardContent>
             </Card>
           ))}

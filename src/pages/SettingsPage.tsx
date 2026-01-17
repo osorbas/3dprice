@@ -394,7 +394,7 @@ const SettingsPage = () => {
   return (
     <div className="space-y-6 p-4">
       <h1 className="text-3xl font-bold">Definições</h1>
-      <Tabs defaultValue="general" className="w-full">
+      <Tabs defaultValue="general" className="w-full relative"> {/* Adicionado 'relative' aqui */}
         <TabsList className="flex flex-wrap gap-2 w-full p-1 mb-4 md:grid md:w-fit md:grid-cols-5 md:mb-0">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="printers">Impressoras</TabsTrigger>
@@ -402,323 +402,325 @@ const SettingsPage = () => {
           <TabsTrigger value="extras">Extras</TabsTrigger>
           <TabsTrigger value="electricity">Eletricidade</TabsTrigger>
         </TabsList>
-        <TabsContent value="general" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Definições da Aplicação</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <p className="text-muted-foreground">Configure as definições gerais da sua aplicação.</p>
-                <div className="grid gap-2">
-                  <Label htmlFor="theme-select">Tema</Label>
-                  <Select value={theme} onValueChange={setTheme}>
-                    <SelectTrigger id="theme-select" className="w-[180px]">
-                      <SelectValue placeholder="Selecionar Tema" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="light">Claro</SelectItem>
-                      <SelectItem value="dark">Escuro</SelectItem>
-                      <SelectItem value="system">Sistema</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2 pt-4">
-                  <Label htmlFor="default-profit-margin">Margem de Lucro Predefinida (%)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="default-profit-margin"
-                      type="number"
-                      min="0"
-                      max="1000"
-                      step="1"
-                      value={tempProfitMargin}
-                      onChange={handleProfitMarginChange}
-                      className="w-[180px]"
-                    />
-                    <Button
-                      variant={isProfitMarginConfirmDisabled ? "outline" : "default"}
-                      size="sm"
-                      onClick={handleConfirmProfitMargin}
-                      disabled={isProfitMarginConfirmDisabled}
-                      className={profitMarginButtonClasses}
-                    >
-                      <Check className="h-4 w-4" />
-                      Confirmar
-                    </Button>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Valor de margem de lucro que será pré-preenchido na calculadora.</p>
-                </div>
-              </div>
-
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Gestão de Dados</h3>
-
+        <div className="relative min-h-[500px]"> {/* Wrapper para o conteúdo dos separadores */}
+          <TabsContent value="general" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Definições da Aplicação</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Limpar Histórico de Cálculos</h4>
-                      <p className="text-sm text-muted-foreground">Esta ação removerá permanentemente todos os cálculos do histórico</p>
+                  <p className="text-muted-foreground">Configure as definições gerais da sua aplicação.</p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="theme-select">Tema</Label>
+                    <Select value={theme} onValueChange={setTheme}>
+                      <SelectTrigger id="theme-select" className="w-[180px]">
+                        <SelectValue placeholder="Selecionar Tema" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">Claro</SelectItem>
+                        <SelectItem value="dark">Escuro</SelectItem>
+                        <SelectItem value="system">Sistema</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="grid gap-2 pt-4">
+                    <Label htmlFor="default-profit-margin">Margem de Lucro Predefinida (%)</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="default-profit-margin"
+                        type="number"
+                        min="0"
+                        max="1000"
+                        step="1"
+                        value={tempProfitMargin}
+                        onChange={handleProfitMarginChange}
+                        className="w-[180px]"
+                      />
+                      <Button
+                        variant={isProfitMarginConfirmDisabled ? "outline" : "default"}
+                        size="sm"
+                        onClick={handleConfirmProfitMargin}
+                        disabled={isProfitMarginConfirmDisabled}
+                        className={profitMarginButtonClasses}
+                      >
+                        <Check className="h-4 w-4" />
+                        Confirmar
+                      </Button>
                     </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" className="flex items-center gap-2">
-                          <Trash2 className="h-4 w-4" />
-                          Limpar Histórico
+                    <p className="text-sm text-muted-foreground">Valor de margem de lucro que será pré-preenchido na calculadora.</p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-medium mb-4">Gestão de Dados</h3>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <h4 className="font-medium">Limpar Histórico de Cálculos</h4>
+                        <p className="text-sm text-muted-foreground">Esta ação removerá permanentemente todos os cálculos do histórico</p>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" className="flex items-center gap-2">
+                            <Trash2 className="h-4 w-4" />
+                            Limpar Histórico
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação não pode ser desfeita. Isso removerá permanentemente todos os seus cálculos do histórico.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleClearHistory}>Limpar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <h4 className="font-medium">Exportar Backup Completo</h4>
+                        <p className="text-sm text-muted-foreground">Fazer backup de todos os dados da aplicação</p>
+                      </div>
+                      <Button variant="secondary" className="flex items-center gap-2" onClick={handleExportAll}>
+                        <Download className="h-4 w-4" />
+                        Exportar Backup
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                      <div>
+                        <h4 className="font-medium">Importar Backup Completo</h4>
+                        <p className="text-sm text-muted-foreground">Importar todos os dados da aplicação de um arquivo de backup</p>
+                      </div>
+                      <Label htmlFor="import-all" className="cursor-pointer">
+                        <Button variant="secondary" className="flex items-center gap-2" asChild>
+                          <span>
+                            <Upload className="h-4 w-4" />
+                            Importar Backup
+                          </span>
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. Isso removerá permanentemente todos os seus cálculos do histórico.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleClearHistory}>Limpar</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Exportar Backup Completo</h4>
-                      <p className="text-sm text-muted-foreground">Fazer backup de todos os dados da aplicação</p>
+                      </Label>
+                      <Input
+                        id="import-all"
+                        type="file"
+                        accept=".json"
+                        className="hidden"
+                        onChange={handleImportFileSelect}
+                      />
                     </div>
-                    <Button variant="secondary" className="flex items-center gap-2" onClick={handleExportAll}>
-                      <Download className="h-4 w-4" />
-                      Exportar Backup
-                    </Button>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="printers" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações de Impressoras</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">Configure as definições relacionadas às suas impressoras 3D.</p>
 
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Importar Backup Completo</h4>
-                      <p className="text-sm text-muted-foreground">Importar todos os dados da aplicação de um arquivo de backup</p>
+                  <div className="grid gap-2">
+                    <Label htmlFor="default-printer-select">Impressora Predefinida</Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={tempPrinterId || "none"}
+                        onValueChange={(value) => setTempPrinterId(value === "none" ? null : value)}
+                        disabled={printers.length === 0}
+                      >
+                        <SelectTrigger id="default-printer-select" className="w-[300px]">
+                          <SelectValue placeholder="Selecione uma impressora predefinida" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma impressora predefinida</SelectItem>
+                          {printers.map((printer) => (
+                            <SelectItem key={printer.id} value={printer.id}>
+                              <div className="flex items-center gap-2">
+                                <PrinterIcon className="h-4 w-4" />
+                                {printer.name} ({printer.brand} {printer.model})
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant={isPrinterConfirmDisabled ? "outline" : "default"}
+                        size="sm"
+                        onClick={handleConfirmPrinter}
+                        disabled={isPrinterConfirmDisabled}
+                        className={printerButtonClasses}
+                      >
+                        <Check className="h-4 w-4" />
+                        Confirmar
+                      </Button>
+                      {defaultPrinterId && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleClearPrinter}
+                        >
+                          Limpar
+                        </Button>
+                      )}
                     </div>
-                    <Label htmlFor="import-all" className="cursor-pointer">
-                      <Button variant="secondary" className="flex items-center gap-2" asChild>
-                        <span>
-                          <Upload className="h-4 w-4" />
-                          Importar Backup
-                        </span>
-                      </Button>
-                    </Label>
-                    <Input
-                      id="import-all"
-                      type="file"
-                      accept=".json"
-                      className="hidden"
-                      onChange={handleImportFileSelect}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="printers" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações de Impressoras</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <p className="text-muted-foreground">Configure as definições relacionadas às suas impressoras 3D.</p>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="default-printer-select">Impressora Predefinida</Label>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={tempPrinterId || "none"}
-                      onValueChange={(value) => setTempPrinterId(value === "none" ? null : value)}
-                      disabled={printers.length === 0}
-                    >
-                      <SelectTrigger id="default-printer-select" className="w-[300px]">
-                        <SelectValue placeholder="Selecione uma impressora predefinida" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhuma impressora predefinida</SelectItem>
-                        {printers.map((printer) => (
-                          <SelectItem key={printer.id} value={printer.id}>
-                            <div className="flex items-center gap-2">
-                              <PrinterIcon className="h-4 w-4" />
-                              {printer.name} ({printer.brand} {printer.model})
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant={isPrinterConfirmDisabled ? "outline" : "default"}
-                      size="sm"
-                      onClick={handleConfirmPrinter}
-                      disabled={isPrinterConfirmDisabled}
-                      className={printerButtonClasses}
-                    >
-                      <Check className="h-4 w-4" />
-                      Confirmar
-                    </Button>
-                    {defaultPrinterId && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleClearPrinter}
-                      >
-                        Limpar
-                      </Button>
+                    {printers.length === 0 && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Adicione impressoras na lista abaixo para poder selecionar uma como predefinida.
+                      </p>
                     )}
                   </div>
-                  {printers.length === 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Adicione impressoras na lista abaixo para poder selecionar uma como predefinida.
-                    </p>
-                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <div className="mt-6">
-            <PrintersPage />
-          </div>
-        </TabsContent>
-        <TabsContent value="filaments" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações de Filamentos</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <p className="text-muted-foreground">Configure as definições relacionadas aos seus filamentos 3D.</p>
+            <div className="mt-6">
+              <PrintersPage />
+            </div>
+          </TabsContent>
+          <TabsContent value="filaments" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações de Filamentos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">Configure as definições relacionadas aos seus filamentos 3D.</p>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="default-filament-select">Filamento Predefinido</Label>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={tempFilamentId || "none"}
-                      onValueChange={(value) => setTempFilamentId(value === "none" ? null : value)}
-                      disabled={filaments.length === 0}
-                    >
-                      <SelectTrigger id="default-filament-select" className="w-[300px]">
-                        <SelectValue placeholder="Selecione um filamento predefinido" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhuma filamento predefinido</SelectItem>
-                        {filaments.map((filament) => (
-                          <SelectItem key={filament.id} value={filament.id}>
-                            <div className="flex items-center gap-2">
-                              <Package className="h-4 w-4" />
-                              {filament.name} ({filament.brand} - {filament.type})
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant={isFilamentConfirmDisabled ? "outline" : "default"}
-                      size="sm"
-                      onClick={handleConfirmFilament}
-                      disabled={isFilamentConfirmDisabled}
-                      className={filamentButtonClasses}
-                    >
-                      <Check className="h-4 w-4" />
-                      Confirmar
-                    </Button>
-                    {defaultFilamentId && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleClearFilament}
+                  <div className="grid gap-2">
+                    <Label htmlFor="default-filament-select">Filamento Predefinido</Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={tempFilamentId || "none"}
+                        onValueChange={(value) => setTempFilamentId(value === "none" ? null : value)}
+                        disabled={filaments.length === 0}
                       >
-                        Limpar
+                        <SelectTrigger id="default-filament-select" className="w-[300px]">
+                          <SelectValue placeholder="Selecione um filamento predefinido" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma filamento predefinido</SelectItem>
+                          {filaments.map((filament) => (
+                            <SelectItem key={filament.id} value={filament.id}>
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4" />
+                                {filament.name} ({filament.brand} - {filament.type})
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant={isFilamentConfirmDisabled ? "outline" : "default"}
+                        size="sm"
+                        onClick={handleConfirmFilament}
+                        disabled={isFilamentConfirmDisabled}
+                        className={filamentButtonClasses}
+                      >
+                        <Check className="h-4 w-4" />
+                        Confirmar
                       </Button>
+                      {defaultFilamentId && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleClearFilament}
+                        >
+                          Limpar
+                        </Button>
+                      )}
+                    </div>
+                    {filaments.length === 0 && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Adicione filamentos na lista abaixo para poder selecionar um como predefinido.
+                      </p>
                     )}
                   </div>
-                  {filaments.length === 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Adicione filamentos na lista abaixo para poder selecionar um como predefinido.
-                    </p>
-                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="mt-6">
-            <FilamentsPage />
-          </div>
-        </TabsContent>
-        <TabsContent value="extras" className="mt-0">
-          <ExtrasPage />
-        </TabsContent>
-        <TabsContent value="electricity" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurações de Eletricidade</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <p className="text-muted-foreground">Configure os perfis de custo de eletricidade por hora.</p>
+              </CardContent>
+            </Card>
+            <div className="mt-6">
+              <FilamentsPage />
+            </div>
+          </TabsContent>
+          <TabsContent value="extras" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+            <ExtrasPage />
+          </TabsContent>
+          <TabsContent value="electricity" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Configurações de Eletricidade</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">Configure os perfis de custo de eletricidade por hora.</p>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="default-electricity-profile-select">Perfil de Eletricidade Predefinido</Label>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={tempElectricityProfileId || "none"}
-                      onValueChange={(value) => setTempElectricityProfileId(value === "none" ? null : value)}
-                      disabled={electricityProfiles.length === 0}
-                    >
-                      <SelectTrigger id="default-electricity-profile-select" className="w-[300px]">
-                        <SelectValue placeholder="Selecione um perfil predefinido" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhum perfil predefinido</SelectItem>
-                        {electricityProfiles.map((profile) => (
-                          <SelectItem key={profile.id} value={profile.id}>
-                            <div className="flex items-center gap-2">
-                              <Zap className="h-4 w-4" />
-                              {profile.name} (€{profile.costPerHour.toFixed(2)}/h)
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      variant={isElectricityConfirmDisabled ? "outline" : "default"}
-                      size="sm"
-                      onClick={handleConfirmElectricityProfile}
-                      disabled={isElectricityConfirmDisabled}
-                      className={electricityButtonClasses}
-                    >
-                      <Check className="h-4 w-4" />
-                      Confirmar
-                    </Button>
-                    {defaultElectricityProfileId && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleClearElectricityProfile}
+                  <div className="grid gap-2">
+                    <Label htmlFor="default-electricity-profile-select">Perfil de Eletricidade Predefinido</Label>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={tempElectricityProfileId || "none"}
+                        onValueChange={(value) => setTempElectricityProfileId(value === "none" ? null : value)}
+                        disabled={electricityProfiles.length === 0}
                       >
-                        Limpar
+                        <SelectTrigger id="default-electricity-profile-select" className="w-[300px]">
+                          <SelectValue placeholder="Selecione um perfil predefinido" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum perfil predefinido</SelectItem>
+                          {electricityProfiles.map((profile) => (
+                            <SelectItem key={profile.id} value={profile.id}>
+                              <div className="flex items-center gap-2">
+                                <Zap className="h-4 w-4" />
+                                {profile.name} (€{profile.costPerHour.toFixed(2)}/h)
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant={isElectricityConfirmDisabled ? "outline" : "default"}
+                        size="sm"
+                        onClick={handleConfirmElectricityProfile}
+                        disabled={isElectricityConfirmDisabled}
+                        className={electricityButtonClasses}
+                      >
+                        <Check className="h-4 w-4" />
+                        Confirmar
                       </Button>
+                      {defaultElectricityProfileId && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={handleClearElectricityProfile}
+                        >
+                          Limpar
+                        </Button>
+                      )}
+                    </div>
+                    {electricityProfiles.length === 0 && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Adicione perfis de eletricidade na lista abaixo para poder selecionar um como predefinido.
+                      </p>
                     )}
                   </div>
-                  {electricityProfiles.length === 0 && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Adicione perfis de eletricidade na lista abaixo para poder selecionar um como predefinido.
-                    </p>
-                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-          <div className="mt-6">
-            <ElectricityProfilesPage />
-          </div>
-        </TabsContent>
+              </CardContent>
+            </Card>
+            <div className="mt-6">
+              <ElectricityProfilesPage />
+            </div>
+          </TabsContent>
+        </div>
       </Tabs>
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
