@@ -104,9 +104,15 @@ export const PaymentSummaryDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="flex justify-between gap-2">
-          {/* Botão Fechar Resumo à esquerda */}
-          <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full sm:w-auto order-1 sm:order-none">
+        <DialogFooter className="flex justify-between items-center gap-2">
+          {/* Espaçador à esquerda para centralizar o botão do meio */}
+          <div className="w-10 h-10 flex-shrink-0 invisible sm:visible" aria-hidden="true"></div> 
+          
+          {/* Botão Fechar Resumo centralizado e laranja */}
+          <Button 
+            onClick={() => onOpenChange(false)} 
+            className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+          >
             Fechar Resumo
           </Button>
           
@@ -115,7 +121,7 @@ export const PaymentSummaryDialog = ({
             variant="destructive" 
             onClick={handleDelete} 
             size="icon"
-            className="h-10 w-10 flex-shrink-0 order-2 sm:order-none"
+            className="h-10 w-10 flex-shrink-0"
           >
             <Trash2 className="h-5 w-5" />
             <span className="sr-only">Apagar Registo</span>
