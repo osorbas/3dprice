@@ -103,7 +103,8 @@ const SettingsPage = () => {
     printers: true,
     filaments: true,
     extraMaterials: true,
-    electricityProfiles: true
+    electricityProfiles: true,
+    appSettings: true, // Adicionado para as predefinições
   });
 
   // Efeito para salvar a impressora predefinida no localStorage
@@ -191,6 +192,12 @@ const SettingsPage = () => {
         filaments,
         extraMaterials,
         electricityProfiles,
+        appSettings: { // Incluir as predefinições
+          default_profit_margin: localStorage.getItem("default_profit_margin"),
+          default_printer_id: localStorage.getItem("default_printer_id"),
+          default_filament_id: localStorage.getItem("default_filament_id"),
+          default_electricity_profile_id: localStorage.getItem("default_electricity_profile_id"),
+        },
         timestamp: new Date().toISOString(),
         version: "1.0"
       };
@@ -249,6 +256,41 @@ const SettingsPage = () => {
           importElectricityProfiles(data.electricityProfiles);
         }
 
+        if (selectedImportTypes.appSettings && data.appSettings) {
+          if (data.appSettings.default_profit_margin !== undefined) {
+            localStorage.setItem("default_profit_margin", data.appSettings.default_profit_margin);
+            setDefaultProfitMargin(parseFloat(data.appSettings.default_profit_margin));
+            setTempProfitMargin(parseFloat(data.appSettings.default_profit_margin));
+          }
+          if (data.appSettings.default_printer_id !== undefined) {
+            localStorage.setItem("default_printer_id", data.appSettings.default_printer_id);
+            setDefaultPrinterId(data.appSettings.default_printer_id);
+            setTempPrinterId(data.appSettings.default_printer_id);
+          } else {
+            localStorage.removeItem("default_printer_id");
+            setDefaultPrinterId(null);
+            setTempPrinterId(null);
+          }
+          if (data.appSettings.default_filament_id !== undefined) {
+            localStorage.setItem("default_filament_id", data.appSettings.default_filament_id);
+            setDefaultFilamentId(data.appSettings.default_filament_id);
+            setTempFilamentId(data.appSettings.default_filament_id);
+          } else {
+            localStorage.removeItem("default_filament_id");
+            setDefaultFilamentId(null);
+            setTempFilamentId(null);
+          }
+          if (data.appSettings.default_electricity_profile_id !== undefined) {
+            localStorage.setItem("default_electricity_profile_id", data.appSettings.default_electricity_profile_id);
+            setDefaultElectricityProfileId(data.appSettings.default_electricity_profile_id);
+            setTempElectricityProfileId(data.appSettings.default_electricity_profile_id);
+          } else {
+            localStorage.removeItem("default_electricity_profile_id");
+            setDefaultElectricityProfileId(null);
+            setTempElectricityProfileId(null);
+          }
+        }
+
         showSuccess("Backup importado com sucesso!");
         setImportDialogOpen(false);
         setImportFile(null);
@@ -273,7 +315,8 @@ const SettingsPage = () => {
       printers: true,
       filaments: true,
       extraMaterials: true,
-      electricityProfiles: true
+      electricityProfiles: true,
+      appSettings: true
     });
   };
 
@@ -283,7 +326,8 @@ const SettingsPage = () => {
       printers: false,
       filaments: false,
       extraMaterials: false,
-      electricityProfiles: false
+      electricityProfiles: false,
+      appSettings: false
     });
   };
 
@@ -794,6 +838,17 @@ const SettingsPage = () => {
                 />
                 <Label htmlFor="electricityProfiles" className="font-medium">
                   Perfis de Eletricidade
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Checkbox
+                  id="appSettings"
+                  checked={selectedImportTypes.appSettings}
+                  onCheckedChange={() => handleImportTypeChange('appSettings')}
+                />
+                <Label htmlFor="appSettings" className="font-medium">
+                  Definições da Aplicação (Predefinições)
                 </Label>
               </div>
             </div>
