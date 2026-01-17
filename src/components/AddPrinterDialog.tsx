@@ -52,6 +52,8 @@ const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] =
   { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro" },
   { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus" },
   { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max" },
+  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E" }, // Novo
+  { name: "Bambu Lab P1S Pro", brand: "Bambu Lab", model: "P1S Pro" }, // Novo
   { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado" },
 ];
 
