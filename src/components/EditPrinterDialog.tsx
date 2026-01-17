@@ -16,7 +16,7 @@ const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
-  workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0), // Adicionado
+  // workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0), // Removido
 });
 
 interface EditPrinterDialogProps {
@@ -66,7 +66,7 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
       name: printer.name,
       brand: printer.brand,
       model: printer.model,
-      workingHours: printer.workingHours, // Inicializa o novo campo
+      // workingHours: printer.workingHours, // Removido
     },
   });
 
@@ -84,7 +84,14 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
-      updatePrinter(printer.id, values);
+      // Ao atualizar, apenas passamos os campos que estão no formulário (name, brand, model)
+      // O campo workingHours não é editável aqui, então não é incluído no objeto de atualização
+      updatePrinter(printer.id, {
+        name: values.name,
+        brand: values.brand,
+        model: values.model,
+        // workingHours permanece inalterado no objeto original da impressora
+      });
       showSuccess(`Impressora "${values.name}" atualizada com sucesso!`);
       setOpen(false);
       // onSuccess?.(); // Não é mais necessário chamar o callback
@@ -190,30 +197,7 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="workingHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Horas de Trabalho (h)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="0"
-                      {...field}
-                      value={field.value === 0 ? "" : field.value}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? 0 : value);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Campo workingHours removido daqui */}
             <DialogFooter>
               <Button type="submit">Salvar Alterações</Button>
             </DialogFooter>
