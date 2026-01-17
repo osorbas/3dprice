@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
-import { usePrinters } from "@/hooks/use-printers";
+import { usePrinters } from "@/hooks/use-printers"; // Importar usePrinters
 import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
 import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
@@ -55,7 +55,7 @@ const formSchema = z.object({
 
 const CalculatorPage = () => {
   const { addCalculation, calculations } = usePrintCalculations();
-  const { printers } = usePrinters();
+  const { printers, updatePrinter } = usePrinters(); // Obter updatePrinter
   const { filaments } = useFilaments();
   const { extraMaterials } = useExtraMaterials();
   const { electricityProfiles } = useElectricityProfiles();
@@ -251,6 +251,14 @@ const CalculatorPage = () => {
       filamentGrams: values.filamentGrams,
       filamentId: values.filamentId,
     });
+
+    // Atualizar as horas de trabalho da impressora
+    const selectedPrinter = printers.find(p => p.id === values.printerId);
+    if (selectedPrinter) {
+      updatePrinter(selectedPrinter.id, {
+        workingHours: selectedPrinter.workingHours + totalPrintTimeHours,
+      });
+    }
 
     setSummaryData({
       printName: values.printName,
