@@ -104,11 +104,8 @@ export const PaymentSummaryDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="flex justify-between items-center gap-2">
-          {/* Espaçador à esquerda para centralizar o botão do meio */}
-          <div className="w-10 h-10 flex-shrink-0 invisible sm:visible" aria-hidden="true"></div> 
-          
-          {/* Botão Fechar Resumo centralizado e laranja */}
+        <DialogFooter className="flex justify-center sm:justify-between items-center relative">
+          {/* Botão Fechar Resumo centralizado */}
           <Button 
             onClick={() => onOpenChange(false)} 
             className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-semibold"
@@ -116,12 +113,12 @@ export const PaymentSummaryDialog = ({
             Fechar Resumo
           </Button>
           
-          {/* Botão Apagar Registo à direita, apenas com ícone */}
+          {/* Botão Apagar Registo no canto direito (absoluto para não interferir na centralização) */}
           <Button 
             variant="destructive" 
             onClick={handleDelete} 
             size="icon"
-            className="h-10 w-10 flex-shrink-0"
+            className="h-10 w-10 flex-shrink-0 absolute right-0 top-1/2 transform -translate-y-1/2 sm:static sm:translate-y-0"
           >
             <Trash2 className="h-5 w-5" />
             <span className="sr-only">Apagar Registo</span>
