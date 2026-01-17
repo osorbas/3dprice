@@ -11,6 +11,7 @@ import { usePrintCalculations } from "@/hooks/use-print-calculations";
 import { showError, showSuccess } from "@/utils/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EditCalculationDialog } from "@/components/EditCalculationDialog";
+import { usePrinters } from "@/hooks/use-printers"; // Importar usePrinters
 
 interface CalculationListProps {
   calculations: PrintCalculation[];
@@ -18,6 +19,7 @@ interface CalculationListProps {
 
 export const CalculationList = ({ calculations }: CalculationListProps) => {
   const { deleteCalculation } = usePrintCalculations();
+  const { printers } = usePrinters(); // Obter a lista de impressoras
 
   const handleDeleteCalculation = (id: string) => {
     try {
@@ -54,6 +56,7 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Nome</TableHead>
+                <TableHead>Impressora</TableHead> {/* Nova coluna para Impressora */}
                 <TableHead>Material (€)</TableHead>
                 <TableHead>Tempo (h)</TableHead>
                 <TableHead>Eletricidade (€/h)</TableHead>
@@ -64,45 +67,50 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {calculations.map((calc) => (
-                <TableRow key={calc.id}>
-                  <TableCell>{format(new Date(calc.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
-                  <TableCell>{calc.printName || "N/A"}</TableCell>
-                  <TableCell>{calc.materialCost.toFixed(2)}</TableCell>
-                  <TableCell>{calc.printTimeHours.toFixed(1)}</TableCell>
-                  <TableCell>{calc.electricityCost.toFixed(2)}</TableCell>
-                  <TableCell>{calc.laborCost.toFixed(2)}</TableCell>
-                  <TableCell>{calc.profitMargin.toFixed(0)}</TableCell>
-                  <TableCell className="text-right font-semibold">{calc.totalPrice.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <EditCalculationDialog calculation={calc} />
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">Excluir Cálculo</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. Isso removerá permanentemente o cálculo do histórico.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteCalculation(calc.id)}>
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {calculations.map((calc) => {
+                const printer = printers.find(p => p.id === calc.printerId);
+                const printerName = printer ? printer.name : "N/A"; // Encontrar o nome da impressora
+                return (
+                  <TableRow key={calc.id}>
+                    <TableCell>{format(new Date(calc.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
+                    <TableCell>{calc.printName || "N/A"}</TableCell>
+                    <TableCell>{printerName}</TableCell> {/* Exibir o nome da impressora */}
+                    <TableCell>{calc.materialCost.toFixed(2)}</TableCell>
+                    <TableCell>{calc.printTimeHours.toFixed(1)}</TableCell>
+                    <TableCell>{calc.electricityCost.toFixed(2)}</TableCell>
+                    <TableCell>{calc.laborCost.toFixed(2)}</TableCell>
+                    <TableCell>{calc.profitMargin.toFixed(0)}</TableCell>
+                    <TableCell className="text-right font-semibold">{calc.totalPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <EditCalculationDialog calculation={calc} />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <span className="sr-only">Excluir Cálculo</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso removerá permanentemente o cálculo do histórico.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteCalculation(calc.id)}>
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
