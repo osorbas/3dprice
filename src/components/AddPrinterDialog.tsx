@@ -37,6 +37,7 @@ const predefinedPrinters: Omit<Printer, "id" | "timestamp">[] = [
   { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+" },
   { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon" },
   { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper" },
+  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado" }, // Adicionado "Outra"
 ];
 
 export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => {
