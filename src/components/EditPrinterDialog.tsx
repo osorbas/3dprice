@@ -202,14 +202,7 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
                       min="0"
                       step="1"
                       placeholder="0"
-                      value={field.value === null || field.value === undefined ? "" : String(field.value)}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        field.onChange(val === "" ? 0 : val);
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
