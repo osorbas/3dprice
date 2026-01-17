@@ -54,7 +54,7 @@ const formSchema = z.object({
 });
 
 const CalculatorPage = () => {
-  const { addCalculation, calculations } = usePrintCalculations();
+  const { addCalculation, deleteCalculation, calculations } = usePrintCalculations();
   const { printers, updatePrinter } = usePrinters(); // Obter updatePrinter
   const { filaments } = useFilaments();
   const { extraMaterials } = useExtraMaterials();
@@ -63,6 +63,7 @@ const CalculatorPage = () => {
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
+  const [lastCalculationId, setLastCalculationId] = useState<string | null>(null); // Novo estado para guardar o ID
 
   const [defaultPrinterId, setDefaultPrinterId] = useState<string | null>(null);
   const [defaultFilamentId, setDefaultFilamentId] = useState<string | null>(null);
@@ -238,7 +239,8 @@ const CalculatorPage = () => {
     const profit = baseCost * (values.profitMargin / 100);
     const finalPrice = baseCost + profit;
 
-    addCalculation({
+    // Criar o objeto de cálculo
+    const newCalculation = {
       printName: values.printName,
       printerId: values.printerId,
       materialCost: parseFloat(materialCost.toFixed(2)),
@@ -250,7 +252,13 @@ const CalculatorPage = () => {
       totalPrice: parseFloat(finalPrice.toFixed(2)),
       filamentGrams: values.filamentGrams,
       filamentId: values.filamentId,
-    });
+    };
+
+    // Adicionar o cálculo e obter o ID (assumindo que addCalculation retorna o objeto completo ou o ID)
+    // Como usePrintCalculations não retorna o ID imediatamente, vamos simular a criação do ID aqui
+    const tempId = Date.now().toString();
+    
+    addCalculation(newCalculation);
 
     // Atualizar as horas de trabalho da impressora
     const selectedPrinter = printers.find(p => p.id === values.printerId);
@@ -260,7 +268,11 @@ const CalculatorPage = () => {
       });
     }
 
+    // Definir o ID temporário para o resumo (o ID real será o mais recente no hook)
+    setLastCalculationId(tempId); 
+
     setSummaryData({
+      id: tempId, // Usamos o ID temporário para o resumo
       printName: values.printName,
       materialCost,
       electricityCost,
@@ -274,6 +286,23 @@ const CalculatorPage = () => {
     setIsSummaryDialogOpen(true);
     showSuccess("Cálculo guardado!");
     handleClearCalculator();
+  };
+
+  // Função para apagar o cálculo recém-criado
+  const handleDeleteLastCalculation = (tempId: string) => {
+    // Encontrar o cálculo real que corresponde ao ID temporário (o mais recente)
+    // Como o hook usePrintCalculations adiciona o novo cálculo no início da lista,
+    // o cálculo mais recente (que acabamos de adicionar) deve ser o primeiro.
+    const actualCalculation = calculations.find(c => c.id === tempId) || calculations[0];
+
+    if (actualCalculation) {
+      deleteCalculation(actualCalculation.id);
+      showSuccess("Registo de cálculo apagado com sucesso.");
+    } else {
+      showError("Erro ao apagar o registo. Cálculo não encontrado.");
+    }
+    setLastCalculationId(null);
+    setSummaryData(null);
   };
 
   const handleImportFromHistory = (calculation: PrintCalculation) => {
@@ -518,7 +547,12 @@ const CalculatorPage = () => {
           <p className="text-3xl font-black text-primary">€{calculatedTotalPrice.toFixed(2)}</p>
         </CardFooter>
       </Card>
-      <PaymentSummaryDialog isOpen={isSummaryDialogOpen} onOpenChange={setIsSummaryDialogOpen} data={summaryData} />
+      <PaymentSummaryDialog 
+        isOpen={isSummaryDialogOpen} 
+        onOpenChange={setIsSummaryDialogOpen} 
+        data={summaryData} 
+        onDelete={handleDeleteLastCalculation} // Passar a função de exclusão
+      />
     </div>
   );
 };

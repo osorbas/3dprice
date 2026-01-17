@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Receipt, Printer, Package, Zap, Clock, TrendingUp, Box } from "lucide-react";
+import { Receipt, Zap, Clock, TrendingUp, Box, Trash2 } from "lucide-react";
 
 interface PaymentSummaryData {
+  id: string; // Adicionado ID para permitir exclusão
   printName: string;
   materialCost: number;
   electricityCost: number;
@@ -29,14 +30,21 @@ interface PaymentSummaryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   data: PaymentSummaryData | null;
+  onDelete: (id: string) => void; // Nova prop para apagar o cálculo
 }
 
 export const PaymentSummaryDialog = ({
   isOpen,
   onOpenChange,
   data,
+  onDelete,
 }: PaymentSummaryDialogProps) => {
   if (!data) return null;
+
+  const handleDelete = () => {
+    onDelete(data.id);
+    onOpenChange(false); // Fecha o diálogo após a exclusão
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -54,7 +62,7 @@ export const PaymentSummaryDialog = ({
         <div className="space-y-4 py-4">
           <div className="grid grid-cols-2 gap-y-3 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Package className="h-4 w-4" /> Filamento
+              <Box className="h-4 w-4" /> Filamento
             </div>
             <div className="text-right font-medium">€{data.materialCost.toFixed(2)}</div>
 
@@ -96,8 +104,16 @@ export const PaymentSummaryDialog = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button onClick={() => onOpenChange(false)} className="w-full">
+        <DialogFooter className="flex sm:justify-between gap-2">
+          <Button 
+            variant="destructive" 
+            onClick={handleDelete} 
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Apagar Registo
+          </Button>
+          <Button onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Fechar Resumo
           </Button>
         </DialogFooter>
