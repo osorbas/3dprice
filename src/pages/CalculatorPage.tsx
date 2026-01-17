@@ -415,6 +415,7 @@ const CalculatorPage = () => {
                           )} />
                           <FormField control={form.control} name="filamentGrams" render={({ field }) => (
                             <FormItem className="w-24">
+                              <FormLabel>Gramas</FormLabel> {/* Adicionado o rótulo "Gramas" aqui */}
                               <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
