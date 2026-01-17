@@ -401,26 +401,25 @@ const CalculatorPage = () => {
                       )} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <FormLabel>Filamento *</FormLabel>
-                        <div className="flex gap-2">
-                          <FormField control={form.control} name="filamentId" render={({ field }) => (
-                            <FormItem className="flex-grow">
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Tipo..." /></SelectTrigger></FormControl>
-                                <SelectContent>{filaments.map((f) => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={form.control} name="filamentGrams" render={({ field }) => (
-                            <FormItem className="w-24">
-                              <FormLabel>Gramas</FormLabel> {/* Adicionado o rótulo "Gramas" aqui */}
-                              <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                        </div>
+                      {/* Filament and Grams fields */}
+                      <div className="flex gap-2">
+                        <FormField control={form.control} name="filamentId" render={({ field }) => (
+                          <FormItem className="flex-grow">
+                            <FormLabel>Filamento *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Tipo..." /></SelectTrigger></FormControl>
+                              <SelectContent>{filaments.map((f) => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="filamentGrams" render={({ field }) => (
+                          <FormItem className="w-24">
+                            <FormLabel>Gramas</FormLabel>
+                            <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                       </div>
                       <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
                         <FormItem>
