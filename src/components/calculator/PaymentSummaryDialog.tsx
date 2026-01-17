@@ -104,17 +104,21 @@ export const PaymentSummaryDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="flex sm:justify-between gap-2">
+        <DialogFooter className="flex justify-between gap-2">
+          {/* Botão Fechar Resumo à esquerda */}
+          <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full sm:w-auto order-1 sm:order-none">
+            Fechar Resumo
+          </Button>
+          
+          {/* Botão Apagar Registo à direita, apenas com ícone */}
           <Button 
             variant="destructive" 
             onClick={handleDelete} 
-            className="flex items-center gap-2"
+            size="icon"
+            className="h-10 w-10 flex-shrink-0 order-2 sm:order-none"
           >
-            <Trash2 className="h-4 w-4" />
-            Apagar Registo
-          </Button>
-          <Button onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            Fechar Resumo
+            <Trash2 className="h-5 w-5" />
+            <span className="sr-only">Apagar Registo</span>
           </Button>
         </DialogFooter>
       </DialogContent>
