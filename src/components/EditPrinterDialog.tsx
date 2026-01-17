@@ -44,6 +44,10 @@ const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] =
   { name: "Bambu Lab A1 Mini Combo", brand: "Bambu Lab", model: "A1 Mini Combo" },
   { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon" },
   { name: "Bambu Lab X1 Carbon Combo", brand: "Bambu Lab", model: "X1 Carbon Combo" },
+  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E" },
+  { name: "Bambu Lab P1S Pro", brand: "Bambu Lab", model: "P1S Pro" },
+  { name: "Bambu Lab H100", brand: "Bambu Lab", model: "H100" }, // Novo
+  { name: "Bambu Lab H100 Combo", brand: "Bambu Lab", model: "H100 Combo" }, // Novo
   { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo" },
   { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro" },
   { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus" },
@@ -53,8 +57,6 @@ const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] =
   { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro" },
   { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus" },
   { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max" },
-  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E" }, // Novo
-  { name: "Bambu Lab P1S Pro", brand: "Bambu Lab", model: "P1S Pro" }, // Novo
   { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado" },
 ];
 
