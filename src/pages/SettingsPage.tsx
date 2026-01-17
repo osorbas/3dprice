@@ -402,7 +402,7 @@ const SettingsPage = () => {
           <TabsTrigger value="extras">Extras</TabsTrigger>
           <TabsTrigger value="electricity">Eletricidade</TabsTrigger>
         </TabsList>
-        <TabsContent value="general" className="mt-4 min-h-[400px]">
+        <TabsContent value="general" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle>Definições da Aplicação</CardTitle>
@@ -520,7 +520,7 @@ const SettingsPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="printers" className="mt-4 min-h-[400px]">
+        <TabsContent value="printers" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle>Configurações de Impressoras</CardTitle>
@@ -586,7 +586,7 @@ const SettingsPage = () => {
             <PrintersPage />
           </div>
         </TabsContent>
-        <TabsContent value="filaments" className="mt-4 min-h-[400px]">
+        <TabsContent value="filaments" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle>Configurações de Filamentos</CardTitle>
@@ -607,7 +607,7 @@ const SettingsPage = () => {
                         <SelectValue placeholder="Selecione um filamento predefinido" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">Nenhum filamento predefinido</SelectItem>
+                        <SelectItem value="none">Nenhuma filamento predefinido</SelectItem>
                         {filaments.map((filament) => (
                           <SelectItem key={filament.id} value={filament.id}>
                             <div className="flex items-center gap-2">
@@ -651,10 +651,10 @@ const SettingsPage = () => {
             <FilamentsPage />
           </div>
         </TabsContent>
-        <TabsContent value="extras" className="mt-4 min-h-[400px]">
+        <TabsContent value="extras" className="mt-0">
           <ExtrasPage />
         </TabsContent>
-        <TabsContent value="electricity" className="mt-4 min-h-[400px]">
+        <TabsContent value="electricity" className="mt-0">
           <Card>
             <CardHeader>
               <CardTitle>Configurações de Eletricidade</CardTitle>
