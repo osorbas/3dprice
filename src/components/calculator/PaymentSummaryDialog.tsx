@@ -104,7 +104,7 @@ export const PaymentSummaryDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="flex justify-center sm:justify-between items-center relative">
+        <DialogFooter className="flex justify-center items-center relative">
           {/* Botão Fechar Resumo centralizado */}
           <Button 
             onClick={() => onOpenChange(false)} 
@@ -118,7 +118,7 @@ export const PaymentSummaryDialog = ({
             variant="destructive" 
             onClick={handleDelete} 
             size="icon"
-            className="h-10 w-10 flex-shrink-0 absolute right-0 top-1/2 transform -translate-y-1/2 sm:static sm:translate-y-0"
+            className="h-10 w-10 flex-shrink-0 absolute right-0 top-1/2 transform -translate-y-1/2"
           >
             <Trash2 className="h-5 w-5" />
             <span className="sr-only">Apagar Registo</span>
