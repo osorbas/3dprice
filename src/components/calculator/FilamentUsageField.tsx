@@ -33,7 +33,7 @@ export const FilamentUsageField = ({
         control={control}
         name={filamentIdName}
         render={({ field }) => (
-          <FormItem className="flex-grow">
+          <FormItem className="w-[240px]"> {/* Definida largura fixa reduzida em vez de flex-grow */}
             <FormLabel className={index > 0 ? "sr-only" : ""}>Filamento *</FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
