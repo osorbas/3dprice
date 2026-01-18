@@ -24,7 +24,7 @@ interface AddPrinterDialogProps {
 }
 
 // Predefined list of popular 3D printers (used for select options)
-const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] = [ // Atualizado para omitir workingHours
+export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] = [ // Exportado
   { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2" },
   { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE" },
   { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE" },

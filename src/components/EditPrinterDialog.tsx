@@ -11,6 +11,7 @@ import { usePrinters, Printer } from "@/hooks/use-printers";
 import { showSuccess, showError } from "@/utils/toast";
 import { Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { predefinedPrinters } from "./AddPrinterDialog"; // Importado do AddPrinterDialog
 
 const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
@@ -23,42 +24,6 @@ interface EditPrinterDialogProps {
   printer: Printer;
   // Removida prop onSuccess
 }
-
-// Predefined list of popular 3D printers (used for select options)
-const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] = [ // Atualizado para omitir workingHours
-  { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2" },
-  { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE" },
-  { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE" },
-  { name: "Creality K1", brand: "Creality", model: "K1" },
-  { name: "Creality K1 Max", brand: "Creality", model: "K1 Max" },
-  { name: "Creality CR-10 Smart Pro", brand: "Creality", model: "CR-10 Smart Pro" },
-  { name: "Prusa i3 MK3S+", brand: "Prusa Research", model: "i3 MK3S+" },
-  { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+" },
-  { name: "Prusa XL (1 Toolhead)", brand: "Prusa Research", model: "XL (1 Toolhead)" },
-  { name: "Prusa XL (5 Toolheads)", brand: "Prusa Research", model: "XL (5 Toolheads)" },
-  { name: "Bambu Lab P1P", brand: "Bambu Lab", model: "P1P" },
-  { name: "Bambu Lab P1S", brand: "Bambu Lab", model: "P1S" },
-  { name: "Bambu Lab A1", brand: "Bambu Lab", model: "A1" },
-  { name: "Bambu Lab A1 Mini", brand: "Bambu Lab", model: "A1 Mini" },
-  { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon" },
-  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E" },
-  { name: "Bambu Lab P1S Pro", brand: "Bambu Lab", model: "P1S Pro" },
-  { name: "Bambu Lab H2D", brand: "Bambu Lab", model: "H2D" },
-  { name: "Bambu Lab H2S", brand: "Bambu Lab", model: "H2S" },
-  { name: "Bambu Lab H2C", brand: "Bambu Lab", model: "H2C" },
-  { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo" },
-  { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro" },
-  { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus" },
-  { name: "Anycubic Kobra 2 Max", brand: "Anycubic", model: "Kobra 2 Max" },
-  { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper" },
-  { name: "Elegoo Neptune 4", brand: "Elegoo", model: "Neptune 4" },
-  { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro" },
-  { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus" },
-  { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max" },
-  { name: "Blocks Zero", brand: "Blocks", model: "Zero" },
-  { name: "Blocks One", brand: "Blocks", model: "One" },
-  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado" },
-];
 
 export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialogProps) => {
   const { updatePrinter } = usePrinters();

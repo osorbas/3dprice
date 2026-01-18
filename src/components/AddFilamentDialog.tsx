@@ -26,7 +26,7 @@ interface AddFilamentDialogProps {
 }
 
 // Predefined list of popular filament brands and types
-const predefinedFilamentOptions = [
+export const predefinedFilamentOptions = [ // Exportado
   { brand: "Genérico", type: "PLA" },
   { brand: "Genérico", type: "PETG" },
   { brand: "Genérico", type: "ABS" },

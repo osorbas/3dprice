@@ -1,17 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Sidebar } from "./Sidebar";
-import { useIsMobile } from "@/hooks/use-mobile"; // Import useIsMobile hook
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"; // Import Sheet components
-import { Button } from "@/components/ui/button"; // Import Button component
-import { Menu } from "lucide-react"; // Import Menu icon
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
+import { FirstTimeSetupDialog } from "@/components/FirstTimeSetupDialog";
 
 export const DashboardLayout = () => {
   const isMobile = useIsMobile();
-  const [isSheetOpen, setIsSheetOpen] = React.useState(false); // State to control sheet open/close
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const [showFirstTimeSetup, setShowFirstTimeSetup] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hasVisitedBefore = localStorage.getItem("hasVisitedBefore");
+      if (!hasVisitedBefore) {
+        setShowFirstTimeSetup(true);
+      }
+    }
+  }, []);
 
   if (isMobile) {
     return (
@@ -27,9 +38,15 @@ export const DashboardLayout = () => {
             <Sidebar />
           </SheetContent>
         </Sheet>
-        <div className="flex flex-col h-full w-full overflow-auto p-4 pt-16"> {/* Added pt-16 to account for the menu button */}
-          <Outlet /> {/* This is where nested routes will render */}
+        <div className="flex flex-col h-full w-full overflow-auto p-4 pt-16">
+          <Outlet />
         </div>
+        {showFirstTimeSetup && (
+          <FirstTimeSetupDialog
+            open={showFirstTimeSetup}
+            onOpenChange={setShowFirstTimeSetup}
+          />
+        )}
       </div>
     );
   }
@@ -43,10 +60,16 @@ export const DashboardLayout = () => {
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={85}>
           <div className="flex flex-col h-full overflow-auto p-4">
-            <Outlet /> {/* This is where nested routes will render */}
+            <Outlet />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
+      {showFirstTimeSetup && (
+        <FirstTimeSetupDialog
+          open={showFirstTimeSetup}
+          onOpenChange={setShowFirstTimeSetup}
+        />
+      )}
     </div>
   );
 };

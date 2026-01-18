@@ -11,6 +11,7 @@ import { useFilaments, Filament } from "@/hooks/use-filaments";
 import { showSuccess, showError } from "@/utils/toast";
 import { Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { predefinedFilamentOptions } from "./AddFilamentDialog"; // Importado do AddFilamentDialog
 
 const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
@@ -25,34 +26,6 @@ interface EditFilamentDialogProps {
   filament: Filament;
   // Removida prop onSuccess
 }
-
-// Predefined list of popular filament brands and types
-const predefinedFilamentOptions = [
-  { brand: "Genérico", type: "PLA" },
-  { brand: "Genérico", type: "PETG" },
-  { brand: "Genérico", type: "ABS" },
-  { brand: "Prusament", type: "PLA" },
-  { brand: "Prusament", type: "PETG" },
-  { brand: "ESUN", type: "PLA+" },
-  { brand: "ESUN", type: "PETG" },
-  { brand: "Polymaker", type: "PLA Pro" },
-  { brand: "Polymaker", type: "PETG" },
-  { brand: "Hatchbox", type: "PLA" },
-  { brand: "Hatchbox", type: "PETG" },
-  { brand: "Overture", type: "PLA" },
-  { brand: "Overture", type: "PETG" },
-  { brand: "Bambu Lab", type: "PLA Basic" },
-  { brand: "Bambu Lab", type: "PETG Basic" },
-  { brand: "Bambu Lab", type: "ABS" },
-  { brand: "Anycubic", type: "PLA" },
-  { brand: "Anycubic", type: "PETG" },
-  { brand: "Sunlu", type: "PLA" },
-  { brand: "Sunlu", type: "PETG" },
-  { brand: "Geeetech", type: "PLA" },
-  { brand: "Geeetech", type: "PETG" },
-  { brand: "Amazon Basics", type: "PLA" },
-  { brand: "Amazon Basics", type: "PETG" },
-];
 
 export const EditFilamentDialog = ({ filament /* onSuccess */ }: EditFilamentDialogProps) => {
   const { updateFilament } = useFilaments();
