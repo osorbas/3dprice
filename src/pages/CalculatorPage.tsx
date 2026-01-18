@@ -542,7 +542,7 @@ const CalculatorPage = () => {
                   </TabsContent>
                   <TabsContent value="pricing" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50 overflow-y-auto">
                     <FormField control={form.control} name="profitMargin" render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="w-32">
                         <FormLabel>Margem de Lucro (%)</FormLabel>
                         <FormControl><Input type="number" min="0" step="1" {...field} /></FormControl>
                         <FormMessage />
