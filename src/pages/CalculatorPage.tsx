@@ -443,10 +443,10 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="filamentGrams" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                          <FormItem className="flex-grow"> {/* Alterado para flex-grow */}
                             <div className="relative">
-                              <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                              <FormControl><Input type="number" min="0" step="0.01" className="pr-8" {...field} /></FormControl> {/* Ajustado pr-8 */}
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span> {/* Alterado para 'g' */}
                             </div>
                             <FormMessage />
                           </FormItem>
@@ -471,16 +471,16 @@ const CalculatorPage = () => {
                       <FormLabel>Tempo de Impressão *</FormLabel>
                       <div className="flex gap-2">
                         <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                          <FormItem className="flex-grow"> {/* Alterado para flex-grow */}
                             <div className="relative">
-                              <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
+                              <FormControl><Input type="number" min="0" className="pr-8" {...field} /></FormControl> {/* Ajustado pr-8 */}
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
                             </div>
                             <FormMessage />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                          <FormItem className="flex-grow"> {/* Alterado para flex-grow */}
                             <div className="relative">
                               <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
@@ -504,16 +504,16 @@ const CalculatorPage = () => {
                         <FormLabel>Tempo de Trabalho</FormLabel>
                         <div className="flex gap-2">
                           <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                            <FormItem className="flex-grow"> {/* Alterado para flex-grow */}
                               <div className="relative">
-                                <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
+                                <FormControl><Input type="number" min="0" className="pr-8" {...field} /></FormControl> {/* Ajustado pr-8 */}
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
                               </div>
                               <FormMessage />
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                            <FormItem className="flex-grow"> {/* Alterado para flex-grow */}
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
