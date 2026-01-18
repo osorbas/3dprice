@@ -446,7 +446,7 @@ const CalculatorPage = () => {
                           <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
                             <div className="relative">
                               <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span>
                             </div>
                             <FormMessage />
                           </FormItem>
@@ -517,11 +517,10 @@ const CalculatorPage = () => {
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                        </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                       </div>
                     </div>
                   </TabsContent>
