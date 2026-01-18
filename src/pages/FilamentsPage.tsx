@@ -239,7 +239,7 @@ const FilamentsPage = () => {
                                     <AlertDialogDescription>
                                       Tens a certeza que queres eliminar o filamento "{filament.name}"?
                                     </AlertDialogDescription>
-                                  </AccordionHeader>
+                                  </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                     <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
