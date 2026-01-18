@@ -10,12 +10,11 @@ export interface PrintCalculation {
   extraCost: number;
   profitMargin: number;
   totalPrice: number;
-  filamentGrams: number; // Mantido para compatibilidade com histórico
-  filamentId: string; // Mantido para compatibilidade com histórico
+  filamentGrams: number;
+  filamentId: string;
   timestamp: number;
   printName?: string;
   printerId?: string;
-  // filamentsUsed?: { filamentId: string; grams: number }[]; // Não adicionado aqui para manter a interface mais simples para o histórico
 }
 
 const LOCAL_STORAGE_KEY = "print_calculations";

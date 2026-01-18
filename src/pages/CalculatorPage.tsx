@@ -20,7 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
-import { usePrinters } from "@/hooks/use-printers";
+import { usePrinters } from "@/hooks/use-printers"; // Importar usePrinters
 import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
 import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
@@ -38,7 +38,7 @@ const extraSchema = z.object({
 const formSchema = z.object({
   printName: z.string().min(1, "O nome da impressão é obrigatório."),
   printerId: z.string().min(1, "Selecione uma impressora."),
-  filamentId: z.string().min(1, "Selecione um filamento."), // Single filament field
+  filamentId: z.string().min(1, "Selecione um filamento."),
   filamentGrams: z.coerce.number().min(0.01, "A quantidade de filamento deve ser positiva."),
   printTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
   printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
@@ -55,7 +55,7 @@ const formSchema = z.object({
 
 const CalculatorPage = () => {
   const { addCalculation, deleteCalculation, calculations } = usePrintCalculations();
-  const { printers, updatePrinter } = usePrinters();
+  const { printers, updatePrinter } = usePrinters(); // Obter updatePrinter
   const { filaments } = useFilaments();
   const { extraMaterials } = useExtraMaterials();
   const { electricityProfiles } = useElectricityProfiles();
@@ -63,7 +63,7 @@ const CalculatorPage = () => {
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
-  const [lastCalculationId, setLastCalculationId] = useState<string | null>(null);
+  const [lastCalculationId, setLastCalculationId] = useState<string | null>(null); // Novo estado para guardar o ID
 
   const [defaultPrinterId, setDefaultPrinterId] = useState<string | null>(null);
   const [defaultFilamentId, setDefaultFilamentId] = useState<string | null>(null);
@@ -93,7 +93,7 @@ const CalculatorPage = () => {
     defaultValues: {
       printName: "",
       printerId: defaultPrinterId || "",
-      filamentId: defaultFilamentId || "", // Single filament field
+      filamentId: defaultFilamentId || "",
       filamentGrams: 0,
       printTimeHours: 0,
       printTimeMinutes: 0,
@@ -102,11 +102,12 @@ const CalculatorPage = () => {
       laborCostPerHour: 10,
       laborTimeHours: 0,
       laborTimeMinutes: 0,
-      profitMargin: defaultProfitMargin,
+      profitMargin: defaultProfitMargin, // Usar margem predefinida
       extras: [],
     },
   });
 
+  // Atualizar valores iniciais quando os defaults são carregados
   useEffect(() => {
     if (defaultPrinterId) {
       form.setValue("printerId", defaultPrinterId, { shouldValidate: true });
@@ -121,6 +122,7 @@ const CalculatorPage = () => {
         form.setValue("electricityCostPerHour", prof.costPerHour, { shouldValidate: true });
       }
     }
+    // Atualizar margem de lucro se o valor padrão for alterado
     form.setValue("profitMargin", defaultProfitMargin, { shouldValidate: true });
   }, [defaultPrinterId, defaultFilamentId, defaultElectricityProfileId, defaultProfitMargin, electricityProfiles, form]);
 
@@ -169,6 +171,7 @@ const CalculatorPage = () => {
 
       let gcodeContent = "";
 
+      // Apenas processa .gcode
       if (file.name.toLowerCase().endsWith(".gcode")) {
         gcodeContent = await new Promise<string>((resolve) => {
           const reader = new FileReader();
@@ -236,6 +239,7 @@ const CalculatorPage = () => {
     const profit = baseCost * (values.profitMargin / 100);
     const finalPrice = baseCost + profit;
 
+    // Criar o objeto de cálculo
     const newCalculation = {
       printName: values.printName,
       printerId: values.printerId,
@@ -249,10 +253,14 @@ const CalculatorPage = () => {
       filamentGrams: values.filamentGrams,
       filamentId: values.filamentId,
     };
-    
+
+    // Adicionar o cálculo e obter o ID (assumindo que addCalculation retorna o objeto completo ou o ID)
+    // Como usePrintCalculations não retorna o ID imediatamente, vamos simular a criação do ID aqui
     const tempId = Date.now().toString();
+    
     addCalculation(newCalculation);
 
+    // Atualizar as horas de trabalho da impressora
     const selectedPrinter = printers.find(p => p.id === values.printerId);
     if (selectedPrinter) {
       updatePrinter(selectedPrinter.id, {
@@ -260,10 +268,11 @@ const CalculatorPage = () => {
       });
     }
 
+    // Definir o ID temporário para o resumo (o ID real será o mais recente no hook)
     setLastCalculationId(tempId); 
 
     setSummaryData({
-      id: tempId,
+      id: tempId, // Usamos o ID temporário para o resumo
       printName: values.printName,
       materialCost,
       electricityCost,
@@ -279,7 +288,11 @@ const CalculatorPage = () => {
     handleClearCalculator();
   };
 
+  // Função para apagar o cálculo recém-criado
   const handleDeleteLastCalculation = (tempId: string) => {
+    // Encontrar o cálculo real que corresponde ao ID temporário (o mais recente)
+    // Como o hook usePrintCalculations adiciona o novo cálculo no início da lista,
+    // o cálculo mais recente (que acabamos de adicionar) deve ser o primeiro.
     const actualCalculation = calculations.find(c => c.id === tempId) || calculations[0];
 
     if (actualCalculation) {
@@ -323,7 +336,7 @@ const CalculatorPage = () => {
       laborCostPerHour: 10,
       laborTimeHours: 0,
       laborTimeMinutes: 0,
-      profitMargin: defaultProfitMargin,
+      profitMargin: defaultProfitMargin, // Usar margem predefinida
       extras: [],
     });
   };
@@ -395,7 +408,7 @@ const CalculatorPage = () => {
                   <TabsTrigger value="extras">Extras</TabsTrigger>
                   <TabsTrigger value="pricing">Margem</TabsTrigger>
                 </TabsList>
-                <div className="relative mt-4 min-h-[350px]">
+                <div className="relative mt-4 min-h-[350px]"> {/* Wrapper para o conteúdo dos separadores */}
                   <TabsContent value="basic-info" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50 overflow-y-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="printName" render={({ field }) => (
@@ -409,7 +422,7 @@ const CalculatorPage = () => {
                         <FormItem>
                           <FormLabel>Impressora *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
                             <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
@@ -430,10 +443,10 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="filamentGrams" render={({ field }) => (
-                          <FormItem className="w-24">
+                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
                             <div className="relative">
                               <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span>
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
                             </div>
                             <FormMessage />
                           </FormItem>
@@ -447,7 +460,7 @@ const CalculatorPage = () => {
                             const prof = electricityProfiles.find(p => p.id === val);
                             if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
                           }} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
                             <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
@@ -458,7 +471,7 @@ const CalculatorPage = () => {
                       <FormLabel>Tempo de Impressão *</FormLabel>
                       <div className="flex gap-2">
                         <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                          <FormItem className="w-24">
+                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
                             <div className="relative">
                               <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
@@ -467,7 +480,7 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                          <FormItem className="w-24">
+                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
                             <div className="relative">
                               <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
@@ -491,7 +504,7 @@ const CalculatorPage = () => {
                         <FormLabel>Tempo de Trabalho</FormLabel>
                         <div className="flex gap-2">
                           <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
-                            <FormItem className="w-24">
+                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
@@ -500,14 +513,15 @@ const CalculatorPage = () => {
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
-                            <FormItem className="w-24">
+                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
@@ -539,7 +553,7 @@ const CalculatorPage = () => {
         isOpen={isSummaryDialogOpen} 
         onOpenChange={setIsSummaryDialogOpen} 
         data={summaryData} 
-        onDelete={handleDeleteLastCalculation}
+        onDelete={handleDeleteLastCalculation} // Passar a função de exclusão
       />
     </div>
   );
