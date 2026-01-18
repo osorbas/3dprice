@@ -478,59 +478,52 @@ const CalculatorPage = () => {
                       {filamentFields.map((field, index) => (
                         <FilamentField key={field.id} index={index} namePrefix="filamentsUsed" onRemove={removeFilament} />
                       ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendFilament({ filamentId: "", grams: 0 })}
+                        className="w-full"
+                      >
+                        <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Outro Filamento
+                      </Button>
                     </div>
 
-                    {/* Electricity Profile, Print Time, and Add Filament Button */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                      {/* Column 1: Electricity Profile */}
-                      <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Perfil Energia</FormLabel>
-                          <Select onValueChange={(val) => {
-                            field.onChange(val);
-                            const prof = electricityProfiles.find(p => p.id === val);
-                            if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
-                          }} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
-                            <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      
-                      {/* Column 2: Print Time and Add Filament Button */}
-                      <div className="flex flex-col gap-2">
-                        <div className="space-y-2">
-                          <FormLabel>Tempo de Impressão *</FormLabel>
-                          <div className="flex gap-2">
-                            <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                              <FormItem className="w-24">
-                                <div className="relative">
-                                  <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
-                                  <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )} />
-                            <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                              <FormItem className="w-24">
-                                <div className="relative">
-                                  <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
-                                  <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                                </div>
-                                <FormMessage />
-                              </FormItem>
-                            )} />
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => appendFilament({ filamentId: "", grams: 0 })}
-                          className="w-fit self-end"
-                        >
-                          <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Outro Filamento
-                        </Button>
+                    <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Perfil Energia</FormLabel>
+                        <Select onValueChange={(val) => {
+                          field.onChange(val);
+                          const prof = electricityProfiles.find(p => p.id === val);
+                          if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
+                        }} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                          <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    
+                    <div className="space-y-2">
+                      <FormLabel>Tempo de Impressão *</FormLabel>
+                      <div className="flex gap-2">
+                        <FormField control={form.control} name="printTimeHours" render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <div className="relative">
+                              <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
+                          <FormItem className="flex-1">
+                            <div className="relative">
+                              <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                       </div>
                     </div>
                   </TabsContent>
@@ -547,7 +540,7 @@ const CalculatorPage = () => {
                         <FormLabel>Tempo de Trabalho</FormLabel>
                         <div className="flex gap-2">
                           <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                            <FormItem className="flex-1">
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
@@ -556,7 +549,7 @@ const CalculatorPage = () => {
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                            <FormItem className="flex-1">
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
