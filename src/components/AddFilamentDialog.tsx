@@ -13,7 +13,7 @@ import { PlusCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatório."),
+  name: z.string().optional(),
   brand: z.string().min(1, "A marca é obrigatória."),
   type: z.string().min(1, "O tipo é obrigatório."),
   color: z.string().optional(),
@@ -78,12 +78,15 @@ export const AddFilamentDialog = ({ /* onSuccess */ }: AddFilamentDialogProps) =
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
-      addFilament(values);
-      showSuccess(`Filamento "${values.name}" adicionado com sucesso!`);
+      addFilament({
+        ...values,
+        name: values.name || "", // Garante que seja string vazia se não preenchido
+      });
+      const displayName = values.name || `${values.brand} (${values.color || 'N/A'})`;
+      showSuccess(`Filamento "${displayName}" adicionado com sucesso!`);
       form.reset();
       setSelectedBrand(undefined); // Reset selected brand state
       setOpen(false);
-      // onSuccess?.(); // Não é mais necessário chamar o callback
     } catch (error) {
       showError("Erro ao adicionar filamento. Por favor, tente novamente.");
       console.error("Add filament error:", error);
@@ -107,7 +110,7 @@ export const AddFilamentDialog = ({ /* onSuccess */ }: AddFilamentDialogProps) =
         <DialogHeader>
           <DialogTitle>Adicionar Novo Filamento</DialogTitle>
           <DialogDescription>
-            Preencha os detalhes do seu filamento de impressão 3D.
+            Preencha os detalhes do seu filamento. O nome é opcional.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -117,9 +120,9 @@ export const AddFilamentDialog = ({ /* onSuccess */ }: AddFilamentDialogProps) =
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel>Nome (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="PLA Preto Prusament" {...field} />
+                    <Input placeholder="ex: PLA Favorito" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

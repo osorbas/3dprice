@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { predefinedFilamentOptions } from "./AddFilamentDialog"; // Importado do AddFilamentDialog
 
 const formSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatório."),
+  name: z.string().optional(),
   brand: z.string().min(1, "A marca é obrigatória."),
   type: z.string().min(1, "O tipo é obrigatório."),
   color: z.string().optional(),
@@ -34,10 +34,10 @@ export const EditFilamentDialog = ({ filament /* onSuccess */ }: EditFilamentDia
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: filament.name,
+      name: filament.name || "",
       brand: filament.brand,
       type: filament.type,
-      color: filament.color,
+      color: filament.color || "",
       pricePerKg: filament.pricePerKg,
       weight: filament.weight,
     },
@@ -57,10 +57,12 @@ export const EditFilamentDialog = ({ filament /* onSuccess */ }: EditFilamentDia
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
-      updateFilament(filament.id, values);
-      showSuccess(`Filamento "${values.name}" atualizado com sucesso!`);
+      updateFilament(filament.id, {
+        ...values,
+        name: values.name || "",
+      });
+      showSuccess("Filamento atualizado com sucesso!");
       setOpen(false);
-      // onSuccess?.(); // Não é mais necessário chamar o callback
     } catch (error) {
       showError("Erro ao atualizar filamento. Por favor, tente novamente.");
       console.error("Edit filament error:", error);
@@ -84,7 +86,7 @@ export const EditFilamentDialog = ({ filament /* onSuccess */ }: EditFilamentDia
         <DialogHeader>
           <DialogTitle>Editar Filamento</DialogTitle>
           <DialogDescription>
-            Altere os detalhes do seu filamento de impressão 3D.
+            Altere os detalhes do seu filamento. O nome é opcional.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -94,9 +96,9 @@ export const EditFilamentDialog = ({ filament /* onSuccess */ }: EditFilamentDia
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel>Nome (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="PLA Preto Prusament" {...field} />
+                    <Input placeholder="ex: PLA Favorito" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

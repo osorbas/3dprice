@@ -63,7 +63,11 @@ const FilamentsPage = () => {
     return Object.keys(groups)
       .sort()
       .reduce((acc, key) => {
-        acc[key] = groups[key].sort((a, b) => a.name.localeCompare(b.name));
+        acc[key] = groups[key].sort((a, b) => {
+          const nameA = a.name || `${a.brand} (${a.color || 'N/A'})`;
+          const nameB = b.name || `${b.brand} (${b.color || 'N/A'})`;
+          return nameA.localeCompare(nameB);
+        });
         return acc;
       }, {} as Record<string, Filament[]>);
   }, [filaments]);
@@ -86,6 +90,13 @@ const FilamentsPage = () => {
       showError("Erro ao excluir filamento.");
       console.error("Delete filament error:", error);
     }
+  };
+
+  const getFilamentDisplayName = (filament: Filament) => {
+    if (filament.name && filament.name.trim() !== "") {
+      return filament.name;
+    }
+    return `${filament.brand} (${filament.color || 'N/A'})`;
   };
 
   return (
@@ -144,7 +155,7 @@ const FilamentsPage = () => {
           {filaments.map((filament) => (
             <Card key={filament.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-medium">{filament.name}</CardTitle>
+                <CardTitle className="text-xl font-medium">{getFilamentDisplayName(filament)}</CardTitle>
                 <div className="flex items-center gap-2">
                   <EditFilamentDialog filament={filament} />
                   <AlertDialog>
@@ -158,7 +169,7 @@ const FilamentsPage = () => {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. Isso removerá permanentemente o filamento "{filament.name}".
+                          Esta ação não pode ser desfeita. Isso removerá permanentemente o filamento "{getFilamentDisplayName(filament)}".
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -219,7 +230,7 @@ const FilamentsPage = () => {
                     <TableBody>
                       {brandFilaments.map((filament) => (
                         <TableRow key={filament.id}>
-                          <TableCell className="font-medium">{filament.name}</TableCell>
+                          <TableCell className="font-medium">{getFilamentDisplayName(filament)}</TableCell>
                           <TableCell>{filament.type}</TableCell>
                           <TableCell>{filament.color || '-'}</TableCell>
                           <TableCell>€{filament.pricePerKg.toFixed(2)}</TableCell>
@@ -237,7 +248,7 @@ const FilamentsPage = () => {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Eliminar filamento?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Tens a certeza que queres eliminar o filamento "{filament.name}"?
+                                      Tens a certeza que queres eliminar o filamento "{getFilamentDisplayName(filament)}"?
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
