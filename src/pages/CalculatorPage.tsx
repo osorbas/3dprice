@@ -143,9 +143,13 @@ const CalculatorPage = () => {
   const watchedValues = form.watch();
   
   const calculatedTotalPrice = useMemo(() => {
+    // Cálculo do custo de todos os filamentos
     const filamentsCost = (watchedValues.filamentsUsed || []).reduce((sum, f) => {
       const material = filaments.find(mat => mat.id === f.filamentId);
-      if (material) return sum + ((material.pricePerKg / 1000) * (Number(f.filamentGrams) || 0));
+      const grams = parseFloat(String(f.filamentGrams)) || 0;
+      if (material) {
+        return sum + ((material.pricePerKg / 1000) * grams);
+      }
       return sum;
     }, 0);
 
@@ -160,13 +164,15 @@ const CalculatorPage = () => {
 
     const calculatedExtraCost = (watchedValues.extras || []).reduce((sum, extra) => {
       const material = extraMaterials.find(mat => mat.id === extra.materialId);
-      if (material) return sum + (material.costPerUnit * (Number(extra.quantity) || 0));
+      const qty = parseFloat(String(extra.quantity)) || 0;
+      if (material) return sum + (material.costPerUnit * qty);
       return sum;
     }, 0);
 
     const calculatedBaseCost = filamentsCost + calculatedElectricityCost + calculatedLaborCost + calculatedExtraCost;
     const calculatedProfit = calculatedBaseCost * (currentProfitMargin / 100);
-    return calculatedBaseCost + calculatedProfit;
+    
+    return isNaN(calculatedBaseCost) ? 0 : (calculatedBaseCost + calculatedProfit);
   }, [watchedValues, filaments, extraMaterials]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,6 +232,7 @@ const CalculatorPage = () => {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Cálculo total dos filamentos no submit
     const totalFilamentsCost = values.filamentsUsed.reduce((sum, f) => {
       const material = filaments.find(mat => mat.id === f.filamentId);
       return material ? sum + ((material.pricePerKg / 1000) * f.filamentGrams) : sum;
