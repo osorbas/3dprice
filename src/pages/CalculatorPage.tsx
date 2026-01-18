@@ -20,11 +20,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
-import { usePrinters } from "@/hooks/use-printers"; // Importar usePrinters
+import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
 import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
 import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
+import { FilamentField } from "@/components/calculator/FilamentField"; // Importar o novo componente
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
 
@@ -35,11 +36,15 @@ const extraSchema = z.object({
   quantity: z.coerce.number().min(0, "A quantidade não pode ser negativa."),
 });
 
+const filamentEntrySchema = z.object({
+  filamentId: z.string().min(1, "Selecione um filamento."),
+  grams: z.coerce.number().min(0.01, "A quantidade de filamento deve ser positiva."),
+});
+
 const formSchema = z.object({
   printName: z.string().min(1, "O nome da impressão é obrigatório."),
   printerId: z.string().min(1, "Selecione uma impressora."),
-  filamentId: z.string().min(1, "Selecione um filamento."),
-  filamentGrams: z.coerce.number().min(0.01, "A quantidade de filamento deve ser positiva."),
+  filamentsUsed: z.array(filamentEntrySchema).min(1, "Pelo menos um filamento é obrigatório."), // Alterado para array
   printTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
   printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
   
@@ -55,7 +60,7 @@ const formSchema = z.object({
 
 const CalculatorPage = () => {
   const { addCalculation, deleteCalculation, calculations } = usePrintCalculations();
-  const { printers, updatePrinter } = usePrinters(); // Obter updatePrinter
+  const { printers, updatePrinter } = usePrinters();
   const { filaments } = useFilaments();
   const { extraMaterials } = useExtraMaterials();
   const { electricityProfiles } = useElectricityProfiles();
@@ -63,7 +68,7 @@ const CalculatorPage = () => {
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
-  const [lastCalculationId, setLastCalculationId] = useState<string | null>(null); // Novo estado para guardar o ID
+  const [lastCalculationId, setLastCalculationId] = useState<string | null>(null);
 
   const [defaultPrinterId, setDefaultPrinterId] = useState<string | null>(null);
   const [defaultFilamentId, setDefaultFilamentId] = useState<string | null>(null);
@@ -93,8 +98,7 @@ const CalculatorPage = () => {
     defaultValues: {
       printName: "",
       printerId: defaultPrinterId || "",
-      filamentId: defaultFilamentId || "",
-      filamentGrams: 0,
+      filamentsUsed: defaultFilamentId ? [{ filamentId: defaultFilamentId, grams: 0 }] : [{ filamentId: "", grams: 0 }], // Inicializa com um filamento
       printTimeHours: 0,
       printTimeMinutes: 0,
       electricityProfileId: defaultElectricityProfileId || "",
@@ -102,7 +106,7 @@ const CalculatorPage = () => {
       laborCostPerHour: 10,
       laborTimeHours: 0,
       laborTimeMinutes: 0,
-      profitMargin: defaultProfitMargin, // Usar margem predefinida
+      profitMargin: defaultProfitMargin,
       extras: [],
     },
   });
@@ -112,8 +116,8 @@ const CalculatorPage = () => {
     if (defaultPrinterId) {
       form.setValue("printerId", defaultPrinterId, { shouldValidate: true });
     }
-    if (defaultFilamentId) {
-      form.setValue("filamentId", defaultFilamentId, { shouldValidate: true });
+    if (defaultFilamentId && form.getValues("filamentsUsed").length === 1 && form.getValues("filamentsUsed")[0].filamentId === "") {
+      form.setValue("filamentsUsed.0.filamentId", defaultFilamentId, { shouldValidate: true });
     }
     if (defaultElectricityProfileId) {
       const prof = electricityProfiles.find(p => p.id === defaultElectricityProfileId);
@@ -122,7 +126,6 @@ const CalculatorPage = () => {
         form.setValue("electricityCostPerHour", prof.costPerHour, { shouldValidate: true });
       }
     }
-    // Atualizar margem de lucro se o valor padrão for alterado
     form.setValue("profitMargin", defaultProfitMargin, { shouldValidate: true });
   }, [defaultPrinterId, defaultFilamentId, defaultElectricityProfileId, defaultProfitMargin, electricityProfiles, form]);
 
@@ -132,19 +135,28 @@ const CalculatorPage = () => {
     name: "extras",
   });
 
+  const { fields: filamentFields, append: appendFilament, remove: removeFilament } = useFieldArray({
+    control: form.control,
+    name: "filamentsUsed",
+  });
+
   const watchedValues = form.watch();
   
   const calculatedTotalPrice = useMemo(() => {
-    const selectedFilament = filaments.find(f => f.id === watchedValues.filamentId);
-    
-    const currentFilamentGrams = Number(watchedValues.filamentGrams) || 0;
     const currentPrintTimeHours = (Number(watchedValues.printTimeHours) || 0) + (Number(watchedValues.printTimeMinutes) || 0) / 60;
     const currentElectricityCostPerHour = Number(watchedValues.electricityCostPerHour) || 0;
     const currentLaborCostPerHour = Number(watchedValues.laborCostPerHour) || 0;
     const currentLaborTimeHours = (Number(watchedValues.laborTimeHours) || 0) + (Number(watchedValues.laborTimeMinutes) || 0) / 60;
     const currentProfitMargin = Number(watchedValues.profitMargin) || 0;
 
-    const calculatedMaterialCost = selectedFilament ? (selectedFilament.pricePerKg / 1000) * currentFilamentGrams : 0;
+    const calculatedMaterialCost = (watchedValues.filamentsUsed || []).reduce((sum, entry) => {
+      const selectedFilament = filaments.find(f => f.id === entry.filamentId);
+      if (selectedFilament) {
+        return sum + (selectedFilament.pricePerKg / 1000) * (Number(entry.grams) || 0);
+      }
+      return sum;
+    }, 0);
+
     const calculatedElectricityCost = currentPrintTimeHours * currentElectricityCostPerHour;
     const calculatedLaborCost = currentLaborTimeHours * currentLaborCostPerHour;
 
@@ -171,7 +183,6 @@ const CalculatorPage = () => {
 
       let gcodeContent = "";
 
-      // Apenas processa .gcode
       if (file.name.toLowerCase().endsWith(".gcode")) {
         gcodeContent = await new Promise<string>((resolve) => {
           const reader = new FileReader();
@@ -189,7 +200,7 @@ const CalculatorPage = () => {
 
       let foundData = false;
       if (metadata.filamentGrams !== null) {
-        form.setValue("filamentGrams", parseFloat(metadata.filamentGrams.toFixed(2)));
+        form.setValue("filamentsUsed.0.grams", parseFloat(metadata.filamentGrams.toFixed(2))); // Define para o primeiro filamento
         foundData = true;
       }
 
@@ -218,15 +229,26 @@ const CalculatorPage = () => {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    const selectedFilament = filaments.find(f => f.id === values.filamentId);
-    if (!selectedFilament) {
-      showError("Por favor, selecione um filamento.");
+    if (values.filamentsUsed.length === 0) {
+      showError("Pelo menos um filamento é obrigatório.");
       return;
     }
 
+    let totalFilamentGrams = 0;
+    let materialCost = 0;
+
+    values.filamentsUsed.forEach(entry => {
+      const selectedFilament = filaments.find(f => f.id === entry.filamentId);
+      if (!selectedFilament) {
+        showError(`Filamento selecionado inválido: ${entry.filamentId}`);
+        return;
+      }
+      totalFilamentGrams += entry.grams;
+      materialCost += (selectedFilament.pricePerKg / 1000) * entry.grams;
+    });
+
     const totalPrintTimeHours = values.printTimeHours + (values.printTimeMinutes / 60);
     const totalLaborTimeHours = values.laborTimeHours + (values.laborTimeMinutes / 60);
-    const materialCost = (selectedFilament.pricePerKg / 1000) * values.filamentGrams;
     const electricityCost = totalPrintTimeHours * values.electricityCostPerHour;
     const laborCost = totalLaborTimeHours * values.laborCostPerHour;
 
@@ -239,7 +261,6 @@ const CalculatorPage = () => {
     const profit = baseCost * (values.profitMargin / 100);
     const finalPrice = baseCost + profit;
 
-    // Criar o objeto de cálculo
     const newCalculation = {
       printName: values.printName,
       printerId: values.printerId,
@@ -250,17 +271,13 @@ const CalculatorPage = () => {
       extraCost: parseFloat(extraCostTotal.toFixed(2)),
       profitMargin: values.profitMargin,
       totalPrice: parseFloat(finalPrice.toFixed(2)),
-      filamentGrams: values.filamentGrams,
-      filamentId: values.filamentId,
+      filamentGrams: parseFloat(totalFilamentGrams.toFixed(2)), // Total de gramas de todos os filamentos
+      filamentId: values.filamentsUsed[0]?.filamentId || "", // Manter o ID do primeiro filamento para compatibilidade com histórico
     };
-
-    // Adicionar o cálculo e obter o ID (assumindo que addCalculation retorna o objeto completo ou o ID)
-    // Como usePrintCalculations não retorna o ID imediatamente, vamos simular a criação do ID aqui
-    const tempId = Date.now().toString();
     
+    const tempId = Date.now().toString();
     addCalculation(newCalculation);
 
-    // Atualizar as horas de trabalho da impressora
     const selectedPrinter = printers.find(p => p.id === values.printerId);
     if (selectedPrinter) {
       updatePrinter(selectedPrinter.id, {
@@ -268,11 +285,10 @@ const CalculatorPage = () => {
       });
     }
 
-    // Definir o ID temporário para o resumo (o ID real será o mais recente no hook)
     setLastCalculationId(tempId); 
 
     setSummaryData({
-      id: tempId, // Usamos o ID temporário para o resumo
+      id: tempId,
       printName: values.printName,
       materialCost,
       electricityCost,
@@ -288,11 +304,7 @@ const CalculatorPage = () => {
     handleClearCalculator();
   };
 
-  // Função para apagar o cálculo recém-criado
   const handleDeleteLastCalculation = (tempId: string) => {
-    // Encontrar o cálculo real que corresponde ao ID temporário (o mais recente)
-    // Como o hook usePrintCalculations adiciona o novo cálculo no início da lista,
-    // o cálculo mais recente (que acabamos de adicionar) deve ser o primeiro.
     const actualCalculation = calculations.find(c => c.id === tempId) || calculations[0];
 
     if (actualCalculation) {
@@ -309,8 +321,7 @@ const CalculatorPage = () => {
     form.reset({
       printName: calculation.printName || "",
       printerId: calculation.printerId || "",
-      filamentId: calculation.filamentId || "",
-      filamentGrams: calculation.filamentGrams,
+      filamentsUsed: [{ filamentId: calculation.filamentId || "", grams: calculation.filamentGrams }], // Popula o primeiro filamento
       printTimeHours: Math.floor(calculation.printTimeHours),
       printTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
       electricityCostPerHour: calculation.electricityCost,
@@ -327,8 +338,7 @@ const CalculatorPage = () => {
     form.reset({
       printName: "",
       printerId: defaultPrinterId || "",
-      filamentId: defaultFilamentId || "",
-      filamentGrams: 0,
+      filamentsUsed: defaultFilamentId ? [{ filamentId: defaultFilamentId, grams: 0 }] : [{ filamentId: "", grams: 0 }],
       printTimeHours: 0,
       printTimeMinutes: 0,
       electricityProfileId: defaultElectricityProfileId || "",
@@ -336,7 +346,7 @@ const CalculatorPage = () => {
       laborCostPerHour: 10,
       laborTimeHours: 0,
       laborTimeMinutes: 0,
-      profitMargin: defaultProfitMargin, // Usar margem predefinida
+      profitMargin: defaultProfitMargin,
       extras: [],
     });
   };
@@ -408,7 +418,7 @@ const CalculatorPage = () => {
                   <TabsTrigger value="extras">Extras</TabsTrigger>
                   <TabsTrigger value="pricing">Margem</TabsTrigger>
                 </TabsList>
-                <div className="relative mt-4 min-h-[350px]"> {/* Wrapper para o conteúdo dos separadores */}
+                <div className="relative mt-4 min-h-[350px]">
                   <TabsContent value="basic-info" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50 overflow-y-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="printName" render={({ field }) => (
@@ -430,28 +440,6 @@ const CalculatorPage = () => {
                       )} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Filament and Grams fields */}
-                      <div className="flex gap-2">
-                        <FormField control={form.control} name="filamentId" render={({ field }) => (
-                          <FormItem className="flex-grow">
-                            <FormLabel>Filamento *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="Tipo..." /></SelectTrigger></FormControl>
-                              <SelectContent>{filaments.map((f) => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="filamentGrams" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
-                            <div className="relative">
-                              <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                      </div>
                       <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Perfil Energia</FormLabel>
@@ -467,11 +455,27 @@ const CalculatorPage = () => {
                         </FormItem>
                       )} />
                     </div>
+
+                    <div className="space-y-4">
+                      <FormLabel>Filamentos Utilizados *</FormLabel>
+                      {filamentFields.map((field, index) => (
+                        <FilamentField key={field.id} index={index} namePrefix="filamentsUsed" onRemove={removeFilament} />
+                      ))}
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => appendFilament({ filamentId: "", grams: 0 })} 
+                        className="w-full flex items-center gap-2"
+                      >
+                        <PlusCircle className="h-4 w-4" /> Adicionar Filamento
+                      </Button>
+                    </div>
+
                     <div className="space-y-2">
                       <FormLabel>Tempo de Impressão *</FormLabel>
                       <div className="flex gap-2">
                         <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                          <FormItem className="w-24">
                             <div className="relative">
                               <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
@@ -480,7 +484,7 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                          <FormItem className="w-24">
                             <div className="relative">
                               <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
@@ -504,7 +508,7 @@ const CalculatorPage = () => {
                         <FormLabel>Tempo de Trabalho</FormLabel>
                         <div className="flex gap-2">
                           <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                            <FormItem className="w-24">
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
@@ -513,15 +517,14 @@ const CalculatorPage = () => {
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                            <FormItem className="w-24">
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                        </div>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
                       </div>
                     </div>
                   </TabsContent>
@@ -553,7 +556,7 @@ const CalculatorPage = () => {
         isOpen={isSummaryDialogOpen} 
         onOpenChange={setIsSummaryDialogOpen} 
         data={summaryData} 
-        onDelete={handleDeleteLastCalculation} // Passar a função de exclusão
+        onDelete={handleDeleteLastCalculation}
       />
     </div>
   );
