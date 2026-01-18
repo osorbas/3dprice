@@ -1,6 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 
+export interface FilamentUsage {
+  filamentId: string;
+  grams: number;
+}
+
 export interface PrintCalculation {
   id: string;
   materialCost: number;
@@ -10,8 +15,9 @@ export interface PrintCalculation {
   extraCost: number;
   profitMargin: number;
   totalPrice: number;
-  filamentGrams: number;
-  filamentId: string;
+  filamentGrams: number; // Mantido para compatibilidade (total)
+  filamentId: string;    // Mantido para compatibilidade (primeiro filamento)
+  filaments?: FilamentUsage[]; // Nova lista detalhada
   timestamp: number;
   printName?: string;
   printerId?: string;
@@ -33,6 +39,7 @@ export function usePrintCalculations() {
           printName: calc.printName ?? "",
           printerId: calc.printerId ?? "",
           extraCost: calc.extraCost ?? 0,
+          filaments: calc.filaments ?? [{ filamentId: calc.filamentId || "", grams: calc.filamentGrams || 0 }],
         }));
       }
     }
