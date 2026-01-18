@@ -431,7 +431,7 @@ const CalculatorPage = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Filament and Grams fields */}
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-end"> {/* Adicionado items-end para alinhar os campos */}
                         <FormField control={form.control} name="filamentId" render={({ field }) => (
                           <FormItem className="flex-grow">
                             <FormLabel>Filamento *</FormLabel>
@@ -443,7 +443,7 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="filamentGrams" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado para w-24 */}
+                          <FormItem className="w-24">
                             <div className="relative">
                               <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span>
@@ -471,7 +471,7 @@ const CalculatorPage = () => {
                       <FormLabel>Tempo de Impressão *</FormLabel>
                       <div className="flex gap-2">
                         <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado para w-24 */}
+                          <FormItem className="w-24">
                             <div className="relative">
                               <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
@@ -480,7 +480,7 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                          <FormItem className="w-24"> {/* Alterado para w-24 */}
+                          <FormItem className="w-24">
                             <div className="relative">
                               <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                               <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
@@ -504,7 +504,7 @@ const CalculatorPage = () => {
                         <FormLabel>Tempo de Trabalho</FormLabel>
                         <div className="flex gap-2">
                           <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado para w-24 */}
+                            <FormItem className="w-24">
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
@@ -513,7 +513,7 @@ const CalculatorPage = () => {
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
-                            <FormItem className="w-24"> {/* Alterado para w-24 */}
+                            <FormItem className="w-24">
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
