@@ -13,6 +13,7 @@ interface FilamentUsageFieldProps {
   onRemove?: (index: number) => void;
   onAdd?: () => void;
   showAdd?: boolean;
+  totalFields: number; // Nova prop para saber o total
 }
 
 export const FilamentUsageField = ({
@@ -20,6 +21,7 @@ export const FilamentUsageField = ({
   onRemove,
   onAdd,
   showAdd = false,
+  totalFields,
 }: FilamentUsageFieldProps) => {
   const { control } = useFormContext<FieldValues>();
   const { filaments } = useFilaments();
@@ -33,7 +35,7 @@ export const FilamentUsageField = ({
         control={control}
         name={filamentIdName}
         render={({ field }) => (
-          <FormItem className="w-[240px]"> {/* Definida largura fixa reduzida em vez de flex-grow */}
+          <FormItem className="w-[240px]">
             <FormLabel className={index > 0 ? "sr-only" : ""}>Filamento *</FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
@@ -93,7 +95,8 @@ export const FilamentUsageField = ({
           </Button>
         )}
 
-        {index > 0 && !showAdd && onRemove && (
+        {/* Mostra o botão de apagar se houver mais de um filamento no total */}
+        {totalFields > 1 && onRemove && (
           <Button
             type="button"
             variant="ghost"

@@ -464,6 +464,7 @@ const CalculatorPage = () => {
                             onRemove={removeFilament}
                             onAdd={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
                             showAdd={index === filamentFields.length - 1}
+                            totalFields={filamentFields.length}
                           />
                         ))}
                       </div>
