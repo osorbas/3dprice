@@ -30,7 +30,7 @@ const formSchema = z.object({
   printTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
   printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativas.").max(59, "Minutos não podem exceder 59."),
   electricityCostPerHour: z.coerce.number().min(0, "O custo da eletricidade não pode ser negativo."),
-  laborCostPerHour: z.coerce.number().min(0, "O custo da mão de obra não pode ser negativo."),
+  laborCostTotal: z.coerce.number().min(0, "O custo da mão de obra não pode ser negativo."),
   profitMargin: z.coerce.number().min(0, "A margem de lucro não pode ser negativa."),
 });
 
@@ -59,8 +59,10 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       filamentGrams: calculation.filamentGrams,
       printTimeHours: Math.floor(calculation.printTimeHours),
       printTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
-      electricityCostPerHour: calculation.electricityCost,
-      laborCostPerHour: calculation.laborCost,
+      // Como o histórico guarda o total, mas o campo pede taxa, carregamos o total e o user ajusta.
+      // Idealmente o histórico guardaria a taxa, mas aqui recalcula-se o total no submit.
+      electricityCostPerHour: calculation.electricityCost, 
+      laborCostTotal: calculation.laborCost,
       profitMargin: calculation.profitMargin,
     },
   });
@@ -69,6 +71,18 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
     try {
       const totalPrintTimeHours = values.printTimeHours + (values.printTimeMinutes / 60);
       
+      // Encontrar filamento para recalcular custo do material
+      const selectedFilament = filaments.find(f => f.id === values.filamentId);
+      const materialCost = selectedFilament ? (selectedFilament.pricePerKg / 1000) * values.filamentGrams : 0;
+      
+      // Recalcular custo total de eletricidade e lucro
+      const electricityCostTotal = totalPrintTimeHours * values.electricityCostPerHour;
+      const extraCost = calculation.extraCost || 0;
+      
+      const baseCost = materialCost + electricityCostTotal + values.laborCostTotal + extraCost;
+      const profit = baseCost * (values.profitMargin / 100);
+      const totalPrice = baseCost + profit;
+
       // Combinar data e hora
       const finalDate = new Date(values.timestamp);
       finalDate.setHours(values.recordHour);
@@ -81,9 +95,11 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
         filamentId: values.filamentId,
         filamentGrams: values.filamentGrams,
         printTimeHours: totalPrintTimeHours,
-        electricityCost: values.electricityCostPerHour,
-        laborCost: values.laborCostPerHour,
+        materialCost: parseFloat(materialCost.toFixed(2)),
+        electricityCost: parseFloat(electricityCostTotal.toFixed(2)),
+        laborCost: parseFloat(values.laborCostTotal.toFixed(2)),
         profitMargin: values.profitMargin,
+        totalPrice: parseFloat(totalPrice.toFixed(2)),
       });
       
       showSuccess("Cálculo atualizado com sucesso!");
@@ -104,7 +120,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Cálculo</DialogTitle>
-          <DialogDescription>Altere os detalhes do registo, incluindo a data e hora.</DialogDescription>
+          <DialogDescription>Altere os detalhes do registo. O preço total será recalculado.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -284,10 +300,10 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
               />
               <FormField
                 control={form.control}
-                name="laborCostPerHour"
+                name="laborCostTotal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mão de Obra (€/h)</FormLabel>
+                    <FormLabel>Mão de Obra Total (€)</FormLabel>
                     <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
                   </FormItem>
                 )}
