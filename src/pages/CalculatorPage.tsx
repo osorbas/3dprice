@@ -410,7 +410,7 @@ const CalculatorPage = () => {
                 </TabsList>
                 <div className="relative mt-4 min-h-[350px]"> {/* Wrapper para o conteúdo dos separadores */}
                   <TabsContent value="basic-info" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50 overflow-y-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <FormField control={form.control} name="printName" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Nome da Impressão *</FormLabel>
@@ -418,12 +418,28 @@ const CalculatorPage = () => {
                           <FormMessage />
                         </FormItem>
                       )} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="printerId" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Impressora *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
                             <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Perfil Energia</FormLabel>
+                          <Select onValueChange={(val) => {
+                            field.onChange(val);
+                            const prof = electricityProfiles.find(p => p.id === val);
+                            if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
+                          }} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                            <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
@@ -431,7 +447,7 @@ const CalculatorPage = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Filament and Grams fields */}
-                      <div className="flex gap-2 items-end"> {/* Adicionado items-end para alinhar os campos */}
+                      <div className="flex gap-2 items-end">
                         <FormField control={form.control} name="filamentId" render={({ field }) => (
                           <FormItem className="flex-grow">
                             <FormLabel>Filamento *</FormLabel>
@@ -452,42 +468,28 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                       </div>
-                      <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Perfil Energia</FormLabel>
-                          <Select onValueChange={(val) => {
-                            field.onChange(val);
-                            const prof = electricityProfiles.find(p => p.id === val);
-                            if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
-                          }} value={field.value}>
-                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
-                            <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-                    <div className="space-y-2">
-                      <FormLabel>Tempo de Impressão *</FormLabel>
-                      <div className="flex gap-2">
-                        <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                          <FormItem className="w-24">
-                            <div className="relative">
-                              <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                          <FormItem className="w-24">
-                            <div className="relative">
-                              <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                      <div className="space-y-2">
+                        <FormLabel>Tempo de Impressão *</FormLabel>
+                        <div className="flex gap-2">
+                          <FormField control={form.control} name="printTimeHours" render={({ field }) => (
+                            <FormItem className="w-24">
+                              <div className="relative">
+                                <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
+                                <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
+                            <FormItem className="w-24">
+                              <div className="relative">
+                                <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
+                                <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
