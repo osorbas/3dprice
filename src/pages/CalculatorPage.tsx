@@ -115,13 +115,17 @@ const CalculatorPage = () => {
     if (defaultFilamentId) {
       form.setValue("filamentId", defaultFilamentId, { shouldValidate: true });
     }
-    if (defaultElectricityProfileId) {
-      const prof = electricityProfiles.find(p => p.id === defaultElectricityProfileId);
-      if (prof) {
-        form.setValue("electricityProfileId", defaultElectricityProfileId, { shouldValidate: true });
-        form.setValue("electricityCostPerHour", prof.costPerHour, { shouldValidate: true });
-      }
+    
+    // Fallback para Tarifa Normal se não houver predefinido
+    const targetProfileId = defaultElectricityProfileId || "default-normal";
+    const prof = electricityProfiles.find(p => p.id === targetProfileId) || 
+                 electricityProfiles.find(p => p.name.includes("Tarifa Normal"));
+    
+    if (prof) {
+      form.setValue("electricityProfileId", prof.id, { shouldValidate: true });
+      form.setValue("electricityCostPerHour", prof.costPerHour, { shouldValidate: true });
     }
+
     // Atualizar margem de lucro se o valor padrão for alterado
     form.setValue("profitMargin", defaultProfitMargin, { shouldValidate: true });
   }, [defaultPrinterId, defaultFilamentId, defaultElectricityProfileId, defaultProfitMargin, electricityProfiles, form]);
@@ -324,6 +328,11 @@ const CalculatorPage = () => {
   };
 
   const handleClearCalculator = () => {
+    // Fallback para Tarifa Normal se não houver predefinido
+    const targetProfileId = defaultElectricityProfileId || "default-normal";
+    const prof = electricityProfiles.find(p => p.id === targetProfileId) || 
+                 electricityProfiles.find(p => p.name.includes("Tarifa Normal"));
+    
     form.reset({
       printName: "",
       printerId: defaultPrinterId || "",
@@ -331,8 +340,8 @@ const CalculatorPage = () => {
       filamentGrams: 0,
       printTimeHours: 0,
       printTimeMinutes: 0,
-      electricityProfileId: defaultElectricityProfileId || "",
-      electricityCostPerHour: 0.15,
+      electricityProfileId: prof?.id || "",
+      electricityCostPerHour: prof?.costPerHour || 0.15,
       laborCostPerHour: 10,
       laborTimeHours: 0,
       laborTimeMinutes: 0,
