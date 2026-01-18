@@ -517,10 +517,11 @@ const CalculatorPage = () => {
                               <div className="relative">
                                 <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
                                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
