@@ -166,7 +166,7 @@ const CalculatorPage = () => {
     const toastId = showLoading("A processar ficheiro...");
     
     try {
-      const fileName = file.name.replace(/\.(gcode)$/i, "").replace(/_/g, " ");
+      const fileName = file.name.replace(/\.(gcode)$/i, "",).replace(/_/g, " ");
       form.setValue("printName", fileName);
 
       let gcodeContent = "";
@@ -422,7 +422,7 @@ const CalculatorPage = () => {
                         <FormItem>
                           <FormLabel>Impressora *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
                             <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
@@ -443,9 +443,11 @@ const CalculatorPage = () => {
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="filamentGrams" render={({ field }) => (
-                          <FormItem className="w-24">
-                            <FormLabel>Gramas</FormLabel>
-                            <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
+                          <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
+                            <div className="relative">
+                              <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )} />
@@ -458,7 +460,7 @@ const CalculatorPage = () => {
                             const prof = electricityProfiles.find(p => p.id === val);
                             if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
                           }} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
                             <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
