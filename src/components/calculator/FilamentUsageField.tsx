@@ -13,7 +13,7 @@ interface FilamentUsageFieldProps {
   onRemove?: (index: number) => void;
   onAdd?: () => void;
   showAdd?: boolean;
-  totalFields: number; // Nova prop para saber o total
+  totalFields: number;
 }
 
 export const FilamentUsageField = ({
@@ -59,7 +59,8 @@ export const FilamentUsageField = ({
         )}
       />
       
-      <div className="flex gap-2 items-center">
+      {/* Alterado para items-end para alinhar os botões com a caixa de input */}
+      <div className="flex gap-2 items-end">
         <FormField
           control={control}
           name={gramsName}
@@ -95,7 +96,6 @@ export const FilamentUsageField = ({
           </Button>
         )}
 
-        {/* Mostra o botão de apagar se houver mais de um filamento no total */}
         {totalFields > 1 && onRemove && (
           <Button
             type="button"
