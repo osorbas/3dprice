@@ -25,7 +25,6 @@ import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
 import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
 import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
-import { FilamentField } from "@/components/calculator/FilamentField";
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
 
@@ -36,15 +35,11 @@ const extraSchema = z.object({
   quantity: z.coerce.number().min(0, "A quantidade não pode ser negativa."),
 });
 
-const filamentEntrySchema = z.object({
-  filamentId: z.string().min(1, "Selecione um filamento."),
-  grams: z.coerce.number().min(0.01, "A quantidade de filamento deve ser positiva."),
-});
-
 const formSchema = z.object({
   printName: z.string().min(1, "O nome da impressão é obrigatório."),
   printerId: z.string().min(1, "Selecione uma impressora."),
-  filamentsUsed: z.array(filamentEntrySchema).min(1, "Pelo menos um filamento é obrigatório."),
+  filamentId: z.string().min(1, "Selecione um filamento."), // Single filament field
+  filamentGrams: z.coerce.number().min(0.01, "A quantidade de filamento deve ser positiva."),
   printTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
   printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
   
@@ -98,7 +93,8 @@ const CalculatorPage = () => {
     defaultValues: {
       printName: "",
       printerId: defaultPrinterId || "",
-      filamentsUsed: defaultFilamentId ? [{ filamentId: defaultFilamentId, grams: 0 }] : [{ filamentId: "", grams: 0 }],
+      filamentId: defaultFilamentId || "", // Single filament field
+      filamentGrams: 0,
       printTimeHours: 0,
       printTimeMinutes: 0,
       electricityProfileId: defaultElectricityProfileId || "",
@@ -115,8 +111,8 @@ const CalculatorPage = () => {
     if (defaultPrinterId) {
       form.setValue("printerId", defaultPrinterId, { shouldValidate: true });
     }
-    if (defaultFilamentId && form.getValues("filamentsUsed").length === 1 && form.getValues("filamentsUsed")[0].filamentId === "") {
-      form.setValue("filamentsUsed.0.filamentId", defaultFilamentId, { shouldValidate: true });
+    if (defaultFilamentId) {
+      form.setValue("filamentId", defaultFilamentId, { shouldValidate: true });
     }
     if (defaultElectricityProfileId) {
       const prof = electricityProfiles.find(p => p.id === defaultElectricityProfileId);
@@ -134,28 +130,19 @@ const CalculatorPage = () => {
     name: "extras",
   });
 
-  const { fields: filamentFields, append: appendFilament, remove: removeFilament } = useFieldArray({
-    control: form.control,
-    name: "filamentsUsed",
-  });
-
   const watchedValues = form.watch();
   
   const calculatedTotalPrice = useMemo(() => {
+    const selectedFilament = filaments.find(f => f.id === watchedValues.filamentId);
+    
+    const currentFilamentGrams = Number(watchedValues.filamentGrams) || 0;
     const currentPrintTimeHours = (Number(watchedValues.printTimeHours) || 0) + (Number(watchedValues.printTimeMinutes) || 0) / 60;
     const currentElectricityCostPerHour = Number(watchedValues.electricityCostPerHour) || 0;
     const currentLaborCostPerHour = Number(watchedValues.laborCostPerHour) || 0;
     const currentLaborTimeHours = (Number(watchedValues.laborTimeHours) || 0) + (Number(watchedValues.laborTimeMinutes) || 0) / 60;
     const currentProfitMargin = Number(watchedValues.profitMargin) || 0;
 
-    const calculatedMaterialCost = (watchedValues.filamentsUsed || []).reduce((sum, entry) => {
-      const selectedFilament = filaments.find(f => f.id === entry.filamentId);
-      if (selectedFilament) {
-        return sum + (selectedFilament.pricePerKg / 1000) * (Number(entry.grams) || 0);
-      }
-      return sum;
-    }, 0);
-
+    const calculatedMaterialCost = selectedFilament ? (selectedFilament.pricePerKg / 1000) * currentFilamentGrams : 0;
     const calculatedElectricityCost = currentPrintTimeHours * currentElectricityCostPerHour;
     const calculatedLaborCost = currentLaborTimeHours * currentLaborCostPerHour;
 
@@ -199,7 +186,7 @@ const CalculatorPage = () => {
 
       let foundData = false;
       if (metadata.filamentGrams !== null) {
-        form.setValue("filamentsUsed.0.grams", parseFloat(metadata.filamentGrams.toFixed(2))); // Define para o primeiro filamento
+        form.setValue("filamentGrams", parseFloat(metadata.filamentGrams.toFixed(2)));
         foundData = true;
       }
 
@@ -228,26 +215,15 @@ const CalculatorPage = () => {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    if (values.filamentsUsed.length === 0) {
-      showError("Pelo menos um filamento é obrigatório.");
+    const selectedFilament = filaments.find(f => f.id === values.filamentId);
+    if (!selectedFilament) {
+      showError("Por favor, selecione um filamento.");
       return;
     }
 
-    let totalFilamentGrams = 0;
-    let materialCost = 0;
-
-    values.filamentsUsed.forEach(entry => {
-      const selectedFilament = filaments.find(f => f.id === entry.filamentId);
-      if (!selectedFilament) {
-        showError(`Filamento selecionado inválido: ${entry.filamentId}`);
-        return;
-      }
-      totalFilamentGrams += entry.grams;
-      materialCost += (selectedFilament.pricePerKg / 1000) * entry.grams;
-    });
-
     const totalPrintTimeHours = values.printTimeHours + (values.printTimeMinutes / 60);
     const totalLaborTimeHours = values.laborTimeHours + (values.laborTimeMinutes / 60);
+    const materialCost = (selectedFilament.pricePerKg / 1000) * values.filamentGrams;
     const electricityCost = totalPrintTimeHours * values.electricityCostPerHour;
     const laborCost = totalLaborTimeHours * values.laborCostPerHour;
 
@@ -270,8 +246,8 @@ const CalculatorPage = () => {
       extraCost: parseFloat(extraCostTotal.toFixed(2)),
       profitMargin: values.profitMargin,
       totalPrice: parseFloat(finalPrice.toFixed(2)),
-      filamentGrams: parseFloat(totalFilamentGrams.toFixed(2)), // Total de gramas de todos os filamentos
-      filamentId: values.filamentsUsed[0]?.filamentId || "", // Manter o ID do primeiro filamento para compatibilidade com histórico
+      filamentGrams: values.filamentGrams,
+      filamentId: values.filamentId,
     };
     
     const tempId = Date.now().toString();
@@ -320,7 +296,8 @@ const CalculatorPage = () => {
     form.reset({
       printName: calculation.printName || "",
       printerId: calculation.printerId || "",
-      filamentsUsed: [{ filamentId: calculation.filamentId || "", grams: calculation.filamentGrams }], // Popula o primeiro filamento
+      filamentId: calculation.filamentId || "",
+      filamentGrams: calculation.filamentGrams,
       printTimeHours: Math.floor(calculation.printTimeHours),
       printTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
       electricityCostPerHour: calculation.electricityCost,
@@ -337,7 +314,8 @@ const CalculatorPage = () => {
     form.reset({
       printName: "",
       printerId: defaultPrinterId || "",
-      filamentsUsed: defaultFilamentId ? [{ filamentId: defaultFilamentId, grams: 0 }] : [{ filamentId: "", grams: 0 }],
+      filamentId: defaultFilamentId || "",
+      filamentGrams: 0,
       printTimeHours: 0,
       printTimeMinutes: 0,
       electricityProfileId: defaultElectricityProfileId || "",
@@ -439,6 +417,28 @@ const CalculatorPage = () => {
                       )} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Filament and Grams fields */}
+                      <div className="flex gap-2">
+                        <FormField control={form.control} name="filamentId" render={({ field }) => (
+                          <FormItem className="flex-grow">
+                            <FormLabel>Filamento *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Tipo..." /></SelectTrigger></FormControl>
+                              <SelectContent>{filaments.map((f) => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="filamentGrams" render={({ field }) => (
+                          <FormItem className="w-24">
+                            <div className="relative">
+                              <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
                       <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Perfil Energia</FormLabel>
@@ -454,22 +454,6 @@ const CalculatorPage = () => {
                         </FormItem>
                       )} />
                     </div>
-
-                    <div className="space-y-4">
-                      <FormLabel>Filamentos Utilizados *</FormLabel>
-                      {filamentFields.map((field, index) => (
-                        <FilamentField key={field.id} index={index} namePrefix="filamentsUsed" onRemove={removeFilament} />
-                      ))}
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => appendFilament({ filamentId: "", grams: 0 })} 
-                        className="w-full flex items-center gap-2"
-                      >
-                        <PlusCircle className="h-4 w-4" /> Adicionar Filamento
-                      </Button>
-                    </div>
-
                     <div className="space-y-2">
                       <FormLabel>Tempo de Impressão *</FormLabel>
                       <div className="flex gap-2">
