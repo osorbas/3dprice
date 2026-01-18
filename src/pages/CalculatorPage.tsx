@@ -25,7 +25,7 @@ import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
 import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
 import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
-import { FilamentField } from "@/components/calculator/FilamentField"; // Importar o novo componente
+import { FilamentField } from "@/components/calculator/FilamentField";
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
 
@@ -44,7 +44,7 @@ const filamentEntrySchema = z.object({
 const formSchema = z.object({
   printName: z.string().min(1, "O nome da impressão é obrigatório."),
   printerId: z.string().min(1, "Selecione uma impressora."),
-  filamentsUsed: z.array(filamentEntrySchema).min(1, "Pelo menos um filamento é obrigatório."), // Alterado para array
+  filamentsUsed: z.array(filamentEntrySchema).min(1, "Pelo menos um filamento é obrigatório."),
   printTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
   printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
   
@@ -98,7 +98,7 @@ const CalculatorPage = () => {
     defaultValues: {
       printName: "",
       printerId: defaultPrinterId || "",
-      filamentsUsed: defaultFilamentId ? [{ filamentId: defaultFilamentId, grams: 0 }] : [{ filamentId: "", grams: 0 }], // Inicializa com um filamento
+      filamentsUsed: defaultFilamentId ? [{ filamentId: defaultFilamentId, grams: 0 }] : [{ filamentId: "", grams: 0 }],
       printTimeHours: 0,
       printTimeMinutes: 0,
       electricityProfileId: defaultElectricityProfileId || "",
@@ -111,7 +111,6 @@ const CalculatorPage = () => {
     },
   });
 
-  // Atualizar valores iniciais quando os defaults são carregados
   useEffect(() => {
     if (defaultPrinterId) {
       form.setValue("printerId", defaultPrinterId, { shouldValidate: true });
@@ -432,14 +431,14 @@ const CalculatorPage = () => {
                         <FormItem>
                           <FormLabel>Impressora *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
                             <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
                       )} />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Nova linha para alinhar Impressora e Perfil Energia */}
                       <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Perfil Energia</FormLabel>
@@ -448,7 +447,7 @@ const CalculatorPage = () => {
                             const prof = electricityProfiles.find(p => p.id === val);
                             if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
                           }} value={field.value}>
-                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
                             <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
