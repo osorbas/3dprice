@@ -230,11 +230,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
                         <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {filaments.map((f) => (
-                          <SelectItem key={f.id} value={f.id}>
-                            {f.name} {f.color ? `(${f.color})` : ''}
-                          </SelectItem>
-                        ))}
+                        {filaments.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </FormItem>
