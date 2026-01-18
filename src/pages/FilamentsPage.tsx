@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useFilaments } from "@/hooks/use-filaments";
+import { useFilaments, Filament } from "@/hooks/use-filaments";
 import { AddFilamentDialog } from "@/components/AddFilamentDialog";
 import { EditFilamentDialog } from "@/components/EditFilamentDialog";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { showError, showSuccess } from "@/utils/toast";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
@@ -44,6 +50,23 @@ const FilamentsPage = () => {
   useEffect(() => {
     localStorage.setItem("filament_view_mode", viewMode);
   }, [viewMode]);
+
+  const groupedFilaments = useMemo(() => {
+    const groups: Record<string, Filament[]> = {};
+    filaments.forEach((f) => {
+      if (!groups[f.brand]) {
+        groups[f.brand] = [];
+      }
+      groups[f.brand].push(f);
+    });
+    // Sort brands alphabetically
+    return Object.keys(groups)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = groups[key].sort((a, b) => a.name.localeCompare(b.name));
+        return acc;
+      }, {} as Record<string, Filament[]>);
+  }, [filaments]);
 
   const handleClearFilaments = () => {
     try {
@@ -76,7 +99,7 @@ const FilamentsPage = () => {
                 <LayoutGrid className="h-4 w-4" /> <span className="hidden sm:inline">Grelha</span>
               </TabsTrigger>
               <TabsTrigger value="list" className="flex items-center gap-2">
-                <List className="h-4 w-4" /> <span className="hidden sm:inline">Lista</span>
+                <List className="h-4 w-4" /> <span className="hidden sm:inline">Lista por Marca</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -168,59 +191,74 @@ const FilamentsPage = () => {
           ))}
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Marca/Tipo</TableHead>
-                  <TableHead>Cor</TableHead>
-                  <TableHead>Preço/Kg</TableHead>
-                  <TableHead>Peso</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filaments.map((filament) => (
-                  <TableRow key={filament.id}>
-                    <TableCell className="font-medium">{filament.name}</TableCell>
-                    <TableCell>{filament.brand} - {filament.type}</TableCell>
-                    <TableCell>{filament.color || '-'}</TableCell>
-                    <TableCell>€{filament.pricePerKg.toFixed(2)}</TableCell>
-                    <TableCell>{filament.weight.toFixed(2)} kg</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <EditFilamentDialog filament={filament} />
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Eliminar filamento?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tens a certeza que queres eliminar o filamento "{filament.name}"?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <Accordion type="multiple" className="w-full space-y-4">
+          {Object.entries(groupedFilaments).map(([brand, brandFilaments]) => (
+            <AccordionItem key={brand} value={brand} className="border rounded-lg bg-card px-4">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-3">
+                  <Package className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-semibold text-lg">{brand}</span>
+                  <span className="text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    {brandFilaments.length} {brandFilaments.length === 1 ? 'filamento' : 'filamentos'}
+                  </span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="pt-2 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Cor</TableHead>
+                        <TableHead>Preço/Kg</TableHead>
+                        <TableHead>Peso</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {brandFilaments.map((filament) => (
+                        <TableRow key={filament.id}>
+                          <TableCell className="font-medium">{filament.name}</TableCell>
+                          <TableCell>{filament.type}</TableCell>
+                          <TableCell>{filament.color || '-'}</TableCell>
+                          <TableCell>€{filament.pricePerKg.toFixed(2)}</TableCell>
+                          <TableCell>{filament.weight.toFixed(2)} kg</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-1">
+                              <EditFilamentDialog filament={filament} />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Eliminar filamento?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tens a certeza que queres eliminar o filamento "{filament.name}"?
+                                    </AlertDialogDescription>
+                                  </AccordionHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       )}
     </div>
   );
