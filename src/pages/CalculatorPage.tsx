@@ -440,7 +440,7 @@ const CalculatorPage = () => {
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="max-w-[240px]">
                           <FormLabel>Perfil Energia</FormLabel>
                           <Select onValueChange={(val) => {
                             field.onChange(val);
@@ -458,7 +458,7 @@ const CalculatorPage = () => {
                       {/* Filament and Grams fields */}
                       <div className="flex gap-2 items-end">
                         <FormField control={form.control} name="filamentId" render={({ field }) => (
-                          <FormItem className="flex-grow">
+                          <FormItem className="w-[240px]">
                             <FormLabel>Filamento *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl><SelectTrigger><SelectValue placeholder="Tipo..." /></SelectTrigger></FormControl>
