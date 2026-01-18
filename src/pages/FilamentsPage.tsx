@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFilaments } from "@/hooks/use-filaments";
 import { AddFilamentDialog } from "@/components/AddFilamentDialog";
 import { EditFilamentDialog } from "@/components/EditFilamentDialog";
 import { Button } from "@/components/ui/button";
-import { Trash2, Package } from "lucide-react";
+import { Trash2, Package, LayoutGrid, List } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { showError, showSuccess } from "@/utils/toast";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
@@ -25,6 +34,16 @@ import { ptBR } from "date-fns/locale";
 
 const FilamentsPage = () => {
   const { filaments, clearFilaments, deleteFilament } = useFilaments();
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("filament_view_mode") as "grid" | "list") || "grid";
+    }
+    return "grid";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("filament_view_mode", viewMode);
+  }, [viewMode]);
 
   const handleClearFilaments = () => {
     try {
@@ -48,15 +67,27 @@ const FilamentsPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-bold">Filamentos Registados</h2>
-        <div className="flex gap-2">
-          <AddFilamentDialog /> {/* Não é mais necessário passar onSuccess */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "grid" | "list")} className="w-auto">
+            <TabsList>
+              <TabsTrigger value="grid" className="flex items-center gap-2">
+                <LayoutGrid className="h-4 w-4" /> <span className="hidden sm:inline">Grelha</span>
+              </TabsTrigger>
+              <TabsTrigger value="list" className="flex items-center gap-2">
+                <List className="h-4 w-4" /> <span className="hidden sm:inline">Lista</span>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <AddFilamentDialog />
+          
           {filaments.length > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="flex items-center gap-2">
-                  <Trash2 className="h-4 w-4" /> Limpar Todos
+                <Button variant="destructive" size="icon" title="Limpar Todos">
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -85,14 +116,14 @@ const FilamentsPage = () => {
             <p className="text-center text-muted-foreground">Adicione o seu primeiro filamento 3D para começar a gerir!</p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"> {/* Removido key={refreshKey} */}
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filaments.map((filament) => (
             <Card key={filament.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-xl font-medium">{filament.name}</CardTitle>
                 <div className="flex items-center gap-2">
-                  <EditFilamentDialog filament={filament} /> {/* Não é mais necessário passar onSuccess */}
+                  <EditFilamentDialog filament={filament} />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
@@ -136,6 +167,60 @@ const FilamentsPage = () => {
             </Card>
           ))}
         </div>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Marca/Tipo</TableHead>
+                  <TableHead>Cor</TableHead>
+                  <TableHead>Preço/Kg</TableHead>
+                  <TableHead>Peso</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filaments.map((filament) => (
+                  <TableRow key={filament.id}>
+                    <TableCell className="font-medium">{filament.name}</TableCell>
+                    <TableCell>{filament.brand} - {filament.type}</TableCell>
+                    <TableCell>{filament.color || '-'}</TableCell>
+                    <TableCell>€{filament.pricePerKg.toFixed(2)}</TableCell>
+                    <TableCell>{filament.weight.toFixed(2)} kg</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <EditFilamentDialog filament={filament} />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Eliminar filamento?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tens a certeza que queres eliminar o filamento "{filament.name}"?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
