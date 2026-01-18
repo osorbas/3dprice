@@ -422,8 +422,22 @@ const CalculatorPage = () => {
                         <FormItem>
                           <FormLabel>Impressora *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
                             <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Perfil Energia</FormLabel>
+                          <Select onValueChange={(val) => {
+                            field.onChange(val);
+                            const prof = electricityProfiles.find(p => p.id === val);
+                            if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
+                          }} value={field.value}>
+                            <FormControl><SelectTrigger className="w-full"><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                            <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                           </Select>
                           <FormMessage />
                         </FormItem>
@@ -446,26 +460,12 @@ const CalculatorPage = () => {
                           <FormItem className="w-24"> {/* Alterado de flex-1 para w-24 */}
                             <div className="relative">
                               <FormControl><Input type="number" min="0" step="0.01" className="pr-6" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span>
                             </div>
                             <FormMessage />
                           </FormItem>
                         )} />
                       </div>
-                      <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Perfil Energia</FormLabel>
-                          <Select onValueChange={(val) => {
-                            field.onChange(val);
-                            const prof = electricityProfiles.find(p => p.id === val);
-                            if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
-                          }} value={field.value}>
-                            <FormControl><SelectTrigger className="w-1/2"><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
-                            <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
                     </div>
                     <div className="space-y-2">
                       <FormLabel>Tempo de Impressão *</FormLabel>
