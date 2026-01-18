@@ -462,7 +462,16 @@ const CalculatorPage = () => {
                             <FormLabel>Filamento *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl><SelectTrigger><SelectValue placeholder="Tipo..." /></SelectTrigger></FormControl>
-                              <SelectContent>{filaments.map((f) => (<SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>))}</SelectContent>
+                              <SelectContent>
+                                {filaments.map((f) => {
+                                  const baseName = f.name && f.name.trim() !== "" ? f.name : `${f.brand} - ${f.type}`;
+                                  return (
+                                    <SelectItem key={f.id} value={f.id}>
+                                      {baseName} {f.color ? `(${f.color})` : ""}
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
                             </Select>
                             <FormMessage />
                           </FormItem>
