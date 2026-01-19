@@ -29,7 +29,7 @@ import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
 import { FilamentUsageField } from "@/components/calculator/FilamentUsageField";
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
-import { ProjectPartField } from "@/components/calculator/ProjectPartField"; // Corrigido: Removido 'Part' duplicado
+import { ProjectPartField } from "@/components/calculator/ProjectPartField";
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
@@ -724,136 +724,137 @@ const CalculatorPage = () => {
           </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
-              <div className="relative min-h-[350px]"> {/* Mantém o TabsContent aqui */}
-                  <TabsContent value="single-print" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
-                    <div className="grid grid-cols-1 gap-4">
-                      <FormField control={form.control} name="printName" render={({ field }) => (
+              <Tabs value={activeTab} className="w-full"> {/* Adicionado: Tag de abertura <Tabs> */}
+                <div className="relative min-h-[350px]">
+                    <TabsContent value="single-print" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField control={form.control} name="printName" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome da Impressão *</FormLabel>
+                            <FormControl><Input placeholder="ex: Peça de Reposição" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="printerId" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Impressora *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                              <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                        <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
+                          <FormItem className="max-w-[240px]">
+                            <FormLabel>Perfil Energia</FormLabel>
+                            <Select onValueChange={(val) => {
+                              field.onChange(val);
+                              const prof = electricityProfiles.find(p => p.id === val);
+                              if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
+                            }} value={field.value}>
+                              <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                              <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                      
+                      <div className="space-y-4 border rounded-md p-3 bg-background/50">
+                        <FormLabel>Filamentos Usados</FormLabel>
+                        <div className="space-y-3">
+                          {singleFilamentFields.map((field, index) => (
+                            <FilamentUsageField 
+                              key={field.id} 
+                              index={index} 
+                              onRemove={removeSingleFilament}
+                              onAdd={() => appendSingleFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
+                              showAdd={index === singleFilamentFields.length - 1}
+                              totalFields={singleFilamentFields.length}
+                              namePrefix="filamentsUsed"
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <FormLabel>Tempo de Impressão *</FormLabel>
+                        <div className="flex gap-2">
+                          <FormField control={form.control} name="printTimeHours" render={({ field }) => (
+                            <FormItem className="w-24">
+                              <div className="relative">
+                                <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
+                                <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
+                            <FormItem className="w-24">
+                              <div className="relative">
+                                <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
+                                <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="project" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                      <FormField control={form.control} name="projectName" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nome da Impressão *</FormLabel>
-                          <FormControl><Input placeholder="ex: Peça de Reposição" {...field} /></FormControl>
+                          <FormLabel>Nome do Projeto *</FormLabel>
+                          <FormControl><Input placeholder="ex: Coleção de Miniaturas" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="printerId" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Impressora *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
-                            <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
-                        <FormItem className="max-w-[240px]">
-                          <FormLabel>Perfil Energia</FormLabel>
-                          <Select onValueChange={(val) => {
-                            field.onChange(val);
-                            const prof = electricityProfiles.find(p => p.id === val);
-                            if (prof) form.setValue("electricityCostPerHour", prof.costPerHour);
-                          }} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
-                            <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                    </div>
-                    
-                    <div className="space-y-4 border rounded-md p-3 bg-background/50">
-                      <FormLabel>Filamentos Usados</FormLabel>
-                      <div className="space-y-3">
-                        {singleFilamentFields.map((field, index) => (
-                          <FilamentUsageField 
-                            key={field.id} 
-                            index={index} 
-                            onRemove={removeSingleFilament}
-                            onAdd={() => appendSingleFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
-                            showAdd={index === singleFilamentFields.length - 1}
-                            totalFields={singleFilamentFields.length}
-                            namePrefix="filamentsUsed"
+                      <Separator className="my-4" />
+                      <h3 className="text-lg font-semibold mb-4">Partes do Projeto</h3>
+                      <div className="space-y-6">
+                        {projectPartFields.map((field, index) => (
+                          <ProjectPartField
+                            key={field.id}
+                            index={index}
+                            namePrefix="projectParts"
+                            onRemove={removeProjectPart}
+                            printers={printers}
+                            filaments={filaments}
+                            extraMaterials={extraMaterials}
+                            electricityProfiles={electricityProfiles}
+                            defaultFilamentId={defaultFilamentId}
+                            defaultElectricityProfileId={defaultElectricityProfileId}
+                            defaultProfitMargin={defaultProfitMargin}
                           />
                         ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => appendProjectPart({
+                            partName: "",
+                            printerId: defaultPrinterId || "",
+                            filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+                            printTimeHours: 0,
+                            printTimeMinutes: 0,
+                            electricityProfileId: defaultElectricityProfileId || "",
+                            electricityCostPerHour: electricityProfiles.find(p => p.id === (defaultElectricityProfileId || "default-normal"))?.costPerHour || 0.15,
+                            laborCostPerHour: 10,
+                            laborTimeHours: 0,
+                            laborTimeMinutes: 0,
+                            profitMargin: defaultProfitMargin,
+                            extras: [],
+                          })}
+                          className="w-full"
+                        >
+                          <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Parte
+                        </Button>
                       </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <FormLabel>Tempo de Impressão *</FormLabel>
-                      <div className="flex gap-2">
-                        <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                          <FormItem className="w-24">
-                            <div className="relative">
-                              <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                          <FormItem className="w-24">
-                            <div className="relative">
-                              <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
-                              <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                            </div>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
-                      </div>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="project" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
-                    <FormField control={form.control} name="projectName" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome do Projeto *</FormLabel>
-                        <FormControl><Input placeholder="ex: Coleção de Miniaturas" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <Separator className="my-4" />
-                    <h3 className="text-lg font-semibold mb-4">Partes do Projeto</h3>
-                    <div className="space-y-6">
-                      {projectPartFields.map((field, index) => (
-                        <ProjectPartField
-                          key={field.id}
-                          index={index}
-                          namePrefix="projectParts"
-                          onRemove={removeProjectPart}
-                          printers={printers}
-                          filaments={filaments}
-                          extraMaterials={extraMaterials}
-                          electricityProfiles={electricityProfiles}
-                          defaultFilamentId={defaultFilamentId}
-                          defaultElectricityProfileId={defaultElectricityProfileId}
-                          defaultProfitMargin={defaultProfitMargin}
-                        />
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => appendProjectPart({
-                          partName: "",
-                          printerId: defaultPrinterId || "",
-                          filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
-                          printTimeHours: 0,
-                          printTimeMinutes: 0,
-                          electricityProfileId: defaultElectricityProfileId || "",
-                          electricityCostPerHour: electricityProfiles.find(p => p.id === (defaultElectricityProfileId || "default-normal"))?.costPerHour || 0.15,
-                          laborCostPerHour: 10,
-                          laborTimeHours: 0,
-                          laborTimeMinutes: 0,
-                          profitMargin: defaultProfitMargin,
-                          extras: [],
-                        })}
-                        className="w-full"
-                      >
-                        <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Parte
-                      </Button>
-                    </div>
-                  </TabsContent>
-                </div>
-              </Tabs>
+                    </TabsContent>
+                  </div>
+                </Tabs> {/* Tag de fecho </Tabs> já estava aqui */}
 
               {/* Common fields for both tabs, or specific to single-print if not moved to ProjectPartField */}
               {activeTab === "single-print" && (
