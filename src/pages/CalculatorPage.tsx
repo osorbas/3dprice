@@ -717,7 +717,7 @@ const CalculatorPage = () => {
       electricityCostPerHour: electricityProfiles.find(p => p.id === (defaultElectricityProfileId || "default-normal"))?.costPerHour || 0.15,
       isConfirmed: false,
     });
-    setOpenPartStates(prev => [...prev, false]); // Novas partes começam recolhidas
+    setOpenPartStates(prev => [...prev, true]); // Novas partes começam EXPANDIDAS
   };
 
   const handleRemoveProjectPart = (index: number) => {
