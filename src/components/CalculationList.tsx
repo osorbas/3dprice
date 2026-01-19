@@ -56,7 +56,7 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Nome</TableHead>
-                <TableHead>Impressora</TableHead> {/* Nova coluna para Impressora */}
+                <TableHead>Impressora</TableHead>
                 <TableHead>Material (€)</TableHead>
                 <TableHead>Tempo (h)</TableHead>
                 <TableHead>Eletricidade (€/h)</TableHead>
@@ -68,13 +68,27 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
             </TableHeader>
             <TableBody>
               {calculations.map((calc) => {
-                const printer = printers.find(p => p.id === calc.printerId);
-                const printerName = printer ? printer.name : "N/A"; // Encontrar o nome da impressora
+                let printerDisplay = "N/A";
+
+                if (calc.isProject && calc.projectParts && calc.projectParts.length > 0) {
+                  const uniquePrinterIds = new Set(calc.projectParts.map(part => part.printerId));
+                  if (uniquePrinterIds.size > 1) {
+                    printerDisplay = "Várias Impressoras";
+                  } else if (uniquePrinterIds.size === 1) {
+                    const singlePrinterId = Array.from(uniquePrinterIds)[0];
+                    const printer = printers.find(p => p.id === singlePrinterId);
+                    printerDisplay = printer ? printer.name : "N/A";
+                  }
+                } else if (!calc.isProject && calc.printerId) {
+                  const printer = printers.find(p => p.id === calc.printerId);
+                  printerDisplay = printer ? printer.name : "N/A";
+                }
+
                 return (
                   <TableRow key={calc.id}>
                     <TableCell>{format(new Date(calc.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
-                    <TableCell>{calc.isProject ? calc.projectName : calc.printName || "N/A"}</TableCell> {/* Ajustado para exibir o nome do projeto */}
-                    <TableCell>{printerName}</TableCell> {/* Exibir o nome da impressora */}
+                    <TableCell>{calc.isProject ? calc.projectName : calc.printName || "N/A"}</TableCell>
+                    <TableCell>{printerDisplay}</TableCell>
                     <TableCell>{calc.materialCost.toFixed(2)}</TableCell>
                     <TableCell>{calc.printTimeHours.toFixed(1)}</TableCell>
                     <TableCell>{calc.electricityCost.toFixed(2)}</TableCell>
