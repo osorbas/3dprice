@@ -543,13 +543,17 @@ const CalculatorPage = () => {
                   </TabsContent>
                 </div>
               </Tabs>
-              <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 py-6 text-lg font-bold"><Save className="h-5 w-5 mr-2" /> Guardar e Ver Resumo</Button>
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-between items-center border-t bg-muted/30 py-6 px-8 rounded-b-lg flex-shrink-0">
-          <p className="text-xl font-medium">Total Estimado:</p>
-          <p className="text-3xl font-black text-primary">€{calculatedTotalPrice.toFixed(2)}</p>
+        <CardFooter className="flex flex-col gap-4 justify-between items-center border-t bg-muted/30 py-6 px-8 rounded-b-lg flex-shrink-0">
+          <div className="flex justify-between items-center w-full">
+            <p className="text-xl font-medium">Total Estimado:</p>
+            <p className="text-3xl font-black text-primary">€{calculatedTotalPrice.toFixed(2)}</p>
+          </div>
+          <Button type="button" onClick={form.handleSubmit(onSubmit)} className="w-full bg-orange-500 hover:bg-orange-600 py-6 text-lg font-bold">
+            <Save className="h-5 w-5 mr-2" /> Guardar e Ver Resumo
+          </Button>
         </CardFooter>
       </Card>
       <PaymentSummaryDialog 
