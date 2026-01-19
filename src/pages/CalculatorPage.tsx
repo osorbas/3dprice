@@ -351,7 +351,7 @@ const CalculatorPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-4">
-      <Card className="w-full max-w-full sm:max-w-3xl shadow-lg flex flex-col h-[calc(100vh-2rem)]">
+      <Card className="w-full max-w-full sm:max-w-2xl shadow-lg flex flex-col h-[calc(100vh-2rem)]">
         <CardHeader className="pb-4 flex-shrink-0">
           <CardTitle className="text-3xl font-bold">Calcular Custo de Impressão</CardTitle>
           <p className="text-muted-foreground">Insira os detalhes para calcular o orçamento.</p>
