@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator"; // Adicionado: Importação do Separator
+import { Separator } from "@/components/ui/separator";
 
 import { usePrintCalculations, PrintCalculation, ProjectPartDetail } from "@/hooks/use-print-calculations";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
@@ -29,7 +29,7 @@ import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
 import { FilamentUsageField } from "@/components/calculator/FilamentUsageField";
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
-import { ProjectPartField } from "@/components/calculator/ProjectPartField";
+import { ProjectPartField } from "@/components/calculator/ProjectPartPartField";
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
@@ -657,9 +657,17 @@ const CalculatorPage = () => {
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-4">
       <Card className="w-full max-w-full sm:max-w-2xl shadow-lg flex flex-col max-h-[85vh]">
-        <CardHeader className="pb-4 flex-shrink-0">
-          <CardTitle className="text-3xl font-bold">Calcular Custo de Impressão</CardTitle>
-          <p className="text-muted-foreground">Insira os detalhes para calcular o orçamento.</p>
+        <CardHeader className="pb-4 flex-shrink-0 flex-row items-center justify-between"> {/* Adicionado flex-row e justify-between */}
+          <div>
+            <CardTitle className="text-3xl font-bold">Calcular Custo de Impressão</CardTitle>
+            <p className="text-muted-foreground">Insira os detalhes para calcular o orçamento.</p>
+          </div>
+          <Tabs value={activeTab} onValueChange={(value: "single-print" | "project") => setActiveTab(value)} className="w-auto"> {/* Removido w-full */}
+            <TabsList className="grid grid-cols-2 gap-2 p-1 md:flex md:w-full md:overflow-x-auto md:whitespace-nowrap md:justify-start"> {/* Ajustado para ser mais compacto */}
+              <TabsTrigger value="single-print">Impressão Única</TabsTrigger>
+              <TabsTrigger value="project">Projeto</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent className="flex-grow overflow-y-auto">
           <div className="flex items-center justify-between p-3 mb-6 rounded-lg border bg-muted/50">
@@ -716,12 +724,7 @@ const CalculatorPage = () => {
           </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
-              <Tabs value={activeTab} onValueChange={(value: "single-print" | "project") => setActiveTab(value)} className="w-full">
-                <TabsList className="grid grid-cols-2 gap-2 w-full p-1 md:flex md:w-full md:overflow-x-auto md:whitespace-nowrap md:justify-start">
-                  <TabsTrigger value="single-print">Impressão Única</TabsTrigger>
-                  <TabsTrigger value="project">Projeto</TabsTrigger>
-                </TabsList>
-                <div className="relative mt-4 min-h-[350px]">
+              <div className="relative min-h-[350px]"> {/* Mantém o TabsContent aqui */}
                   <TabsContent value="single-print" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
                     <div className="grid grid-cols-1 gap-4">
                       <FormField control={form.control} name="printName" render={({ field }) => (
@@ -850,8 +853,6 @@ const CalculatorPage = () => {
                     </div>
                   </TabsContent>
                 </div>
-              </Tabs>
-
               {/* Common fields for both tabs, or specific to single-print if not moved to ProjectPartField */}
               {activeTab === "single-print" && (
                 <>
