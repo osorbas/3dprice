@@ -73,7 +73,7 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
                 return (
                   <TableRow key={calc.id}>
                     <TableCell>{format(new Date(calc.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
-                    <TableCell>{calc.printName || "N/A"}</TableCell>
+                    <TableCell>{calc.isProject ? calc.projectName : calc.printName || "N/A"}</TableCell> {/* Ajustado para exibir o nome do projeto */}
                     <TableCell>{printerName}</TableCell> {/* Exibir o nome da impressora */}
                     <TableCell>{calc.materialCost.toFixed(2)}</TableCell>
                     <TableCell>{calc.printTimeHours.toFixed(1)}</TableCell>
