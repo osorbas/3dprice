@@ -351,12 +351,12 @@ const CalculatorPage = () => {
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full p-4">
-      <Card className="w-full max-w-full sm:max-w-3xl shadow-lg">
-        <CardHeader className="pb-4">
+      <Card className="w-full max-w-full sm:max-w-3xl shadow-lg flex flex-col h-[calc(100vh-2rem)]">
+        <CardHeader className="pb-4 flex-shrink-0">
           <CardTitle className="text-3xl font-bold">Calcular Custo de Impressão</CardTitle>
           <p className="text-muted-foreground">Insira os detalhes para calcular o orçamento.</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-grow overflow-y-auto">
           <div className="flex items-center justify-between p-3 mb-6 rounded-lg border bg-muted/50">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <FileText className="h-4 w-4" /> Gestão de Dados
@@ -547,7 +547,7 @@ const CalculatorPage = () => {
             </form>
           </Form>
         </CardContent>
-        <CardFooter className="flex justify-between items-center border-t bg-muted/30 py-6 px-8 rounded-b-lg">
+        <CardFooter className="flex justify-between items-center border-t bg-muted/30 py-6 px-8 rounded-b-lg flex-shrink-0">
           <p className="text-xl font-medium">Total Estimado:</p>
           <p className="text-3xl font-black text-primary">€{calculatedTotalPrice.toFixed(2)}</p>
         </CardFooter>
