@@ -235,6 +235,12 @@ const FilamentsPage = () => {
                     <div className="grid grid-cols-2 gap-1 text-sm">
                       <p>Preço/Kg:</p>
                       <p className="text-right font-medium">€{filament.pricePerKg.toFixed(2)}</p>
+                      {filament.purchasePrice !== undefined && filament.purchasePrice > 0 && (
+                        <>
+                          <p>Preço Compra/Kg:</p>
+                          <p className="text-right font-medium">€{filament.purchasePrice.toFixed(2)}</p>
+                        </>
+                      )}
                       <p>Peso Bobina:</p>
                       <p className="text-right font-medium">{filament.weight.toFixed(2)} kg</p>
                       <p>Custo Total:</p>
@@ -275,6 +281,7 @@ const FilamentsPage = () => {
                         <TableHead>Tipo</TableHead>
                         <TableHead>Cor</TableHead>
                         <TableHead>Preço/Kg</TableHead>
+                        <TableHead>Preço Compra/Kg</TableHead> {/* Nova coluna */}
                         <TableHead>Peso</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
@@ -286,6 +293,7 @@ const FilamentsPage = () => {
                           <TableCell>{filament.type}</TableCell>
                           <TableCell>{filament.color || '-'}</TableCell>
                           <TableCell>€{filament.pricePerKg.toFixed(2)}</TableCell>
+                          <TableCell>€{(filament.purchasePrice ?? 0).toFixed(2)}</TableCell> {/* Exibe o preço de compra */}
                           <TableCell>{filament.weight.toFixed(2)} kg</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-1">

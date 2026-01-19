@@ -6,6 +6,7 @@ export interface ExtraMaterial {
   name: string;
   description?: string;
   costPerUnit: number;
+  purchasePrice?: number; // Novo campo: preço de compra por unidade
   unit: string;
   timestamp: number;
 }
@@ -18,7 +19,15 @@ export function useExtraMaterials() {
     if (typeof window !== "undefined") {
       try {
         const storedMaterials = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return storedMaterials ? JSON.parse(storedMaterials) : [];
+        if (storedMaterials) {
+          const parsedMaterials: ExtraMaterial[] = JSON.parse(storedMaterials);
+          // Garante que 'purchasePrice' tenha um valor padrão para dados existentes
+          return parsedMaterials.map(material => ({
+            ...material,
+            purchasePrice: material.purchasePrice ?? 0 // Valor padrão 0
+          }));
+        }
+        return [];
       } catch (error) {
         console.error("Failed to parse extra materials from localStorage:", error);
         return [];
@@ -75,7 +84,10 @@ export function useExtraMaterials() {
   };
 
   const importExtraMaterials = (data: ExtraMaterial[]) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.map(material => ({
+      ...material,
+      purchasePrice: material.purchasePrice ?? 0 // Garante que dados importados também tenham valor padrão
+    }))));
     notifyUpdate();
   };
 

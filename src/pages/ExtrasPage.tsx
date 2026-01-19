@@ -124,6 +124,12 @@ const ExtrasPage = () => {
                 <div className="grid grid-cols-2 gap-1 text-sm">
                   <p>Custo por {material.unit}:</p>
                   <p className="text-right font-medium">€{material.costPerUnit.toFixed(2)}</p>
+                  {material.purchasePrice !== undefined && material.purchasePrice > 0 && (
+                    <>
+                      <p>Preço Compra:</p>
+                      <p className="text-right font-medium">€{material.purchasePrice.toFixed(2)}</p>
+                    </>
+                  )}
                 </div>
                 <p className="col-span-2 text-xs text-muted-foreground mt-2">
                   Adicionado em: {format(new Date(material.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}

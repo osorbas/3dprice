@@ -17,6 +17,7 @@ const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   description: z.string().optional(),
   costPerUnit: z.coerce.number().min(0.01, "O custo por unidade deve ser positivo."),
+  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(), // Novo campo
   unit: z.string().min(1, "A unidade é obrigatória."),
 });
 
@@ -33,6 +34,7 @@ export const AddExtraDialog = ({ /* onSuccess */ }: AddExtraDialogProps) => {
       name: "",
       description: "",
       costPerUnit: 0,
+      purchasePrice: 0, // Valor padrão
       unit: "unidade",
     },
   });
@@ -105,6 +107,30 @@ export const AddExtraDialog = ({ /* onSuccess */ }: AddExtraDialogProps) => {
                       min="0.01"
                       step="0.01"
                       {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="purchasePrice" // Novo campo
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preço de Compra por Unidade (€) (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...field}
+                      value={field.value === 0 ? "" : field.value} // Exibe vazio se for 0
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? 0 : parseFloat(value));
+                      }}
                     />
                   </FormControl>
                   <FormMessage />

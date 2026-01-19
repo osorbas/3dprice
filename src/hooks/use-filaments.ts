@@ -8,6 +8,7 @@ export interface Filament {
   type: string;
   color: string;
   pricePerKg: number;
+  purchasePrice?: number; // Novo campo: preço de compra por kg
   weight: number;
   timestamp: number;
 }
@@ -20,7 +21,15 @@ export function useFilaments() {
     if (typeof window !== "undefined") {
       try {
         const storedFilaments = localStorage.getItem(LOCAL_STORAGE_KEY);
-        return storedFilaments ? JSON.parse(storedFilaments) : [];
+        if (storedFilaments) {
+          const parsedFilaments: Filament[] = JSON.parse(storedFilaments);
+          // Garante que 'purchasePrice' tenha um valor padrão para dados existentes
+          return parsedFilaments.map(filament => ({
+            ...filament,
+            purchasePrice: filament.purchasePrice ?? 0 // Valor padrão 0
+          }));
+        }
+        return [];
       } catch (error) {
         console.error("Failed to parse filaments from localStorage:", error);
         return [];
@@ -77,7 +86,10 @@ export function useFilaments() {
   };
 
   const importFilaments = (data: Filament[]) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.map(filament => ({
+      ...filament,
+      purchasePrice: filament.purchasePrice ?? 0 // Garante que dados importados também tenham valor padrão
+    }))));
     notifyUpdate();
   };
 

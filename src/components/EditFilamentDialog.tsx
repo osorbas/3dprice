@@ -19,6 +19,7 @@ const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatório."),
   color: z.string().optional(),
   pricePerKg: z.coerce.number().min(0.01, "O preço por kg deve ser positivo."),
+  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(), // Novo campo
   weight: z.coerce.number().min(0.01, "O peso deve ser positivo."),
 });
 
@@ -39,6 +40,7 @@ export const EditFilamentDialog = ({ filament /* onSuccess */ }: EditFilamentDia
       type: filament.type,
       color: filament.color || "",
       pricePerKg: filament.pricePerKg,
+      purchasePrice: filament.purchasePrice ?? 0, // Valor padrão
       weight: filament.weight,
     },
   });
@@ -187,6 +189,30 @@ export const EditFilamentDialog = ({ filament /* onSuccess */ }: EditFilamentDia
                       min="0.01"
                       step="0.01"
                       {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="purchasePrice" // Novo campo
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Preço de Compra por Kg (€) (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...field}
+                      value={field.value === 0 ? "" : field.value} // Exibe vazio se for 0
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? 0 : parseFloat(value));
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
