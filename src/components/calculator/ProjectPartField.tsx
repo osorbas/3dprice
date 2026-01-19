@@ -10,12 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { PlusCircle, XCircle } from "lucide-react";
 
 import { FilamentUsageField } from "./FilamentUsageField";
-import { ExtraMaterialField } from "./ExtraMaterialField";
+// Removido: import { ExtraMaterialField } from "./ExtraMaterialField"; // Não é mais necessário aqui
 
 // Interfaces for props
 import { Printer } from "@/hooks/use-printers";
 import { Filament } from "@/hooks/use-filaments";
-import { ExtraMaterial } from "@/hooks/use-extras";
+// Removido: import { ExtraMaterial } from "@/hooks/use-extras"; // Não é mais necessário aqui
 import { ElectricityProfile } from "@/hooks/use-electricity-profiles";
 
 interface ProjectPartFieldProps<TFieldValues extends FieldValues> {
@@ -24,11 +24,11 @@ interface ProjectPartFieldProps<TFieldValues extends FieldValues> {
   onRemove: (index: number) => void;
   printers: Printer[];
   filaments: Filament[];
-  extraMaterials: ExtraMaterial[];
+  // Removido: extraMaterials: ExtraMaterial[]; // Não é mais necessário aqui
   electricityProfiles: ElectricityProfile[];
   defaultFilamentId: string | null;
-  defaultElectricityProfileId: string | null;
-  defaultProfitMargin: number;
+  // Removido: defaultElectricityProfileId: string | null; // Não é mais necessário aqui
+  // Removido: defaultProfitMargin: number; // Não é mais necessário aqui
 }
 
 export const ProjectPartField = <TFieldValues extends FieldValues>({
@@ -37,11 +37,11 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
   onRemove,
   printers,
   filaments,
-  extraMaterials,
+  // Removido: extraMaterials,
   electricityProfiles,
   defaultFilamentId,
-  defaultElectricityProfileId,
-  defaultProfitMargin,
+  // Removido: defaultElectricityProfileId,
+  // Removido: defaultProfitMargin,
 }: ProjectPartFieldProps<TFieldValues>) => {
   const { control, watch, setValue } = useFormContext<TFieldValues>();
 
@@ -50,10 +50,11 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
     name: `${namePrefix}.${index}.filamentsUsed` as FieldPath<TFieldValues>,
   });
 
-  const { fields: extraFields, append: appendExtra, remove: removeExtra } = useFieldArray({
-    control,
-    name: `${namePrefix}.${index}.extras` as FieldPath<TFieldValues>,
-  });
+  // Removido: Lógica para extraFields, pois extras são agora globais do projeto
+  // const { fields: extraFields, append: appendExtra, remove: removeExtra } = useFieldArray({
+  //   control,
+  //   name: `${namePrefix}.${index}.extras` as FieldPath<TFieldValues>,
+  // });
 
   const electricityProfileIdPath = `${namePrefix}.${index}.electricityProfileId` as FieldPath<TFieldValues>;
   const electricityCostPerHourPath = `${namePrefix}.${index}.electricityCostPerHour` as FieldPath<TFieldValues>;
@@ -175,88 +176,7 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
         </div>
       </div>
 
-      <Separator />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={control}
-          name={`${namePrefix}.${index}.laborCostPerHour` as FieldPath<TFieldValues>}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Preço Hora Mão de Obra (€/h)</FormLabel>
-              <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="space-y-2">
-          <FormLabel>Tempo de Trabalho</FormLabel>
-          <div className="flex gap-2">
-            <FormField
-              control={control}
-              name={`${namePrefix}.${index}.laborTimeHours` as FieldPath<TFieldValues>}
-              render={({ field }) => (
-                <FormItem className="w-24">
-                  <div className="relative">
-                    <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
-                    <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={control}
-              name={`${namePrefix}.${index}.laborTimeMinutes` as FieldPath<TFieldValues>}
-              render={({ field }) => (
-                <FormItem className="w-24">
-                  <div className="relative">
-                    <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
-                    <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div className="space-y-4">
-        <FormLabel>Materiais Extras</FormLabel>
-        {extraFields.map((field, extraIndex) => (
-          <ExtraMaterialField
-            key={field.id}
-            index={extraIndex}
-            namePrefix={`${namePrefix}.${index}.extras`}
-            onRemove={() => removeExtra(extraIndex)}
-          />
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => appendExtra({ materialId: "", quantity: 0 })}
-          className="w-full"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Material Extra
-        </Button>
-      </div>
-
-      <Separator />
-
-      <FormField
-        control={control}
-        name={`${namePrefix}.${index}.profitMargin` as FieldPath<TFieldValues>}
-        render={({ field }) => (
-          <FormItem className="w-44">
-            <FormLabel>Margem de Lucro (%)</FormLabel>
-            <FormControl><Input type="number" min="0" step="1" {...field} /></FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Removidos: Separator, campos de Mão de Obra, Materiais Extras e Margem de Lucro */}
     </Card>
   );
 };

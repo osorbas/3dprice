@@ -12,9 +12,7 @@ export interface ProjectPartDetail {
   materialCost: number;
   printTimeHours: number;
   electricityCost: number;
-  laborCost: number;
-  extraCost: number;
-  profitMargin: number;
+  // Removidos: laborCost, extraCost, profitMargin do nível da parte
   totalPrice: number;
   filamentGrams: number; // Total grams for this part
   filamentId: string;    // Main filament for this part (or first if multiple)
