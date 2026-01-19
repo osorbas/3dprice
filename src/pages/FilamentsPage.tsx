@@ -41,6 +41,18 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+// Helper function to calculate profit margin
+const getProfitMargin = (sellingPrice: number, purchasePrice?: number) => {
+  if (purchasePrice === undefined || purchasePrice <= 0) {
+    return { value: "N/A", isProfit: null, colorClass: "text-muted-foreground" };
+  }
+  const profitAmount = sellingPrice - purchasePrice;
+  const percentage = (profitAmount / purchasePrice) * 100;
+  const isProfit = profitAmount > 0;
+  const colorClass = isProfit ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
+  return { value: percentage.toFixed(0), isProfit, colorClass };
+};
+
 const FilamentsPage = () => {
   const { filaments, clearFilaments, deleteFilament } = useFilaments();
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
@@ -198,60 +210,67 @@ const FilamentsPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredFilaments.length > 0 ? (
-              filteredFilaments.map((filament) => (
-                <Card key={filament.id}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xl font-medium">{getFilamentDisplayName(filament)}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <EditFilamentDialog filament={filament} />
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                            <span className="sr-only">Excluir Filamento</span>
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. Isso removerá permanentemente o filamento "{getFilamentDisplayName(filament)}".
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      <Package className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{filament.brand} - {filament.type} ({filament.color || 'N/A'})</p>
-                    <Separator className="my-2" />
-                    <div className="grid grid-cols-2 gap-1 text-sm">
-                      <p>Preço/Kg:</p>
-                      <p className="text-right font-medium">€{filament.pricePerKg.toFixed(2)}</p>
-                      {filament.purchasePrice !== undefined && filament.purchasePrice > 0 && (
-                        <>
-                          <p>Preço Compra/Kg:</p>
-                          <p className="text-right font-medium">€{filament.purchasePrice.toFixed(2)}</p>
-                        </>
-                      )}
-                      <p>Peso Bobina:</p>
-                      <p className="text-right font-medium">{filament.weight.toFixed(2)} kg</p>
-                      <p>Custo Total:</p>
-                      <p className="text-right font-medium">€{(filament.pricePerKg * filament.weight).toFixed(2)}</p>
-                    </div>
-                    <p className="col-span-2 text-xs text-muted-foreground mt-2">
-                      Adicionado em: {format(new Date(filament.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))
+              filteredFilaments.map((filament) => {
+                const profitMargin = getProfitMargin(filament.pricePerKg, filament.purchasePrice);
+                return (
+                  <Card key={filament.id}>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-xl font-medium">{getFilamentDisplayName(filament)}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <EditFilamentDialog filament={filament} />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <span className="sr-only">Excluir Filamento</span>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso removerá permanentemente o filamento "{getFilamentDisplayName(filament)}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                        <Package className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">{filament.brand} - {filament.type} ({filament.color || 'N/A'})</p>
+                      <Separator className="my-2" />
+                      <div className="grid grid-cols-2 gap-1 text-sm">
+                        <p>Preço/Kg:</p>
+                        <p className="text-right font-medium">€{filament.pricePerKg.toFixed(2)}</p>
+                        {filament.purchasePrice !== undefined && filament.purchasePrice > 0 && (
+                          <>
+                            <p>Preço Compra/Kg:</p>
+                            <p className="text-right font-medium">€{filament.purchasePrice.toFixed(2)}</p>
+                          </>
+                        )}
+                        <p>Peso Bobina:</p>
+                        <p className="text-right font-medium">{filament.weight.toFixed(2)} kg</p>
+                        <p>Custo Total:</p>
+                        <p className="text-right font-medium">€{(filament.pricePerKg * filament.weight).toFixed(2)}</p>
+                        <p>Margem Lucro:</p>
+                        <p className={cn("text-right font-medium", profitMargin.colorClass)}>
+                          {profitMargin.value}{profitMargin.value !== "N/A" ? "%" : ""}
+                        </p>
+                      </div>
+                      <p className="col-span-2 text-xs text-muted-foreground mt-2">
+                        Adicionado em: {format(new Date(filament.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })
             ) : (
               <p className="col-span-full text-center text-muted-foreground py-8">
                 Nenhum filamento encontrado para esta marca.
@@ -283,46 +302,53 @@ const FilamentsPage = () => {
                         <TableHead>Preço/Kg</TableHead>
                         <TableHead>Preço Compra/Kg</TableHead> {/* Nova coluna */}
                         <TableHead>Peso</TableHead>
+                        <TableHead>Margem Lucro</TableHead> {/* Nova coluna */}
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {brandFilaments.map((filament) => (
-                        <TableRow key={filament.id}>
-                          <TableCell className="font-medium">{getFilamentDisplayName(filament)}</TableCell>
-                          <TableCell>{filament.type}</TableCell>
-                          <TableCell>{filament.color || '-'}</TableCell>
-                          <TableCell>€{filament.pricePerKg.toFixed(2)}</TableCell>
-                          <TableCell>€{(filament.purchasePrice ?? 0).toFixed(2)}</TableCell> {/* Exibe o preço de compra */}
-                          <TableCell>{filament.weight.toFixed(2)} kg</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <EditFilamentDialog filament={filament} />
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Eliminar filamento?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Tens a certeza que queres eliminar o filamento "{getFilamentDisplayName(filament)}"?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
-                                      Eliminar
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {brandFilaments.map((filament) => {
+                        const profitMargin = getProfitMargin(filament.pricePerKg, filament.purchasePrice);
+                        return (
+                          <TableRow key={filament.id}>
+                            <TableCell className="font-medium">{getFilamentDisplayName(filament)}</TableCell>
+                            <TableCell>{filament.type}</TableCell>
+                            <TableCell>{filament.color || '-'}</TableCell>
+                            <TableCell>€{filament.pricePerKg.toFixed(2)}</TableCell>
+                            <TableCell>€{(filament.purchasePrice ?? 0).toFixed(2)}</TableCell> {/* Exibe o preço de compra */}
+                            <TableCell>{filament.weight.toFixed(2)} kg</TableCell>
+                            <TableCell className={cn("font-medium", profitMargin.colorClass)}>
+                              {profitMargin.value}{profitMargin.value !== "N/A" ? "%" : ""}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1">
+                                <EditFilamentDialog filament={filament} />
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Eliminar filamento?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Tens a certeza que queres eliminar o filamento "{getFilamentDisplayName(filament)}"?
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleDeleteFilament(filament.id)}>
+                                        Eliminar
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
