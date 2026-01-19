@@ -582,53 +582,59 @@ const CalculatorPage = () => {
 
     if (calculation.isProject && calculation.projectParts) {
       setActiveTab("project");
-      form.reset({
-        projectName: calculation.projectName || "",
-        projectParts: calculation.projectParts.map(part => ({
+      const mappedParts = calculation.projectParts.map(part => {
+        const printTime = part.printTimeHours || 0;
+        const electricityRate = printTime > 0 ? (part.electricityCost / printTime) : (prof?.costPerHour || 0.15);
+        
+        return {
           partName: part.partName,
           printerId: part.printerId || "",
-          filamentsUsed: part.filaments 
+          filamentsUsed: (part.filaments && part.filaments.length > 0)
             ? part.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams }))
             : [{ filamentId: part.filamentId || "", filamentGrams: part.filamentGrams || 0 }],
-          printTimeHours: Math.floor(part.printTimeHours),
-          printTimeMinutes: Math.round((part.printTimeHours - Math.floor(part.printTimeHours)) * 60),
-          electricityProfileId: electricityProfiles.find(p => p.costPerHour === (part.electricityCost / part.printTimeHours))?.id || prof?.id || "",
-          electricityCostPerHour: part.electricityCost / part.printTimeHours || prof?.costPerHour || 0.15,
-          isConfirmed: true, // Adicionado: partes importadas são consideradas confirmadas
-        })),
-        // Global project fields
-        laborCostPerHour: calculation.laborCost / (calculation.printTimeHours > 0 ? calculation.printTimeHours : 1) || 10, // Assuming labor cost is per print time hour if not explicitly stored
-        laborTimeHours: Math.floor(calculation.printTimeHours), // Placeholder, actual labor time not stored
-        laborTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60), // Placeholder
+          printTimeHours: Math.floor(printTime),
+          printTimeMinutes: Math.round((printTime - Math.floor(printTime)) * 60),
+          electricityProfileId: electricityProfiles.find(p => Math.abs(p.costPerHour - electricityRate) < 0.001)?.id || prof?.id || "",
+          electricityCostPerHour: electricityRate,
+          isConfirmed: true,
+        };
+      });
+
+      form.reset({
+        projectName: calculation.projectName || "",
+        projectParts: mappedParts,
+        laborCostPerHour: calculation.laborCost / (calculation.printTimeHours > 0 ? calculation.printTimeHours : 1) || 10,
+        laborTimeHours: Math.floor(calculation.printTimeHours),
+        laborTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
         profitMargin: calculation.profitMargin,
-        extras: calculation.extraCost > 0 ? [{ materialId: "", quantity: 0 }] : [], // Placeholder for extras
-        // Clear single print fields
+        extras: calculation.extraCost > 0 ? [{ materialId: "", quantity: 0 }] : [],
         printName: "", printerId: "", filamentsUsed: [], printTimeHours: 0, printTimeMinutes: 0,
         electricityProfileId: "", electricityCostPerHour: 0.15,
       });
-      // Define o estado de expansão para as partes importadas (primeira expandida, resto recolhido)
       setOpenPartStates(calculation.projectParts.map((_, idx) => idx === 0));
     } else {
       setActiveTab("single-print");
+      const printTime = calculation.printTimeHours || 0;
+      const electricityRate = printTime > 0 ? (calculation.electricityCost / printTime) : (prof?.costPerHour || 0.15);
+
       form.reset({
         printName: calculation.printName || "",
         printerId: calculation.printerId || "",
-        filamentsUsed: calculation.filaments 
+        filamentsUsed: (calculation.filaments && calculation.filaments.length > 0)
           ? calculation.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams }))
           : [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }],
-        printTimeHours: Math.floor(calculation.printTimeHours),
-        printTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
-        electricityProfileId: electricityProfiles.find(p => p.costPerHour === (calculation.electricityCost / calculation.printTimeHours))?.id || prof?.id || "",
-        electricityCostPerHour: calculation.electricityCost / calculation.printTimeHours || prof?.costPerHour || 0.15,
-        laborCostPerHour: calculation.laborCost / (calculation.laborCost > 0 ? calculation.printTimeHours : 1) || 10, // Assuming labor cost is per print time hour if not explicitly stored
-        laborTimeHours: Math.floor(calculation.printTimeHours), // Placeholder, actual labor time not stored
-        laborTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60), // Placeholder
+        printTimeHours: Math.floor(printTime),
+        printTimeMinutes: Math.round((printTime - Math.floor(printTime)) * 60),
+        electricityProfileId: electricityProfiles.find(p => Math.abs(p.costPerHour - electricityRate) < 0.001)?.id || prof?.id || "",
+        electricityCostPerHour: electricityRate,
+        laborCostPerHour: calculation.laborCost / (calculation.laborCost > 0 ? calculation.printTimeHours : 1) || 10,
+        laborTimeHours: Math.floor(calculation.printTimeHours),
+        laborTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
         profitMargin: calculation.profitMargin,
-        extras: calculation.extraCost > 0 ? [{ materialId: "", quantity: 0 }] : [], // Placeholder for extras
-        // Clear project fields
+        extras: calculation.extraCost > 0 ? [{ materialId: "", quantity: 0 }] : [],
         projectName: "", projectParts: [],
       });
-      setOpenPartStates([]); // Limpa os estados de expansão para impressão única
+      setOpenPartStates([]);
     }
     setIsHistoryDialogOpen(false);
   };
