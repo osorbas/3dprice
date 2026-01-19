@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { FileText, Save, PlusCircle, History, Eraser, FileCode } from "lucide-react"; 
+import { FileText, Save, PlusCircle, History, Eraser, FileCode, CheckCircle } from "lucide-react"; 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -18,6 +18,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
 
 import { usePrintCalculations, PrintCalculation, ProjectPartDetail } from "@/hooks/use-print-calculations";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
@@ -51,7 +58,7 @@ const projectPartSchema = z.object({
   printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
   electricityProfileId: z.string().optional(),
   electricityCostPerHour: z.coerce.number().min(0, "O custo da eletricidade não pode ser negativo."),
-  // Removidos: laborCostPerHour, laborTimeHours, laborTimeMinutes, profitMargin, extras do nível da parte
+  isConfirmed: z.boolean().default(false), // Adicionado: estado de confirmação para a parte
 });
 
 const formSchema = z.object({
@@ -200,6 +207,7 @@ const CalculatorPage = () => {
             printTimeMinutes: 0,
             electricityProfileId: prof?.id || "",
             electricityCostPerHour: prof?.costPerHour || 0.15,
+            isConfirmed: false, // Adicionado: default para false
             // Part-level fields removed
           }],
         });
@@ -452,7 +460,13 @@ const CalculatorPage = () => {
       // Validate project fields
       const projectValidation = z.object({
         projectName: z.string().min(1, "O nome do projeto é obrigatório."),
-        projectParts: z.array(projectPartSchema).min(1, "Adicione pelo menos uma parte ao projeto."),
+        projectParts: z.array(projectPartSchema).min(1, "Adicione pelo menos uma parte ao projeto.").refine(
+          (parts) => parts.every((part) => part.isConfirmed),
+          {
+            message: "Todas as partes do projeto devem ser confirmadas.",
+            path: ["projectParts"],
+          }
+        ),
         laborCostPerHour: z.coerce.number().min(0, "O custo da mão de obra não pode ser negativo."),
         laborTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
         laborTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
@@ -464,7 +478,7 @@ const CalculatorPage = () => {
         projectValidation.error.errors.forEach(err => {
           form.setError(err.path.join('.') as any, { message: err.message });
         });
-        showError("Por favor, preencha todos os campos obrigatórios para o projeto.");
+        showError("Por favor, preencha todos os campos obrigatórios e confirme todas as partes do projeto.");
         return;
       }
 
@@ -574,7 +588,7 @@ const CalculatorPage = () => {
           printTimeMinutes: Math.round((part.printTimeHours - Math.floor(part.printTimeHours)) * 60),
           electricityProfileId: electricityProfiles.find(p => p.costPerHour === (part.electricityCost / part.printTimeHours))?.id || prof?.id || "",
           electricityCostPerHour: part.electricityCost / part.printTimeHours || prof?.costPerHour || 0.15,
-          // Part-level fields removed
+          isConfirmed: true, // Adicionado: partes importadas são consideradas confirmadas
         })),
         // Global project fields
         laborCostPerHour: calculation.laborCost / (calculation.printTimeHours > 0 ? calculation.printTimeHours : 1) || 10, // Assuming labor cost is per print time hour if not explicitly stored
@@ -656,9 +670,19 @@ const CalculatorPage = () => {
           printTimeMinutes: 0,
           electricityProfileId: prof?.id || "",
           electricityCostPerHour: prof?.costPerHour || 0.15,
+          isConfirmed: false, // Adicionado: default para false
           // Part-level fields removed
         }],
       });
+    }
+  };
+
+  const handleConfirmPart = (index: number, confirmed: boolean) => {
+    form.setValue(`projectParts.${index}.isConfirmed`, confirmed);
+    if (confirmed) {
+      showSuccess(`Parte "${form.getValues(`projectParts.${index}.partName`)}" confirmada!`);
+    } else {
+      showSuccess(`Parte "${form.getValues(`projectParts.${index}.partName`)}" reaberta para edição.`);
     }
   };
 
@@ -831,11 +855,10 @@ const CalculatorPage = () => {
                             onRemove={removeProjectPart}
                             printers={printers}
                             filaments={filaments}
-                            // Removido: extraMaterials={extraMaterials}
                             electricityProfiles={electricityProfiles}
                             defaultFilamentId={defaultFilamentId}
-                            // Removido: defaultElectricityProfileId={defaultElectricityProfileId}
-                            // Removido: defaultProfitMargin={defaultProfitMargin}
+                            isConfirmed={form.getValues(`projectParts.${index}.isConfirmed`)}
+                            onConfirmPart={handleConfirmPart}
                           />
                         ))}
                         <Button
@@ -849,7 +872,7 @@ const CalculatorPage = () => {
                             printTimeMinutes: 0,
                             electricityProfileId: defaultElectricityProfileId || "",
                             electricityCostPerHour: electricityProfiles.find(p => p.id === (defaultElectricityProfileId || "default-normal"))?.costPerHour || 0.15,
-                            // Part-level fields removed
+                            isConfirmed: false, // Adicionado: default para false
                           })}
                           className="w-full"
                         >

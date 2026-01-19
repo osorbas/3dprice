@@ -7,15 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { PlusCircle, XCircle } from "lucide-react";
+import { PlusCircle, XCircle, CheckCircle, Pencil } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 
 import { FilamentUsageField } from "./FilamentUsageField";
-// Removido: import { ExtraMaterialField } from "./ExtraMaterialField"; // Não é mais necessário aqui
 
 // Interfaces for props
 import { Printer } from "@/hooks/use-printers";
 import { Filament } from "@/hooks/use-filaments";
-// Removido: import { ExtraMaterial } from "@/hooks/use-extras"; // Não é mais necessário aqui
 import { ElectricityProfile } from "@/hooks/use-electricity-profiles";
 
 interface ProjectPartFieldProps<TFieldValues extends FieldValues> {
@@ -24,11 +29,10 @@ interface ProjectPartFieldProps<TFieldValues extends FieldValues> {
   onRemove: (index: number) => void;
   printers: Printer[];
   filaments: Filament[];
-  // Removido: extraMaterials: ExtraMaterial[]; // Não é mais necessário aqui
   electricityProfiles: ElectricityProfile[];
   defaultFilamentId: string | null;
-  // Removido: defaultElectricityProfileId: string | null; // Não é mais necessário aqui
-  // Removido: defaultProfitMargin: number; // Não é mais necessário aqui
+  isConfirmed: boolean;
+  onConfirmPart: (index: number, confirmed: boolean) => void;
 }
 
 export const ProjectPartField = <TFieldValues extends FieldValues>({
@@ -37,29 +41,24 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
   onRemove,
   printers,
   filaments,
-  // Removido: extraMaterials,
   electricityProfiles,
   defaultFilamentId,
-  // Removido: defaultElectricityProfileId,
-  // Removido: defaultProfitMargin,
+  isConfirmed,
+  onConfirmPart,
 }: ProjectPartFieldProps<TFieldValues>) => {
-  const { control, watch, setValue } = useFormContext<TFieldValues>();
+  const { control, watch, setValue, trigger, getValues } = useFormContext<TFieldValues>();
 
   const { fields: filamentFields, append: appendFilament, remove: removeFilament } = useFieldArray({
     control,
     name: `${namePrefix}.${index}.filamentsUsed` as FieldPath<TFieldValues>,
   });
 
-  // Removido: Lógica para extraFields, pois extras são agora globais do projeto
-  // const { fields: extraFields, append: appendExtra, remove: removeExtra } = useFieldArray({
-  //   control,
-  //   name: `${namePrefix}.${index}.extras` as FieldPath<TFieldValues>,
-  // });
-
   const electricityProfileIdPath = `${namePrefix}.${index}.electricityProfileId` as FieldPath<TFieldValues>;
   const electricityCostPerHourPath = `${namePrefix}.${index}.electricityCostPerHour` as FieldPath<TFieldValues>;
+  const partNamePath = `${namePrefix}.${index}.partName` as FieldPath<TFieldValues>;
 
   const watchedElectricityProfileId = watch(electricityProfileIdPath);
+  const watchedPartName = watch(partNamePath);
 
   React.useEffect(() => {
     const selectedProfile = electricityProfiles.find(p => p.id === watchedElectricityProfileId);
@@ -68,115 +67,187 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
     }
   }, [watchedElectricityProfileId, electricityProfiles, setValue, electricityCostPerHourPath]);
 
+  const handleConfirm = async () => {
+    const fieldsToValidate: (FieldPath<TFieldValues>)[] = [
+      partNamePath,
+      `${namePrefix}.${index}.printerId`,
+      `${namePrefix}.${index}.printTimeHours`,
+      `${namePrefix}.${index}.printTimeMinutes`,
+      electricityProfileIdPath,
+      electricityCostPerHourPath,
+    ];
+
+    // Add filament fields to validation
+    filamentFields.forEach((_, fIndex) => {
+      fieldsToValidate.push(`${namePrefix}.${index}.filamentsUsed.${fIndex}.filamentId` as FieldPath<TFieldValues>);
+      fieldsToValidate.push(`${namePrefix}.${index}.filamentsUsed.${fIndex}.filamentGrams` as FieldPath<TFieldValues>);
+    });
+
+    const isValid = await trigger(fieldsToValidate);
+    if (isValid) {
+      onConfirmPart(index, true);
+    }
+  };
+
+  const handleEdit = () => {
+    onConfirmPart(index, false);
+  };
+
   return (
-    <Card className="p-4 space-y-4 bg-background/50">
-      <CardHeader className="flex flex-row items-center justify-between p-0 pb-4">
-        <CardTitle className="text-lg">Parte {index + 1}</CardTitle>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={() => onRemove(index)}
-          className="text-destructive"
-        >
-          <XCircle className="h-5 w-5" />
-          <span className="sr-only">Remover Parte</span>
-        </Button>
-      </CardHeader>
-      <div className="grid grid-cols-1 gap-4">
-        <FormField
-          control={control}
-          name={`${namePrefix}.${index}.partName` as FieldPath<TFieldValues>}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome da Parte *</FormLabel>
-              <FormControl><Input placeholder="ex: Base da Estátua" {...field} /></FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          control={control}
-          name={`${namePrefix}.${index}.printerId` as FieldPath<TFieldValues>}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Impressora *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
-                <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name={electricityProfileIdPath}
-          render={({ field }) => (
-            <FormItem className="max-w-[240px]">
-              <FormLabel>Perfil Energia</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
-                <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <div className="space-y-4 border rounded-md p-3 bg-background/50">
-        <FormLabel>Filamentos Usados</FormLabel>
-        <div className="space-y-3">
-          {filamentFields.map((field, filamentIndex) => (
-            <FilamentUsageField
-              key={field.id}
-              index={filamentIndex}
-              onRemove={() => removeFilament(filamentIndex)}
-              onAdd={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
-              showAdd={filamentIndex === filamentFields.length - 1}
-              totalFields={filamentFields.length}
-              namePrefix={`${namePrefix}.${index}.filamentsUsed`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <FormLabel>Tempo de Impressão *</FormLabel>
-        <div className="flex gap-2">
-          <FormField
-            control={control}
-            name={`${namePrefix}.${index}.printTimeHours` as FieldPath<TFieldValues>}
-            render={({ field }) => (
-              <FormItem className="w-24">
-                <div className="relative">
-                  <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
-                  <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
-                </div>
-                <FormMessage />
-              </FormItem>
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value={`part-${index}`} className="border rounded-lg bg-card px-4">
+        <AccordionTrigger className="hover:no-underline">
+          <div className="flex items-center gap-3 w-full pr-8">
+            <span className="font-semibold text-lg truncate">
+              {watchedPartName || `Parte ${index + 1}`}
+            </span>
+            {isConfirmed && (
+              <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
             )}
-          />
-          <FormField
-            control={control}
-            name={`${namePrefix}.${index}.printTimeMinutes` as FieldPath<TFieldValues>}
-            render={({ field }) => (
-              <FormItem className="w-24">
-                <div className="relative">
-                  <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
-                  <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
+            <div className="ml-auto flex items-center gap-2">
+              {isConfirmed ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={(e) => { e.stopPropagation(); handleEdit(); }}
+                  className="h-8 w-8 p-0 text-primary hover:text-primary/80"
+                >
+                  <Pencil className="h-4 w-4" />
+                  <span className="sr-only">Editar Parte</span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
+                  className="flex items-center gap-1 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                >
+                  <CheckCircle className="h-4 w-4" /> Confirmar
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={(e) => { e.stopPropagation(); onRemove(index); }}
+                className="text-destructive h-8 w-8 p-0"
+              >
+                <XCircle className="h-5 w-5" />
+                <span className="sr-only">Remover Parte</span>
+              </Button>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="p-4 space-y-4 bg-background/50 border-t -mx-4 -mb-4 rounded-b-lg">
+            <div className="grid grid-cols-1 gap-4">
+              <FormField
+                control={control}
+                name={partNamePath}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome da Parte *</FormLabel>
+                    <FormControl><Input placeholder="ex: Base da Estátua" {...field} disabled={isConfirmed} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={control}
+                name={`${namePrefix}.${index}.printerId` as FieldPath<TFieldValues>}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Impressora *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isConfirmed}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                      <SelectContent>{printers.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name={electricityProfileIdPath}
+                render={({ field }) => (
+                  <FormItem className="max-w-[240px]">
+                    <FormLabel>Perfil Energia</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={isConfirmed}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Personalizado..." /></SelectTrigger></FormControl>
+                      <SelectContent>{electricityProfiles.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-      {/* Removidos: Separator, campos de Mão de Obra, Materiais Extras e Margem de Lucro */}
-    </Card>
+            <div className="space-y-4 border rounded-md p-3 bg-background/50">
+              <FormLabel>Filamentos Usados</FormLabel>
+              <div className="space-y-3">
+                {filamentFields.map((field, filamentIndex) => (
+                  <FilamentUsageField
+                    key={field.id}
+                    index={filamentIndex}
+                    onRemove={() => removeFilament(filamentIndex)}
+                    onAdd={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
+                    showAdd={filamentIndex === filamentFields.length - 1 && !isConfirmed}
+                    totalFields={filamentFields.length}
+                    namePrefix={`${namePrefix}.${index}.filamentsUsed`}
+                    disabled={isConfirmed}
+                  />
+                ))}
+                {!isConfirmed && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
+                    className="w-full"
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Filamento
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <FormLabel>Tempo de Impressão *</FormLabel>
+              <div className="flex gap-2">
+                <FormField
+                  control={control}
+                  name={`${namePrefix}.${index}.printTimeHours` as FieldPath<TFieldValues>}
+                  render={({ field }) => (
+                    <FormItem className="w-24">
+                      <div className="relative">
+                        <FormControl><Input type="number" min="0" className="pr-6" {...field} disabled={isConfirmed} /></FormControl>
+                        <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name={`${namePrefix}.${index}.printTimeMinutes` as FieldPath<TFieldValues>}
+                  render={({ field }) => (
+                    <FormItem className="w-24">
+                      <div className="relative">
+                        <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} disabled={isConfirmed} /></FormControl>
+                        <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 };
