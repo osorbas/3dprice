@@ -14,6 +14,7 @@ interface FilamentUsageFieldProps {
   onAdd?: () => void;
   showAdd?: boolean;
   totalFields: number;
+  namePrefix: FieldPath<FieldValues>; // Add namePrefix
 }
 
 export const FilamentUsageField = ({
@@ -22,12 +23,13 @@ export const FilamentUsageField = ({
   onAdd,
   showAdd = false,
   totalFields,
+  namePrefix, // Use namePrefix
 }: FilamentUsageFieldProps) => {
   const { control } = useFormContext<FieldValues>();
   const { filaments } = useFilaments();
   
-  const filamentIdName = `filamentsUsed.${index}.filamentId` as FieldPath<FieldValues>;
-  const gramsName = `filamentsUsed.${index}.filamentGrams` as FieldPath<FieldValues>;
+  const filamentIdName = `${namePrefix}.${index}.filamentId` as FieldPath<FieldValues>;
+  const gramsName = `${namePrefix}.${index}.filamentGrams` as FieldPath<FieldValues>;
 
   return (
     <div className="flex gap-2 items-end">
@@ -59,7 +61,6 @@ export const FilamentUsageField = ({
         )}
       />
       
-      {/* Alterado para items-end para alinhar os botões com a caixa de input */}
       <div className="flex gap-2 items-end">
         <FormField
           control={control}

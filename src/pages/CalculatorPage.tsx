@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
+import { usePrintCalculations, PrintCalculation, ProjectPartDetail } from "@/hooks/use-print-calculations";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
@@ -28,6 +28,7 @@ import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
 import { FilamentUsageField } from "@/components/calculator/FilamentUsageField";
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
+import { ProjectPartField } from "@/components/calculator/ProjectPartField"; // Importar o novo componente
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
@@ -41,24 +42,47 @@ const filamentUsageSchema = z.object({
   filamentGrams: z.coerce.number().min(0, "A quantidade não pode ser negativa."),
 });
 
-const formSchema = z.object({
-  printName: z.string().min(1, "O nome da impressão é obrigatório."),
-  printerId: z.string().min(1, "Selecione uma impressora."),
-  
-  filamentsUsed: z.array(filamentUsageSchema).min(1, "Adicione pelo menos um filamento."),
-  
+const projectPartSchema = z.object({
+  partName: z.string().min(1, "O nome da parte é obrigatório."),
+  printerId: z.string().min(1, "Selecione uma impressora para a parte."),
+  filamentsUsed: z.array(filamentUsageSchema).min(1, "Adicione pelo menos um filamento para a parte."),
   printTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
   printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
-  
-  electricityProfileId: z.string().optional(), 
+  electricityProfileId: z.string().optional(),
   electricityCostPerHour: z.coerce.number().min(0, "O custo da eletricidade não pode ser negativo."),
-  
   laborCostPerHour: z.coerce.number().min(0, "O custo da mão de obra não pode ser negativo."),
   laborTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
   laborTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
   profitMargin: z.coerce.number().min(0, "A margem de lucro não pode ser negativa."),
   extras: z.array(extraSchema).optional(),
 });
+
+const formSchema = z.object({
+  // Fields for single print
+  printName: z.string().optional(),
+  printerId: z.string().optional(),
+  filamentsUsed: z.array(filamentUsageSchema).optional(),
+  printTimeHours: z.coerce.number().optional(),
+  printTimeMinutes: z.coerce.number().optional(),
+  electricityProfileId: z.string().optional(), 
+  electricityCostPerHour: z.coerce.number().optional(),
+  laborCostPerHour: z.coerce.number().optional(),
+  laborTimeHours: z.coerce.number().optional(),
+  laborTimeMinutes: z.coerce.number().optional(),
+  profitMargin: z.coerce.number().optional(),
+  extras: z.array(extraSchema).optional(),
+
+  // Fields for project
+  projectName: z.string().optional(),
+  projectParts: z.array(projectPartSchema).optional(),
+}).superRefine((data, ctx) => {
+  // Conditional validation based on active tab (managed by `activeTab` state)
+  // This schema is broad, actual validation will be triggered by form.trigger() on submit
+  // and controlled by the UI's activeTab.
+  // For Zod's resolver, we'll ensure basic structure.
+  // More specific validation for required fields will be handled by the UI's activeTab logic.
+});
+
 
 const CalculatorPage = () => {
   const { addCalculation, deleteCalculation, calculations } = usePrintCalculations();
@@ -71,6 +95,7 @@ const CalculatorPage = () => {
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
   const [lastCalculationId, setLastCalculationId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"single-print" | "project">("single-print");
 
   const [defaultPrinterId, setDefaultPrinterId] = useState<string | null>(null);
   const [defaultFilamentId, setDefaultFilamentId] = useState<string | null>(null);
@@ -99,52 +124,101 @@ const CalculatorPage = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       printName: "",
-      printerId: defaultPrinterId || "",
-      filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+      printerId: "",
+      filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
       printTimeHours: 0,
       printTimeMinutes: 0,
-      electricityProfileId: defaultElectricityProfileId || "",
+      electricityProfileId: "",
       electricityCostPerHour: 0.15,
       laborCostPerHour: 10,
       laborTimeHours: 0,
       laborTimeMinutes: 0,
-      profitMargin: defaultProfitMargin,
+      profitMargin: DEFAULT_PROFIT_MARGIN,
       extras: [],
+      projectName: "",
+      projectParts: [],
     },
   });
 
-  useEffect(() => {
-    if (defaultPrinterId) {
-      form.setValue("printerId", defaultPrinterId, { shouldValidate: true });
-    }
-    
-    const targetProfileId = defaultElectricityProfileId || "default-normal";
-    const prof = electricityProfiles.find(p => p.id === targetProfileId) || 
-                 electricityProfiles.find(p => p.name.includes("Tarifa Normal"));
-    
-    if (prof) {
-      form.setValue("electricityProfileId", prof.id, { shouldValidate: true });
-      form.setValue("electricityCostPerHour", prof.costPerHour, { shouldValidate: true });
-    }
-
-    form.setValue("profitMargin", defaultProfitMargin, { shouldValidate: true });
-  }, [defaultPrinterId, defaultElectricityProfileId, defaultProfitMargin, electricityProfiles, form]);
-
-  const { fields: extraFields, append: appendExtra, remove: removeExtra } = useFieldArray({
-    control: form.control,
-    name: "extras",
-  });
-
-  const { fields: filamentFields, append: appendFilament, remove: removeFilament } = useFieldArray({
+  const { fields: singleFilamentFields, append: appendSingleFilament, remove: removeSingleFilament } = useFieldArray({
     control: form.control,
     name: "filamentsUsed",
   });
 
+  const { fields: singleExtraFields, append: appendSingleExtra, remove: removeSingleExtra } = useFieldArray({
+    control: form.control,
+    name: "extras",
+  });
+
+  const { fields: projectPartFields, append: appendProjectPart, remove: removeProjectPart } = useFieldArray({
+    control: form.control,
+    name: "projectParts",
+  });
+
+  // Effect to set default values when component mounts or activeTab changes
+  useEffect(() => {
+    const resetDefaults = () => {
+      const targetProfileId = defaultElectricityProfileId || "default-normal";
+      const prof = electricityProfiles.find(p => p.id === targetProfileId) || 
+                   electricityProfiles.find(p => p.name.includes("Tarifa Normal"));
+      
+      if (activeTab === "single-print") {
+        form.reset({
+          printName: "",
+          printerId: defaultPrinterId || "",
+          filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+          printTimeHours: 0,
+          printTimeMinutes: 0,
+          electricityProfileId: prof?.id || "",
+          electricityCostPerHour: prof?.costPerHour || 0.15,
+          laborCostPerHour: 10,
+          laborTimeHours: 0,
+          laborTimeMinutes: 0,
+          profitMargin: defaultProfitMargin,
+          extras: [],
+          projectName: "", // Clear project fields
+          projectParts: [], // Clear project parts
+        });
+      } else { // activeTab === "project"
+        form.reset({
+          printName: "", // Clear single print fields
+          printerId: "",
+          filamentsUsed: [],
+          printTimeHours: 0,
+          printTimeMinutes: 0,
+          electricityProfileId: "",
+          electricityCostPerHour: 0.15,
+          laborCostPerHour: 10,
+          laborTimeHours: 0,
+          laborTimeMinutes: 0,
+          profitMargin: DEFAULT_PROFIT_MARGIN,
+          extras: [],
+          projectName: "",
+          projectParts: [{
+            partName: "",
+            printerId: defaultPrinterId || "",
+            filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+            printTimeHours: 0,
+            printTimeMinutes: 0,
+            electricityProfileId: prof?.id || "",
+            electricityCostPerHour: prof?.costPerHour || 0.15,
+            laborCostPerHour: 10,
+            laborTimeHours: 0,
+            laborTimeMinutes: 0,
+            profitMargin: defaultProfitMargin,
+            extras: [],
+          }],
+        });
+      }
+    };
+    resetDefaults();
+  }, [activeTab, defaultPrinterId, defaultFilamentId, defaultElectricityProfileId, defaultProfitMargin, electricityProfiles, form]);
+
+
   const watchedValues = form.watch();
   
-  const calculatedTotalPrice = useMemo(() => {
-    // Cálculo do custo de todos os filamentos
-    const filamentsCost = (watchedValues.filamentsUsed || []).reduce((sum, f) => {
+  const calculatePartCosts = (part: z.infer<typeof projectPartSchema>) => {
+    const partFilamentsCost = (part.filamentsUsed || []).reduce((sum, f) => {
       const material = filaments.find(mat => mat.id === f.filamentId);
       const grams = parseFloat(String(f.filamentGrams)) || 0;
       if (material) {
@@ -153,27 +227,84 @@ const CalculatorPage = () => {
       return sum;
     }, 0);
 
-    const currentPrintTimeHours = (Number(watchedValues.printTimeHours) || 0) + (Number(watchedValues.printTimeMinutes) || 0) / 60;
-    const currentElectricityCostPerHour = Number(watchedValues.electricityCostPerHour) || 0;
-    const currentLaborCostPerHour = Number(watchedValues.laborCostPerHour) || 0;
-    const currentLaborTimeHours = (Number(watchedValues.laborTimeHours) || 0) + (Number(watchedValues.laborTimeMinutes) || 0) / 60;
-    const currentProfitMargin = Number(watchedValues.profitMargin) || 0;
+    const partPrintTimeHours = (Number(part.printTimeHours) || 0) + (Number(part.printTimeMinutes) || 0) / 60;
+    const partElectricityCostPerHour = Number(part.electricityCostPerHour) || 0;
+    const partLaborCostPerHour = Number(part.laborCostPerHour) || 0;
+    const partLaborTimeHours = (Number(part.laborTimeHours) || 0) + (Number(part.laborTimeMinutes) || 0) / 60;
+    const partProfitMargin = Number(part.profitMargin) || 0;
 
-    const calculatedElectricityCost = currentPrintTimeHours * currentElectricityCostPerHour;
-    const calculatedLaborCost = currentLaborTimeHours * currentLaborCostPerHour;
+    const partCalculatedElectricityCost = partPrintTimeHours * partElectricityCostPerHour;
+    const partCalculatedLaborCost = partLaborTimeHours * partLaborCostPerHour;
 
-    const calculatedExtraCost = (watchedValues.extras || []).reduce((sum, extra) => {
+    const partCalculatedExtraCost = (part.extras || []).reduce((sum, extra) => {
       const material = extraMaterials.find(mat => mat.id === extra.materialId);
       const qty = parseFloat(String(extra.quantity)) || 0;
       if (material) return sum + (material.costPerUnit * qty);
       return sum;
     }, 0);
 
-    const calculatedBaseCost = filamentsCost + calculatedElectricityCost + calculatedLaborCost + calculatedExtraCost;
-    const calculatedProfit = calculatedBaseCost * (currentProfitMargin / 100);
-    
-    return isNaN(calculatedBaseCost) ? 0 : (calculatedBaseCost + calculatedProfit);
-  }, [watchedValues, filaments, extraMaterials]);
+    const partCalculatedBaseCost = partFilamentsCost + partCalculatedElectricityCost + partCalculatedLaborCost + partCalculatedExtraCost;
+    const partCalculatedProfit = partCalculatedBaseCost * (partProfitMargin / 100);
+    const partTotalPrice = isNaN(partCalculatedBaseCost) ? 0 : (partCalculatedBaseCost + partCalculatedProfit);
+
+    const totalGrams = (part.filamentsUsed || []).reduce((sum, f) => sum + (f.filamentGrams || 0), 0);
+
+    return {
+      materialCost: partFilamentsCost,
+      printTimeHours: partPrintTimeHours,
+      electricityCost: partCalculatedElectricityCost,
+      laborCost: partCalculatedLaborCost,
+      extraCost: partCalculatedExtraCost,
+      profitMargin: partProfitMargin,
+      totalPrice: partTotalPrice,
+      filamentGrams: totalGrams,
+      filamentId: part.filamentsUsed?.[0]?.filamentId || "",
+      filaments: part.filamentsUsed?.map(f => ({ filamentId: f.filamentId, grams: f.filamentGrams })) || [],
+      extras: part.extras?.map(e => ({ materialId: e.materialId, quantity: e.quantity, cost: extraMaterials.find(em => em.id === e.materialId)?.costPerUnit || 0 })) || [],
+    };
+  };
+
+  const calculatedTotalPrice = useMemo(() => {
+    let total = 0;
+    if (activeTab === "single-print") {
+      // Cálculo do custo de todos os filamentos
+      const filamentsCost = (watchedValues.filamentsUsed || []).reduce((sum, f) => {
+        const material = filaments.find(mat => mat.id === f.filamentId);
+        const grams = parseFloat(String(f.filamentGrams)) || 0;
+        if (material) {
+          return sum + ((material.pricePerKg / 1000) * grams);
+        }
+        return sum;
+      }, 0);
+
+      const currentPrintTimeHours = (Number(watchedValues.printTimeHours) || 0) + (Number(watchedValues.printTimeMinutes) || 0) / 60;
+      const currentElectricityCostPerHour = Number(watchedValues.electricityCostPerHour) || 0;
+      const currentLaborCostPerHour = Number(watchedValues.laborCostPerHour) || 0;
+      const currentLaborTimeHours = (Number(watchedValues.laborTimeHours) || 0) + (Number(watchedValues.laborTimeMinutes) || 0) / 60;
+      const currentProfitMargin = Number(watchedValues.profitMargin) || 0;
+
+      const calculatedElectricityCost = currentPrintTimeHours * currentElectricityCostPerHour;
+      const calculatedLaborCost = currentLaborTimeHours * currentLaborCostPerHour;
+
+      const calculatedExtraCost = (watchedValues.extras || []).reduce((sum, extra) => {
+        const material = extraMaterials.find(mat => mat.id === extra.materialId);
+        const qty = parseFloat(String(extra.quantity)) || 0;
+        if (material) return sum + (material.costPerUnit * qty);
+        return sum;
+      }, 0);
+
+      const calculatedBaseCost = filamentsCost + calculatedElectricityCost + calculatedLaborCost + calculatedExtraCost;
+      const calculatedProfit = calculatedBaseCost * (currentProfitMargin / 100);
+      
+      total = isNaN(calculatedBaseCost) ? 0 : (calculatedBaseCost + calculatedProfit);
+    } else { // activeTab === "project"
+      total = (watchedValues.projectParts || []).reduce((sum, part) => {
+        const partCosts = calculatePartCosts(part);
+        return sum + partCosts.totalPrice;
+      }, 0);
+    }
+    return total;
+  }, [watchedValues, filaments, extraMaterials, activeTab]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -232,65 +363,173 @@ const CalculatorPage = () => {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Cálculo total dos filamentos no submit
-    const totalFilamentsCost = values.filamentsUsed.reduce((sum, f) => {
-      const material = filaments.find(mat => mat.id === f.filamentId);
-      return material ? sum + ((material.pricePerKg / 1000) * f.filamentGrams) : sum;
-    }, 0);
+    let newCalculation: Omit<PrintCalculation, "id" | "timestamp">;
+    let totalPrintTimeHours = 0;
+    let totalFilamentGrams = 0;
+    let totalMaterialCost = 0;
+    let totalElectricityCost = 0;
+    let totalLaborCost = 0;
+    let totalExtraCost = 0;
+    let overallProfitMargin = 0;
+    let baseCost = 0;
+    let profit = 0;
+    let finalPrice = 0;
 
-    const totalPrintTimeHours = values.printTimeHours + (values.printTimeMinutes / 60);
-    const totalLaborTimeHours = values.laborTimeHours + (values.laborTimeMinutes / 60);
-    const electricityCost = totalPrintTimeHours * values.electricityCostPerHour;
-    const laborCost = totalLaborTimeHours * values.laborCostPerHour;
+    if (activeTab === "single-print") {
+      // Validate single print fields
+      const singlePrintValidation = z.object({
+        printName: z.string().min(1, "O nome da impressão é obrigatório."),
+        printerId: z.string().min(1, "Selecione uma impressora."),
+        filamentsUsed: z.array(filamentUsageSchema).min(1, "Adicione pelo menos um filamento."),
+        printTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
+        printTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
+        electricityProfileId: z.string().optional(), 
+        electricityCostPerHour: z.coerce.number().min(0, "O custo da eletricidade não pode ser negativo."),
+        laborCostPerHour: z.coerce.number().min(0, "O custo da mão de obra não pode ser negativo."),
+        laborTimeHours: z.coerce.number().min(0, "Horas não podem ser negativas."),
+        laborTimeMinutes: z.coerce.number().min(0, "Minutos não podem ser negativos.").max(59, "Minutos não podem exceder 59."),
+        profitMargin: z.coerce.number().min(0, "A margem de lucro não pode ser negativa."),
+        extras: z.array(extraSchema).optional(),
+      }).safeParse(values);
 
-    const extraCostTotal = (values.extras || []).reduce((sum, extra) => {
-      const material = extraMaterials.find(mat => mat.id === extra.materialId);
-      return material ? sum + (material.costPerUnit * extra.quantity) : sum;
-    }, 0);
+      if (!singlePrintValidation.success) {
+        singlePrintValidation.error.errors.forEach(err => {
+          form.setError(err.path.join('.') as any, { message: err.message });
+        });
+        showError("Por favor, preencha todos os campos obrigatórios para a impressão única.");
+        return;
+      }
 
-    const baseCost = totalFilamentsCost + electricityCost + laborCost + extraCostTotal;
-    const profit = baseCost * (values.profitMargin / 100);
-    const finalPrice = baseCost + profit;
+      const validatedValues = singlePrintValidation.data;
 
-    const totalGrams = values.filamentsUsed.reduce((sum, f) => sum + f.filamentGrams, 0);
+      totalFilamentGrams = (validatedValues.filamentsUsed || []).reduce((sum, f) => sum + f.filamentGrams, 0);
+      totalMaterialCost = (validatedValues.filamentsUsed || []).reduce((sum, f) => {
+        const material = filaments.find(mat => mat.id === f.filamentId);
+        return material ? sum + ((material.pricePerKg / 1000) * f.filamentGrams) : sum;
+      }, 0);
 
-    const newCalculation = {
-      printName: values.printName,
-      printerId: values.printerId,
-      materialCost: parseFloat(totalFilamentsCost.toFixed(2)),
-      printTimeHours: parseFloat(totalPrintTimeHours.toFixed(1)),
-      electricityCost: parseFloat(electricityCost.toFixed(2)),
-      laborCost: parseFloat(laborCost.toFixed(2)),
-      extraCost: parseFloat(extraCostTotal.toFixed(2)),
-      profitMargin: values.profitMargin,
-      totalPrice: parseFloat(finalPrice.toFixed(2)),
-      filamentGrams: totalGrams,
-      filamentId: values.filamentsUsed[0].filamentId,
-      filaments: values.filamentsUsed.map(f => ({ filamentId: f.filamentId, grams: f.filamentGrams })),
-    };
+      totalPrintTimeHours = validatedValues.printTimeHours + (validatedValues.printTimeMinutes / 60);
+      const totalLaborTimeHours = validatedValues.laborTimeHours + (validatedValues.laborTimeMinutes / 60);
+      totalElectricityCost = totalPrintTimeHours * (validatedValues.electricityCostPerHour || 0);
+      totalLaborCost = totalLaborTimeHours * (validatedValues.laborCostPerHour || 0);
+
+      totalExtraCost = (validatedValues.extras || []).reduce((sum, extra) => {
+        const material = extraMaterials.find(mat => mat.id === extra.materialId);
+        return material ? sum + (material.costPerUnit * extra.quantity) : sum;
+      }, 0);
+
+      baseCost = totalMaterialCost + totalElectricityCost + totalLaborCost + totalExtraCost;
+      overallProfitMargin = validatedValues.profitMargin;
+      profit = baseCost * (overallProfitMargin / 100);
+      finalPrice = baseCost + profit;
+
+      newCalculation = {
+        printName: validatedValues.printName,
+        printerId: validatedValues.printerId,
+        materialCost: parseFloat(totalMaterialCost.toFixed(2)),
+        printTimeHours: parseFloat(totalPrintTimeHours.toFixed(1)),
+        electricityCost: parseFloat(totalElectricityCost.toFixed(2)),
+        laborCost: parseFloat(totalLaborCost.toFixed(2)),
+        extraCost: parseFloat(totalExtraCost.toFixed(2)),
+        profitMargin: overallProfitMargin,
+        totalPrice: parseFloat(finalPrice.toFixed(2)),
+        filamentGrams: totalFilamentGrams,
+        filamentId: validatedValues.filamentsUsed?.[0]?.filamentId || "",
+        filaments: validatedValues.filamentsUsed?.map(f => ({ filamentId: f.filamentId, grams: f.filamentGrams })) || [],
+        isProject: false,
+      };
+
+      const selectedPrinter = printers.find(p => p.id === validatedValues.printerId);
+      if (selectedPrinter) {
+        updatePrinter(selectedPrinter.id, {
+          workingHours: selectedPrinter.workingHours + totalPrintTimeHours,
+        });
+      }
+
+    } else { // activeTab === "project"
+      // Validate project fields
+      const projectValidation = z.object({
+        projectName: z.string().min(1, "O nome do projeto é obrigatório."),
+        projectParts: z.array(projectPartSchema).min(1, "Adicione pelo menos uma parte ao projeto."),
+      }).safeParse(values);
+
+      if (!projectValidation.success) {
+        projectValidation.error.errors.forEach(err => {
+          form.setError(err.path.join('.') as any, { message: err.message });
+        });
+        showError("Por favor, preencha todos os campos obrigatórios para o projeto.");
+        return;
+      }
+
+      const validatedValues = projectValidation.data;
+      const projectPartsDetails: ProjectPartDetail[] = [];
+      let totalProjectBaseCost = 0;
+      let totalProjectProfit = 0;
+      let totalProjectProfitMarginSum = 0; // For average calculation
+
+      validatedValues.projectParts.forEach(part => {
+        const partCalculatedCosts = calculatePartCosts(part);
+        projectPartsDetails.push({
+          partName: part.partName,
+          printerId: part.printerId,
+          ...partCalculatedCosts,
+        });
+
+        totalMaterialCost += partCalculatedCosts.materialCost;
+        totalPrintTimeHours += partCalculatedCosts.printTimeHours;
+        totalElectricityCost += partCalculatedCosts.electricityCost;
+        totalLaborCost += partCalculatedCosts.laborCost;
+        totalExtraCost += partCalculatedCosts.extraCost;
+        totalFilamentGrams += partCalculatedCosts.filamentGrams;
+        totalProjectBaseCost += (partCalculatedCosts.totalPrice / (1 + part.profitMargin / 100)) || 0;
+        totalProjectProfit += partCalculatedCosts.totalPrice - ((partCalculatedCosts.totalPrice / (1 + part.profitMargin / 100)) || 0);
+        totalProjectProfitMarginSum += part.profitMargin;
+
+        const selectedPrinter = printers.find(p => p.id === part.printerId);
+        if (selectedPrinter) {
+          updatePrinter(selectedPrinter.id, {
+            workingHours: selectedPrinter.workingHours + partCalculatedCosts.printTimeHours,
+          });
+        }
+      });
+
+      baseCost = totalProjectBaseCost;
+      profit = totalProjectProfit;
+      finalPrice = baseCost + profit;
+      overallProfitMargin = baseCost > 0 ? (profit / baseCost) * 100 : 0;
+
+      newCalculation = {
+        projectName: validatedValues.projectName,
+        projectParts: projectPartsDetails,
+        materialCost: parseFloat(totalMaterialCost.toFixed(2)),
+        printTimeHours: parseFloat(totalPrintTimeHours.toFixed(1)),
+        electricityCost: parseFloat(totalElectricityCost.toFixed(2)),
+        laborCost: parseFloat(totalLaborCost.toFixed(2)),
+        extraCost: parseFloat(totalExtraCost.toFixed(2)),
+        profitMargin: parseFloat(overallProfitMargin.toFixed(0)),
+        totalPrice: parseFloat(finalPrice.toFixed(2)),
+        filamentGrams: totalFilamentGrams,
+        filamentId: "", // Not applicable for overall project
+        filaments: [], // Not applicable for overall project
+        isProject: true,
+      };
+    }
 
     const tempId = Date.now().toString();
     addCalculation(newCalculation);
 
-    const selectedPrinter = printers.find(p => p.id === values.printerId);
-    if (selectedPrinter) {
-      updatePrinter(selectedPrinter.id, {
-        workingHours: selectedPrinter.workingHours + totalPrintTimeHours,
-      });
-    }
-
     setLastCalculationId(tempId); 
     setSummaryData({
       id: tempId,
-      printName: values.printName,
-      materialCost: totalFilamentsCost,
-      electricityCost,
-      laborCost,
-      extrasCost: extraCostTotal,
-      baseCost,
-      profitMargin: values.profitMargin,
+      printName: newCalculation.isProject ? newCalculation.projectName : newCalculation.printName,
+      materialCost: newCalculation.materialCost,
+      electricityCost: newCalculation.electricityCost,
+      laborCost: newCalculation.laborCost,
+      extrasCost: newCalculation.extraCost,
+      baseCost: baseCost,
+      profitMargin: newCalculation.profitMargin,
       profitAmount: profit,
-      totalPrice: finalPrice,
+      totalPrice: newCalculation.totalPrice,
     });
     setIsSummaryDialogOpen(true);
     showSuccess("Cálculo guardado!");
@@ -308,23 +547,54 @@ const CalculatorPage = () => {
   };
 
   const handleImportFromHistory = (calculation: PrintCalculation) => {
-    const filamentsUsed = calculation.filaments 
-      ? calculation.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams }))
-      : [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }];
+    const targetProfileId = defaultElectricityProfileId || "default-normal";
+    const prof = electricityProfiles.find(p => p.id === targetProfileId) || 
+                 electricityProfiles.find(p => p.name.includes("Tarifa Normal"));
 
-    form.reset({
-      printName: calculation.printName || "",
-      printerId: calculation.printerId || "",
-      filamentsUsed,
-      printTimeHours: Math.floor(calculation.printTimeHours),
-      printTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
-      electricityCostPerHour: calculation.electricityCost / calculation.printTimeHours || 0.15,
-      laborCostPerHour: calculation.laborCost,
-      laborTimeHours: 0,
-      laborTimeMinutes: 0,
-      profitMargin: calculation.profitMargin,
-      extras: [],
-    });
+    if (calculation.isProject && calculation.projectParts) {
+      setActiveTab("project");
+      form.reset({
+        projectName: calculation.projectName || "",
+        projectParts: calculation.projectParts.map(part => ({
+          partName: part.partName,
+          printerId: part.printerId || "",
+          filamentsUsed: part.filaments || [{ filamentId: part.filamentId || "", filamentGrams: part.filamentGrams || 0 }],
+          printTimeHours: Math.floor(part.printTimeHours),
+          printTimeMinutes: Math.round((part.printTimeHours - Math.floor(part.printTimeHours)) * 60),
+          electricityProfileId: electricityProfiles.find(p => p.costPerHour === (part.electricityCost / part.printTimeHours))?.id || prof?.id || "",
+          electricityCostPerHour: part.electricityCost / part.printTimeHours || prof?.costPerHour || 0.15,
+          laborCostPerHour: part.laborCost / (part.laborCost > 0 ? part.printTimeHours : 1) || 10, // Assuming labor cost is per print time hour if not explicitly stored
+          laborTimeHours: Math.floor(part.printTimeHours), // Placeholder, actual labor time not stored
+          laborTimeMinutes: Math.round((part.printTimeHours - Math.floor(part.printTimeHours)) * 60), // Placeholder
+          profitMargin: part.profitMargin,
+          extras: part.extras?.map(e => ({ materialId: e.materialId, quantity: e.quantity })) || [],
+        })),
+        // Clear single print fields
+        printName: "", printerId: "", filamentsUsed: [], printTimeHours: 0, printTimeMinutes: 0,
+        electricityProfileId: "", electricityCostPerHour: 0.15, laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0,
+        profitMargin: DEFAULT_PROFIT_MARGIN, extras: [],
+      });
+    } else {
+      setActiveTab("single-print");
+      form.reset({
+        printName: calculation.printName || "",
+        printerId: calculation.printerId || "",
+        filamentsUsed: calculation.filaments 
+          ? calculation.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams }))
+          : [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }],
+        printTimeHours: Math.floor(calculation.printTimeHours),
+        printTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60),
+        electricityProfileId: electricityProfiles.find(p => p.costPerHour === (calculation.electricityCost / calculation.printTimeHours))?.id || prof?.id || "",
+        electricityCostPerHour: calculation.electricityCost / calculation.printTimeHours || prof?.costPerHour || 0.15,
+        laborCostPerHour: calculation.laborCost / (calculation.laborCost > 0 ? calculation.printTimeHours : 1) || 10, // Assuming labor cost is per print time hour if not explicitly stored
+        laborTimeHours: Math.floor(calculation.printTimeHours), // Placeholder, actual labor time not stored
+        laborTimeMinutes: Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60), // Placeholder
+        profitMargin: calculation.profitMargin,
+        extras: calculation.extraCost > 0 ? [{ materialId: "", quantity: 0 }] : [], // Placeholder for extras
+        // Clear project fields
+        projectName: "", projectParts: [],
+      });
+    }
     setIsHistoryDialogOpen(false);
   };
 
@@ -333,20 +603,54 @@ const CalculatorPage = () => {
     const prof = electricityProfiles.find(p => p.id === targetProfileId) || 
                  electricityProfiles.find(p => p.name.includes("Tarifa Normal"));
     
-    form.reset({
-      printName: "",
-      printerId: defaultPrinterId || "",
-      filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
-      printTimeHours: 0,
-      printTimeMinutes: 0,
-      electricityProfileId: prof?.id || "",
-      electricityCostPerHour: prof?.costPerHour || 0.15,
-      laborCostPerHour: 10,
-      laborTimeHours: 0,
-      laborTimeMinutes: 0,
-      profitMargin: defaultProfitMargin,
-      extras: [],
-    });
+    if (activeTab === "single-print") {
+      form.reset({
+        printName: "",
+        printerId: defaultPrinterId || "",
+        filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+        printTimeHours: 0,
+        printTimeMinutes: 0,
+        electricityProfileId: prof?.id || "",
+        electricityCostPerHour: prof?.costPerHour || 0.15,
+        laborCostPerHour: 10,
+        laborTimeHours: 0,
+        laborTimeMinutes: 0,
+        profitMargin: defaultProfitMargin,
+        extras: [],
+        projectName: "",
+        projectParts: [],
+      });
+    } else { // activeTab === "project"
+      form.reset({
+        printName: "",
+        printerId: "",
+        filamentsUsed: [],
+        printTimeHours: 0,
+        printTimeMinutes: 0,
+        electricityProfileId: "",
+        electricityCostPerHour: 0.15,
+        laborCostPerHour: 10,
+        laborTimeHours: 0,
+        laborTimeMinutes: 0,
+        profitMargin: DEFAULT_PROFIT_MARGIN,
+        extras: [],
+        projectName: "",
+        projectParts: [{
+          partName: "",
+          printerId: defaultPrinterId || "",
+          filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+          printTimeHours: 0,
+          printTimeMinutes: 0,
+          electricityProfileId: prof?.id || "",
+          electricityCostPerHour: prof?.costPerHour || 0.15,
+          laborCostPerHour: 10,
+          laborTimeHours: 0,
+          laborTimeMinutes: 0,
+          profitMargin: defaultProfitMargin,
+          extras: [],
+        }],
+      });
+    }
   };
 
   return (
@@ -382,6 +686,7 @@ const CalculatorPage = () => {
                         <TableRow>
                           <TableHead>Data</TableHead>
                           <TableHead>Nome</TableHead>
+                          <TableHead>Tipo</TableHead> {/* Nova coluna para tipo de cálculo */}
                           <TableHead>Preço (€)</TableHead>
                           <TableHead className="text-right">Ação</TableHead>
                         </TableRow>
@@ -390,8 +695,9 @@ const CalculatorPage = () => {
                         {calculations.map((calc) => (
                           <TableRow key={calc.id}>
                             <TableCell>{format(new Date(calc.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
-                            <TableCell>{calc.printName || "N/A"}</TableCell>
-                            <TableCell className="font-semibold">{calc.totalPrice.toFixed(2)}</TableCell>
+                            <TableCell>{calc.isProject ? calc.projectName : calc.printName || "N/A"}</TableCell>
+                            <TableCell>{calc.isProject ? "Projeto" : "Impressão Única"}</TableCell>
+                            <TableCell className="font-semibold">€{calc.totalPrice.toFixed(2)}</TableCell>
                             <TableCell className="text-right">
                               <Button variant="outline" size="sm" onClick={() => handleImportFromHistory(calc)}>Importar</Button>
                             </TableCell>
@@ -409,15 +715,13 @@ const CalculatorPage = () => {
           </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
-              <Tabs defaultValue="basic-info" className="w-full">
+              <Tabs value={activeTab} onValueChange={(value: "single-print" | "project") => setActiveTab(value)} className="w-full">
                 <TabsList className="grid grid-cols-2 gap-2 w-full p-1 md:flex md:w-full md:overflow-x-auto md:whitespace-nowrap md:justify-start">
-                  <TabsTrigger value="basic-info">Impressão</TabsTrigger>
-                  <TabsTrigger value="labor">Mão de Obra</TabsTrigger>
-                  <TabsTrigger value="extras">Extras</TabsTrigger>
-                  <TabsTrigger value="pricing">Margem</TabsTrigger>
+                  <TabsTrigger value="single-print">Impressão Única</TabsTrigger>
+                  <TabsTrigger value="project">Projeto</TabsTrigger>
                 </TabsList>
                 <div className="relative mt-4 min-h-[350px]">
-                  <TabsContent value="basic-info" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                  <TabsContent value="single-print" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
                     <div className="grid grid-cols-1 gap-4">
                       <FormField control={form.control} name="printName" render={({ field }) => (
                         <FormItem>
@@ -457,14 +761,15 @@ const CalculatorPage = () => {
                     <div className="space-y-4 border rounded-md p-3 bg-background/50">
                       <FormLabel>Filamentos Usados</FormLabel>
                       <div className="space-y-3">
-                        {filamentFields.map((field, index) => (
+                        {singleFilamentFields.map((field, index) => (
                           <FilamentUsageField 
                             key={field.id} 
                             index={index} 
-                            onRemove={removeFilament}
-                            onAdd={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
-                            showAdd={index === filamentFields.length - 1}
-                            totalFields={filamentFields.length}
+                            onRemove={removeSingleFilament}
+                            onAdd={() => appendSingleFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
+                            showAdd={index === singleFilamentFields.length - 1}
+                            totalFields={singleFilamentFields.length}
+                            namePrefix="filamentsUsed"
                           />
                         ))}
                       </div>
@@ -494,55 +799,119 @@ const CalculatorPage = () => {
                       </div>
                     </div>
                   </TabsContent>
-                  <TabsContent value="labor" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="laborCostPerHour" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Preço Hora Mão de Obra (€/h)</FormLabel>
-                          <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )} />
-                      <div className="space-y-2">
-                        <FormLabel>Tempo de Trabalho</FormLabel>
-                        <div className="flex gap-2">
-                          <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
-                            <FormItem className="w-24">
-                              <div className="relative">
-                                <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
-                                <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                          <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
-                            <FormItem className="w-24">
-                              <div className="relative">
-                                <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
-                                <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-                  <TabsContent value="extras" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
-                    {extraFields.map((field, index) => (<ExtraMaterialField key={field.id} index={index} namePrefix="extras" onRemove={removeExtra} />))}
-                    <Button type="button" variant="outline" onClick={() => appendExtra({ materialId: "", quantity: 0 })} className="w-full"><PlusCircle className="h-4 w-4 mr-2" /> Adicionar Material Extra</Button>
-                  </TabsContent>
-                  <TabsContent value="pricing" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
-                    <FormField control={form.control} name="profitMargin" render={({ field }) => (
-                      <FormItem className="w-44">
-                        <FormLabel>Margem de Lucro (%)</FormLabel>
-                        <FormControl><Input type="number" min="0" step="1" {...field} /></FormControl>
+                  <TabsContent value="project" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                    <FormField control={form.control} name="projectName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome do Projeto *</FormLabel>
+                        <FormControl><Input placeholder="ex: Coleção de Miniaturas" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
+                    <Separator className="my-4" />
+                    <h3 className="text-lg font-semibold mb-4">Partes do Projeto</h3>
+                    <div className="space-y-6">
+                      {projectPartFields.map((field, index) => (
+                        <ProjectPartField
+                          key={field.id}
+                          index={index}
+                          namePrefix="projectParts"
+                          onRemove={removeProjectPart}
+                          printers={printers}
+                          filaments={filaments}
+                          extraMaterials={extraMaterials}
+                          electricityProfiles={electricityProfiles}
+                          defaultFilamentId={defaultFilamentId}
+                          defaultElectricityProfileId={defaultElectricityProfileId}
+                          defaultProfitMargin={defaultProfitMargin}
+                        />
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => appendProjectPart({
+                          partName: "",
+                          printerId: defaultPrinterId || "",
+                          filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+                          printTimeHours: 0,
+                          printTimeMinutes: 0,
+                          electricityProfileId: defaultElectricityProfileId || "",
+                          electricityCostPerHour: electricityProfiles.find(p => p.id === (defaultElectricityProfileId || "default-normal"))?.costPerHour || 0.15,
+                          laborCostPerHour: 10,
+                          laborTimeHours: 0,
+                          laborTimeMinutes: 0,
+                          profitMargin: defaultProfitMargin,
+                          extras: [],
+                        })}
+                        className="w-full"
+                      >
+                        <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Parte
+                      </Button>
+                    </div>
                   </TabsContent>
                 </div>
               </Tabs>
+
+              {/* Common fields for both tabs, or specific to single-print if not moved to ProjectPartField */}
+              {activeTab === "single-print" && (
+                <>
+                  <Tabs defaultValue="labor" className="w-full">
+                    <TabsList className="grid grid-cols-3 gap-2 w-full p-1 md:flex md:w-full md:overflow-x-auto md:whitespace-nowrap md:justify-start">
+                      <TabsTrigger value="labor">Mão de Obra</TabsTrigger>
+                      <TabsTrigger value="extras">Extras</TabsTrigger>
+                      <TabsTrigger value="pricing">Margem</TabsTrigger>
+                    </TabsList>
+                    <div className="relative mt-4 min-h-[150px]">
+                      <TabsContent value="labor" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField control={form.control} name="laborCostPerHour" render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Preço Hora Mão de Obra (€/h)</FormLabel>
+                              <FormControl><Input type="number" min="0" step="0.01" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                          <div className="space-y-2">
+                            <FormLabel>Tempo de Trabalho</FormLabel>
+                            <div className="flex gap-2">
+                              <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
+                                <FormItem className="w-24">
+                                  <div className="relative">
+                                    <FormControl><Input type="number" min="0" className="pr-6" {...field} /></FormControl>
+                                    <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                              <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
+                                <FormItem className="w-24">
+                                  <div className="relative">
+                                    <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} /></FormControl>
+                                    <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              )} />
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="extras" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                        {singleExtraFields.map((field, index) => (<ExtraMaterialField key={field.id} index={index} namePrefix="extras" onRemove={removeSingleExtra} />))}
+                        <Button type="button" variant="outline" onClick={() => appendSingleExtra({ materialId: "", quantity: 0 })} className="w-full"><PlusCircle className="h-4 w-4 mr-2" /> Adicionar Material Extra</Button>
+                      </TabsContent>
+                      <TabsContent value="pricing" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                        <FormField control={form.control} name="profitMargin" render={({ field }) => (
+                          <FormItem className="w-44">
+                            <FormLabel>Margem de Lucro (%)</FormLabel>
+                            <FormControl><Input type="number" min="0" step="1" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </TabsContent>
+                    </div>
+                  </Tabs>
+                </>
+              )}
             </form>
           </Form>
         </CardContent>

@@ -6,8 +6,9 @@ export interface FilamentUsage {
   grams: number;
 }
 
-export interface PrintCalculation {
-  id: string;
+export interface ProjectPartDetail {
+  partName: string;
+  printerId: string;
   materialCost: number;
   printTimeHours: number;
   electricityCost: number;
@@ -15,12 +16,32 @@ export interface PrintCalculation {
   extraCost: number;
   profitMargin: number;
   totalPrice: number;
-  filamentGrams: number; // Mantido para compatibilidade (total)
-  filamentId: string;    // Mantido para compatibilidade (primeiro filamento)
-  filaments?: FilamentUsage[]; // Nova lista detalhada
+  filamentGrams: number; // Total grams for this part
+  filamentId: string;    // Main filament for this part (or first if multiple)
+  filaments?: FilamentUsage[]; // Detailed filament usage for this part
+  extras?: { materialId: string; quantity: number; cost: number }[]; // Detailed extra usage for this part
+}
+
+export interface PrintCalculation {
+  id: string;
+  materialCost: number; // Total for single print or sum for project
+  printTimeHours: number; // Total for single print or sum for project
+  electricityCost: number; // Total for single print or sum for project
+  laborCost: number; // Total for single print or sum for project
+  extraCost: number; // Total for single print or sum for project
+  profitMargin: number; // For single print, or average/overall for project
+  totalPrice: number; // Total for single print or sum for project
+  filamentGrams: number; // Total for single print or sum for project
+  filamentId: string;    // Main filament for single print, or empty/first for project
+  filaments?: FilamentUsage[]; // Detailed for single print, or sum for project
   timestamp: number;
-  printName?: string;
-  printerId?: string;
+  printName?: string; // Name for single print
+  printerId?: string; // Printer for single print
+
+  // New fields for project
+  isProject?: boolean;
+  projectName?: string;
+  projectParts?: ProjectPartDetail[];
 }
 
 const LOCAL_STORAGE_KEY = "print_calculations";
@@ -40,6 +61,9 @@ export function usePrintCalculations() {
           printerId: calc.printerId ?? "",
           extraCost: calc.extraCost ?? 0,
           filaments: calc.filaments ?? [{ filamentId: calc.filamentId || "", grams: calc.filamentGrams || 0 }],
+          isProject: calc.isProject ?? false,
+          projectName: calc.projectName ?? "",
+          projectParts: calc.projectParts ?? [],
         }));
       }
     }
