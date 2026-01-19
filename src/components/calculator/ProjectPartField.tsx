@@ -104,44 +104,22 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
             {isConfirmed && (
               <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
             )}
-            <div className="ml-auto flex items-center gap-2">
-              {isConfirmed ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => { e.stopPropagation(); handleEdit(); }}
-                  className="h-8 w-8 p-0 text-primary hover:text-primary/80"
-                >
-                  <Pencil className="h-4 w-4" />
-                  <span className="sr-only">Editar Parte</span>
-                </Button>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                  className="flex items-center gap-1 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
-                >
-                  <CheckCircle className="h-4 w-4" /> Confirmar
-                </Button>
-              )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={(e) => { e.stopPropagation(); onRemove(index); }}
-                className="text-destructive h-8 w-8 p-0"
-              >
-                <XCircle className="h-5 w-5" />
-                <span className="sr-only">Remover Parte</span>
-              </Button>
-            </div>
           </div>
         </AccordionTrigger>
         <AccordionContent>
-          <div className="p-4 space-y-4 bg-background/50 border-t -mx-4 -mb-4 rounded-b-lg">
+          <div className="p-4 space-y-4 bg-background/50 border-t -mx-4 -mb-4 rounded-b-lg relative">
+            {/* Botão Remover Parte no canto superior direito */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={(e) => { e.stopPropagation(); onRemove(index); }}
+              className="text-destructive absolute right-4 top-4 h-8 w-8 p-0"
+            >
+              <XCircle className="h-5 w-5" />
+              <span className="sr-only">Remover Parte</span>
+            </Button>
+
             <div className="grid grid-cols-1 gap-4">
               <FormField
                 control={control}
@@ -216,33 +194,56 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
 
             <div className="space-y-2">
               <FormLabel>Tempo de Impressão *</FormLabel>
-              <div className="flex gap-2">
-                <FormField
-                  control={control}
-                  name={`${namePrefix}.${index}.printTimeHours` as FieldPath<TFieldValues>}
-                  render={({ field }) => (
-                    <FormItem className="w-24">
-                      <div className="relative">
-                        <FormControl><Input type="number" min="0" className="pr-6" {...field} disabled={isConfirmed} /></FormControl>
-                        <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={control}
-                  name={`${namePrefix}.${index}.printTimeMinutes` as FieldPath<TFieldValues>}
-                  render={({ field }) => (
-                    <FormItem className="w-24">
-                      <div className="relative">
-                        <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} disabled={isConfirmed} /></FormControl>
-                        <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="flex items-end gap-2 justify-between"> {/* Alterado para justify-between */}
+                <div className="flex gap-2">
+                  <FormField
+                    control={control}
+                    name={`${namePrefix}.${index}.printTimeHours` as FieldPath<TFieldValues>}
+                    render={({ field }) => (
+                      <FormItem className="w-24">
+                        <div className="relative">
+                          <FormControl><Input type="number" min="0" className="pr-6" {...field} disabled={isConfirmed} /></FormControl>
+                          <span className="absolute right-2 top-2 text-xs text-muted-foreground">h</span>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={control}
+                    name={`${namePrefix}.${index}.printTimeMinutes` as FieldPath<TFieldValues>}
+                    render={({ field }) => (
+                      <FormItem className="w-24">
+                        <div className="relative">
+                          <FormControl><Input type="number" min="0" max="59" className="pr-8" {...field} disabled={isConfirmed} /></FormControl>
+                          <span className="absolute right-2 top-2 text-xs text-muted-foreground">min</span>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                {isConfirmed ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleEdit(); }}
+                    className="flex items-center gap-1 text-primary border-primary hover:bg-primary/5 hover:text-primary/80"
+                  >
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
+                    className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <CheckCircle className="h-4 w-4" /> Confirmar
+                  </Button>
+                )}
               </div>
             </div>
           </div>
