@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator"; // Adicionado: Importação do Separator
 
 import { usePrintCalculations, PrintCalculation, ProjectPartDetail } from "@/hooks/use-print-calculations";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
@@ -28,7 +29,7 @@ import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
 import { FilamentUsageField } from "@/components/calculator/FilamentUsageField";
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
-import { ProjectPartField } from "@/components/calculator/ProjectPartField"; // Importar o novo componente
+import { ProjectPartField } from "@/components/calculator/ProjectPartField";
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
