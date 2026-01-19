@@ -83,7 +83,6 @@ const formSchema = z.object({
   // Conditional validation based on active tab (managed by `activeTab` state)
   // This schema is broad, actual validation will be triggered by form.trigger() on submit
   // and controlled by the UI's activeTab.
-  // For Zod's resolver, we'll ensure basic structure.
   // More specific validation for required fields will be handled by the UI's activeTab logic.
 });
 
@@ -107,6 +106,9 @@ const CalculatorPage = () => {
   const [defaultProfitMargin, setDefaultProfitMargin] = useState<number>(DEFAULT_PROFIT_MARGIN);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Novo estado para gerir o estado de expansão de cada parte do projeto
+  const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -183,6 +185,7 @@ const CalculatorPage = () => {
           projectName: "", // Clear project fields
           projectParts: [], // Clear project parts
         });
+        setOpenPartStates([]); // Limpa os estados de expansão para impressão única
       } else { // activeTab === "project"
         form.reset({
           printName: "", // Clear single print fields
@@ -211,6 +214,7 @@ const CalculatorPage = () => {
             // Part-level fields removed
           }],
         });
+        setOpenPartStates([true]); // A primeira parte do projeto começa expandida
       }
     };
     resetDefaults();
@@ -600,6 +604,8 @@ const CalculatorPage = () => {
         printName: "", printerId: "", filamentsUsed: [], printTimeHours: 0, printTimeMinutes: 0,
         electricityProfileId: "", electricityCostPerHour: 0.15,
       });
+      // Define o estado de expansão para as partes importadas (primeira expandida, resto recolhido)
+      setOpenPartStates(calculation.projectParts.map((_, idx) => idx === 0));
     } else {
       setActiveTab("single-print");
       form.reset({
@@ -620,6 +626,7 @@ const CalculatorPage = () => {
         // Clear project fields
         projectName: "", projectParts: [],
       });
+      setOpenPartStates([]); // Limpa os estados de expansão para impressão única
     }
     setIsHistoryDialogOpen(false);
   };
@@ -646,6 +653,7 @@ const CalculatorPage = () => {
         projectName: "",
         projectParts: [],
       });
+      setOpenPartStates([]);
     } else { // activeTab === "project"
       form.reset({
         printName: "",
@@ -674,6 +682,7 @@ const CalculatorPage = () => {
           // Part-level fields removed
         }],
       });
+      setOpenPartStates([true]); // A primeira parte do projeto começa expandida
     }
   };
 
@@ -681,9 +690,39 @@ const CalculatorPage = () => {
     form.setValue(`projectParts.${index}.isConfirmed`, confirmed);
     if (confirmed) {
       showSuccess(`Parte "${form.getValues(`projectParts.${index}.partName`)}" confirmada!`);
+      setOpenPartStates(prev => { // Recolhe a parte confirmada
+        const newStates = [...prev];
+        newStates[index] = false;
+        return newStates;
+      });
     } else {
       showSuccess(`Parte "${form.getValues(`projectParts.${index}.partName`)}" reaberta para edição.`);
+      setOpenPartStates(prev => { // Expande a parte para edição
+        const newStates = [...prev];
+        newStates[index] = true;
+        return newStates;
+      });
     }
+  };
+
+  // Funções para adicionar e remover partes, atualizando o estado openPartStates
+  const handleAppendProjectPart = () => {
+    appendProjectPart({
+      partName: "",
+      printerId: defaultPrinterId || "",
+      filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
+      printTimeHours: 0,
+      printTimeMinutes: 0,
+      electricityProfileId: defaultElectricityProfileId || "",
+      electricityCostPerHour: electricityProfiles.find(p => p.id === (defaultElectricityProfileId || "default-normal"))?.costPerHour || 0.15,
+      isConfirmed: false,
+    });
+    setOpenPartStates(prev => [...prev, false]); // Novas partes começam recolhidas
+  };
+
+  const handleRemoveProjectPart = (index: number) => {
+    removeProjectPart(index);
+    setOpenPartStates(prev => prev.filter((_, i) => i !== index));
   };
 
   return (
@@ -852,28 +891,25 @@ const CalculatorPage = () => {
                             key={field.id}
                             index={index}
                             namePrefix="projectParts"
-                            onRemove={removeProjectPart}
+                            onRemove={handleRemoveProjectPart}
                             printers={printers}
                             filaments={filaments}
                             electricityProfiles={electricityProfiles}
                             defaultFilamentId={defaultFilamentId}
                             isConfirmed={form.getValues(`projectParts.${index}.isConfirmed`)}
                             onConfirmPart={handleConfirmPart}
+                            isAccordionOpen={openPartStates[index] ?? false}
+                            setIsAccordionOpen={(open) => setOpenPartStates(prev => {
+                              const newStates = [...prev];
+                              newStates[index] = open;
+                              return newStates;
+                            })}
                           />
                         ))}
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => appendProjectPart({
-                            partName: "",
-                            printerId: defaultPrinterId || "",
-                            filamentsUsed: [{ filamentId: defaultFilamentId || "", filamentGrams: 0 }],
-                            printTimeHours: 0,
-                            printTimeMinutes: 0,
-                            electricityProfileId: defaultElectricityProfileId || "",
-                            electricityCostPerHour: electricityProfiles.find(p => p.id === (defaultElectricityProfileId || "default-normal"))?.costPerHour || 0.15,
-                            isConfirmed: false, // Adicionado: default para false
-                          })}
+                          onClick={handleAppendProjectPart}
                           className="w-full"
                         >
                           <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Parte

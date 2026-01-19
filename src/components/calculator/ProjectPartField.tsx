@@ -33,6 +33,8 @@ interface ProjectPartFieldProps<TFieldValues extends FieldValues> {
   defaultFilamentId: string | null;
   isConfirmed: boolean;
   onConfirmPart: (index: number, confirmed: boolean) => void;
+  isAccordionOpen: boolean; // Nova prop
+  setIsAccordionOpen: (open: boolean) => void; // Nova prop
 }
 
 export const ProjectPartField = <TFieldValues extends FieldValues>({
@@ -45,6 +47,8 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
   defaultFilamentId,
   isConfirmed,
   onConfirmPart,
+  isAccordionOpen,
+  setIsAccordionOpen,
 }: ProjectPartFieldProps<TFieldValues>) => {
   const { control, watch, setValue, trigger, getValues } = useFormContext<TFieldValues>();
 
@@ -86,15 +90,23 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
     const isValid = await trigger(fieldsToValidate);
     if (isValid) {
       onConfirmPart(index, true);
+      setIsAccordionOpen(false); // Recolhe a parte após confirmar
     }
   };
 
   const handleEdit = () => {
     onConfirmPart(index, false);
+    setIsAccordionOpen(true); // Expande a parte para edição
   };
 
   return (
-    <Accordion type="single" collapsible className="w-full">
+    <Accordion
+      type="single"
+      collapsible
+      className="w-full"
+      value={isAccordionOpen ? `part-${index}` : undefined} // Controla o estado de expansão
+      onValueChange={(val) => setIsAccordionOpen(!!val)} // Atualiza o estado de expansão
+    >
       <AccordionItem value={`part-${index}`} className="border rounded-lg bg-card px-4">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-3 w-full pr-8">
@@ -194,7 +206,7 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
 
             <div className="space-y-2">
               <FormLabel>Tempo de Impressão *</FormLabel>
-              <div className="flex items-end gap-2 justify-between"> {/* Alterado para justify-between */}
+              <div className="flex items-end gap-2 justify-between">
                 <div className="flex gap-2">
                   <FormField
                     control={control}
