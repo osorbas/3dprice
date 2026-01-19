@@ -238,7 +238,7 @@ const CalculatorPage = () => {
     
     const partCalculatedElectricityCost = partPrintTimeHours * partElectricityCostPerHour;
 
-    // Removidos: laborCost, extraCost, profitMargin do cálculo da parte
+    // Removidos: laborCost, extraCost, profitMargin do nível da parte
     const partCalculatedBaseCost = partFilamentsCost + partCalculatedElectricityCost;
     // Para o preço total da parte, usamos uma margem de lucro de 0% para que o lucro seja aplicado apenas ao nível do projeto
     const partTotalPrice = isNaN(partCalculatedBaseCost) ? 0 : partCalculatedBaseCost; 
@@ -587,7 +587,9 @@ const CalculatorPage = () => {
         projectParts: calculation.projectParts.map(part => ({
           partName: part.partName,
           printerId: part.printerId || "",
-          filamentsUsed: part.filaments || [{ filamentId: part.filamentId || "", filamentGrams: part.filamentGrams || 0 }],
+          filamentsUsed: part.filaments 
+            ? part.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams }))
+            : [{ filamentId: part.filamentId || "", filamentGrams: part.filamentGrams || 0 }],
           printTimeHours: Math.floor(part.printTimeHours),
           printTimeMinutes: Math.round((part.printTimeHours - Math.floor(part.printTimeHours)) * 60),
           electricityProfileId: electricityProfiles.find(p => p.costPerHour === (part.electricityCost / part.printTimeHours))?.id || prof?.id || "",
