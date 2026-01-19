@@ -417,7 +417,7 @@ const CalculatorPage = () => {
                   <TabsTrigger value="pricing">Margem</TabsTrigger>
                 </TabsList>
                 <div className="relative mt-4 min-h-[350px]">
-                  <TabsContent value="basic-info" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                  <TabsContent value="basic-info" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
                     <div className="grid grid-cols-1 gap-4">
                       <FormField control={form.control} name="printName" render={({ field }) => (
                         <FormItem>
@@ -494,7 +494,7 @@ const CalculatorPage = () => {
                       </div>
                     </div>
                   </TabsContent>
-                  <TabsContent value="labor" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                  <TabsContent value="labor" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField control={form.control} name="laborCostPerHour" render={({ field }) => (
                         <FormItem>
@@ -528,11 +528,11 @@ const CalculatorPage = () => {
                       </div>
                     </div>
                   </TabsContent>
-                  <TabsContent value="extras" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                  <TabsContent value="extras" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
                     {extraFields.map((field, index) => (<ExtraMaterialField key={field.id} index={index} namePrefix="extras" onRemove={removeExtra} />))}
                     <Button type="button" variant="outline" onClick={() => appendExtra({ materialId: "", quantity: 0 })} className="w-full"><PlusCircle className="h-4 w-4 mr-2" /> Adicionar Material Extra</Button>
                   </TabsContent>
-                  <TabsContent value="pricing" className="absolute inset-0 space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
+                  <TabsContent value="pricing" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
                     <FormField control={form.control} name="profitMargin" render={({ field }) => (
                       <FormItem className="w-44">
                         <FormLabel>Margem de Lucro (%)</FormLabel>

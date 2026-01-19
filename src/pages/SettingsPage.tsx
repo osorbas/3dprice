@@ -438,7 +438,7 @@ const SettingsPage = () => {
   return (
     <div className="space-y-6 p-4">
       <h1 className="text-3xl font-bold">Definições</h1>
-      <Tabs defaultValue="general" className="w-full relative"> {/* Adicionado 'relative' aqui */}
+      <Tabs defaultValue="general" className="w-full relative">
         <TabsList className="flex flex-wrap gap-2 w-full p-1 mb-4 md:grid md:w-fit md:grid-cols-5 md:mb-0">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="printers">Impressoras</TabsTrigger>
@@ -446,8 +446,8 @@ const SettingsPage = () => {
           <TabsTrigger value="extras">Extras</TabsTrigger>
           <TabsTrigger value="electricity">Eletricidade</TabsTrigger>
         </TabsList>
-        <div className="relative min-h-[500px]"> {/* Wrapper para o conteúdo dos separadores */}
-          <TabsContent value="general" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+        <div className="relative min-h-[500px]">
+          <TabsContent value="general" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
             <Card>
               <CardHeader>
                 <CardTitle>Definições da Aplicação</CardTitle>
@@ -565,7 +565,7 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
           </TabsContent>
-          <TabsContent value="printers" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+          <TabsContent value="printers" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
             <Card>
               <CardHeader>
                 <CardTitle>Configurações de Impressoras</CardTitle>
@@ -631,7 +631,7 @@ const SettingsPage = () => {
               <PrintersPage />
             </div>
           </TabsContent>
-          <TabsContent value="filaments" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+          <TabsContent value="filaments" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
             <Card>
               <CardHeader>
                 <CardTitle>Configurações de Filamentos</CardTitle>
@@ -696,10 +696,10 @@ const SettingsPage = () => {
               <FilamentsPage />
             </div>
           </TabsContent>
-          <TabsContent value="extras" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+          <TabsContent value="extras" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
             <ExtrasPage />
           </TabsContent>
-          <TabsContent value="electricity" className="absolute inset-0 mt-0"> {/* Adicionado 'absolute inset-0' */}
+          <TabsContent value="electricity" className="space-y-4 pt-4 p-4 rounded-lg border bg-muted/50">
             <Card>
               <CardHeader>
                 <CardTitle>Configurações de Eletricidade</CardTitle>
