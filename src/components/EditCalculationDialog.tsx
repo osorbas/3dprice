@@ -9,7 +9,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
 import { showSuccess, showError } from "@/utils/toast";
-import { Pencil, CalendarIcon, Clock, Package, Printer } from "lucide-react";
+import { Pencil, CalendarIcon, Clock, Package, Printer, ChevronRight } from "lucide-react";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,6 +59,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
   const { filaments } = useFilaments();
   const [open, setOpen] = React.useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
+  const [editingPartIndex, setEditingPartIndex] = React.useState<number | null>(null);
 
   const initialDate = new Date(calculation.timestamp);
 
@@ -92,7 +93,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
     },
   });
 
-  const { fields: partFields } = useFieldArray({
+  const { fields: partFields, update: updatePart } = useFieldArray({
     control: form.control,
     name: "projectParts",
   });
@@ -104,9 +105,43 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       finalDate.setMinutes(values.recordMinute);
 
       if (values.isProject) {
-        // Para projetos, recalculamos o total com base no custo das partes (material + energia) + nova mão de obra + extras
-        const baseCostParts = (calculation.materialCost || 0) + (calculation.electricityCost || 0);
-        const totalBaseCost = baseCostParts + values.laborCostTotal + (calculation.extraCost || 0);
+        // Recalcular custos do projeto com base nas partes possivelmente editadas
+        let totalMaterialCost = 0;
+        let totalElectricityCost = 0;
+        let totalPrintTimeHours = 0;
+        let totalFilamentGrams = 0;
+
+        const updatedParts = (values.projectParts || []).map((part, idx) => {
+          const printer = printers.find(p => p.id === part.printerId);
+          // Usamos o custo de energia original do cálculo para cada parte se não for editável individualmente aqui
+          // Simplificação: usamos 0.15 ou tentamos inferir da parte original
+          const originalPart = calculation.projectParts?.[idx];
+          const electricityRate = originalPart && originalPart.printTimeHours > 0 
+            ? originalPart.electricityCost / originalPart.printTimeHours 
+            : 0.15;
+
+          const partHours = part.printTimeHours + (part.printTimeMinutes / 60);
+          const partMaterialCost = (filaments.find(f => f.id === (originalPart?.filamentId))?.pricePerKg || 20) / 1000 * part.filamentGrams;
+          const partElectricityCost = partHours * electricityRate;
+
+          totalMaterialCost += partMaterialCost;
+          totalElectricityCost += partElectricityCost;
+          totalPrintTimeHours += partHours;
+          totalFilamentGrams += part.filamentGrams;
+
+          return {
+            ...originalPart,
+            partName: part.partName,
+            printerId: part.printerId,
+            printTimeHours: partHours,
+            materialCost: parseFloat(partMaterialCost.toFixed(2)),
+            electricityCost: parseFloat(partElectricityCost.toFixed(2)),
+            filamentGrams: part.filamentGrams,
+            totalPrice: parseFloat((partMaterialCost + partElectricityCost).toFixed(2)),
+          };
+        });
+
+        const totalBaseCost = totalMaterialCost + totalElectricityCost + values.laborCostTotal + (calculation.extraCost || 0);
         const profit = totalBaseCost * (values.profitMargin / 100);
         const finalPrice = totalBaseCost + profit;
 
@@ -115,7 +150,12 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
           timestamp: finalDate.getTime(),
           profitMargin: values.profitMargin,
           laborCost: values.laborCostTotal,
+          materialCost: parseFloat(totalMaterialCost.toFixed(2)),
+          electricityCost: parseFloat(totalElectricityCost.toFixed(2)),
+          printTimeHours: parseFloat(totalPrintTimeHours.toFixed(1)),
+          filamentGrams: totalFilamentGrams,
           totalPrice: parseFloat(finalPrice.toFixed(2)),
+          projectParts: updatedParts as any,
         });
       } else {
         const totalHours = (values.printTimeHours || 0) + ((values.printTimeMinutes || 0) / 60);
@@ -258,24 +298,91 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
               </div>
             ) : (
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Partes do Projeto (Visualização)</h4>
-                <div className="border rounded-md divide-y">
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Partes do Projeto</h4>
+                <div className="border rounded-md divide-y overflow-hidden">
                   {partFields.map((field, index) => (
-                    <div key={field.id} className="p-3 text-sm space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold flex items-center gap-2"><Package className="h-3 w-3" /> {field.partName}</span>
-                        <span className="text-xs bg-muted px-2 py-0.5 rounded flex items-center gap-1">
-                          <Printer className="h-3 w-3" /> {printers.find(p => p.id === field.printerId)?.name || "N/A"}
-                        </span>
+                    <button
+                      key={field.id}
+                      type="button"
+                      onClick={() => setEditingPartIndex(index)}
+                      className="w-full text-left p-3 hover:bg-muted transition-colors flex items-center justify-between group"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 font-semibold">
+                          <Package className="h-3 w-3" /> {field.partName}
+                        </div>
+                        <div className="flex gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Printer className="h-3 w-3" /> {printers.find(p => p.id === field.printerId)?.name || "N/A"}</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {field.printTimeHours}h {field.printTimeMinutes}m</span>
+                          <span>{field.filamentGrams}g</span>
+                        </div>
                       </div>
-                      <div className="flex gap-4 text-muted-foreground">
-                        <span><Clock className="h-3 w-3 inline mr-1" /> {field.printTimeHours}h {field.printTimeMinutes}m</span>
-                        <span>{field.filamentGrams}g</span>
-                      </div>
-                    </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground italic">Nota: Para alterar detalhes técnicos das partes, utilize a Calculadora de Projeto.</p>
+
+                {/* Diálogo de Edição de Parte */}
+                <Dialog open={editingPartIndex !== null} onOpenChange={(open) => !open && setEditingPartIndex(null)}>
+                  <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                      <DialogTitle>Editar Detalhes da Parte</DialogTitle>
+                      <DialogDescription>Altere as especificações desta parte do projeto.</DialogDescription>
+                    </DialogHeader>
+                    {editingPartIndex !== null && (
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <FormLabel>Nome da Parte</FormLabel>
+                          <Input 
+                            value={form.getValues(`projectParts.${editingPartIndex}.partName`)}
+                            onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.partName`, e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <FormLabel>Impressora</FormLabel>
+                          <Select 
+                            value={form.getValues(`projectParts.${editingPartIndex}.printerId`)}
+                            onValueChange={(val) => form.setValue(`projectParts.${editingPartIndex}.printerId`, val)}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                            <SelectContent>{printers.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <FormLabel>Horas</FormLabel>
+                            <Input 
+                              type="number"
+                              value={form.getValues(`projectParts.${editingPartIndex}.printTimeHours`)}
+                              onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeHours`, parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <FormLabel>Minutos</FormLabel>
+                            <Input 
+                              type="number"
+                              max="59"
+                              value={form.getValues(`projectParts.${editingPartIndex}.printTimeMinutes`)}
+                              onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeMinutes`, parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <FormLabel>Peso (g)</FormLabel>
+                          <Input 
+                            type="number"
+                            step="0.01"
+                            value={form.getValues(`projectParts.${editingPartIndex}.filamentGrams`)}
+                            onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.filamentGrams`, parseFloat(e.target.value) || 0)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <DialogFooter>
+                      <Button onClick={() => setEditingPartIndex(null)}>Confirmar Parte</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
 
@@ -291,7 +398,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
             </div>
 
             <DialogFooter className="pt-4">
-              <Button type="submit" className="w-full">Guardar Alterações</Button>
+              <Button type="submit" className="w-full">Guardar Alterações do Projeto</Button>
             </DialogFooter>
           </form>
         </Form>
