@@ -104,14 +104,18 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       finalDate.setMinutes(values.recordMinute);
 
       if (values.isProject) {
-        // Para projetos, mantemos a estrutura mas atualizamos o nome e lucro
-        // Nota: A lógica de recálculo total de partes é complexa para este diálogo simples,
-        // então focamos em atualizar os metadados principais e permitir a edição do nome.
+        // Para projetos, recalculamos o total com base no custo das partes (material + energia) + nova mão de obra + extras
+        const baseCostParts = (calculation.materialCost || 0) + (calculation.electricityCost || 0);
+        const totalBaseCost = baseCostParts + values.laborCostTotal + (calculation.extraCost || 0);
+        const profit = totalBaseCost * (values.profitMargin / 100);
+        const finalPrice = totalBaseCost + profit;
+
         updateCalculation(calculation.id, {
           projectName: values.displayName,
           timestamp: finalDate.getTime(),
           profitMargin: values.profitMargin,
           laborCost: values.laborCostTotal,
+          totalPrice: parseFloat(finalPrice.toFixed(2)),
         });
       } else {
         const totalHours = (values.printTimeHours || 0) + ((values.printTimeMinutes || 0) / 60);
