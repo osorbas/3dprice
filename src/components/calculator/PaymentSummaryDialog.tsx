@@ -11,10 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Receipt, Zap, Clock, TrendingUp, Box, Trash2 } from "lucide-react";
+import { Receipt, Zap, Clock, TrendingUp, Box, Trash2, FileDown } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface PaymentSummaryData {
-  id: string; // Adicionado ID para permitir exclusão
+  id: string;
   printName: string;
   materialCost: number;
   electricityCost: number;
@@ -30,7 +32,7 @@ interface PaymentSummaryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   data: PaymentSummaryData | null;
-  onDelete: (id: string) => void; // Nova prop para apagar o cálculo
+  onDelete: (id: string) => void;
 }
 
 export const PaymentSummaryDialog = ({
@@ -43,7 +45,63 @@ export const PaymentSummaryDialog = ({
 
   const handleDelete = () => {
     onDelete(data.id);
-    onOpenChange(false); // Fecha o diálogo após a exclusão
+    onOpenChange(false);
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    const date = new Date().toLocaleString("pt-PT");
+
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(40, 40, 40);
+    doc.text("Orçamento de Impressão 3D", 14, 22);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Gerado em: ${date}`, 14, 30);
+    doc.text(`Referência: ${data.printName}`, 14, 35);
+
+    // Costs Table
+    const tableData = [
+      ["Descrição", "Valor (€)"],
+      ["Custo de Filamento", data.materialCost.toFixed(2)],
+      ["Custo de Energia", data.electricityCost.toFixed(2)],
+      ["Mão de Obra", data.laborCost.toFixed(2)],
+    ];
+
+    if (data.extrasCost > 0) {
+      tableData.push(["Custos Extras", data.extrasCost.toFixed(2)]);
+    }
+
+    autoTable(doc, {
+      startY: 45,
+      head: [tableData[0]],
+      body: tableData.slice(1),
+      theme: "striped",
+      headStyles: { fillColor: [249, 115, 22] }, // Orange primary
+    });
+
+    // Summary Section
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.text(`Custo Base: €${data.baseCost.toFixed(2)}`, 14, finalY);
+    doc.text(`Margem de Lucro (${data.profitMargin}%): €${data.profitAmount.toFixed(2)}`, 14, finalY + 7);
+    
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(249, 115, 22);
+    doc.text(`Preço Final: €${data.totalPrice.toFixed(2)}`, 14, finalY + 18);
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(150, 150, 150);
+    doc.text("3D Print Price Calculator - Gerado automaticamente", 14, doc.internal.pageSize.height - 10);
+
+    doc.save(`Orcamento_${data.printName.replace(/\s+/g, "_")}.pdf`);
   };
 
   return (
@@ -104,24 +162,31 @@ export const PaymentSummaryDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-2 pt-4">
-          {/* Botão Fechar Resumo */}
-          <Button 
-            onClick={() => onOpenChange(false)} 
-            className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-semibold"
-          >
-            Fechar Resumo
-          </Button>
+        <DialogFooter className="flex flex-col gap-2 pt-4">
+          <div className="flex gap-2 w-full">
+            <Button 
+              onClick={exportToPDF}
+              variant="outline"
+              className="flex-1 flex items-center gap-2 border-primary text-primary hover:bg-primary/5"
+            >
+              <FileDown className="h-4 w-4" />
+              Exportar PDF
+            </Button>
+            <Button 
+              onClick={() => onOpenChange(false)} 
+              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+            >
+              Fechar
+            </Button>
+          </div>
           
-          {/* Botão Apagar Registo */}
           <Button 
-            variant="destructive" 
+            variant="ghost" 
             onClick={handleDelete} 
-            size="icon"
-            className="h-10 w-10 flex-shrink-0"
+            className="w-full text-destructive hover:bg-destructive/5 flex items-center gap-2"
           >
-            <Trash2 className="h-5 w-5" />
-            <span className="sr-only">Apagar Registo</span>
+            <Trash2 className="h-4 w-4" />
+            Apagar Registo
           </Button>
         </DialogFooter>
       </DialogContent>
