@@ -6,12 +6,13 @@ import { PrintCalculation } from "@/hooks/use-print-calculations";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Printer } from "lucide-react";
 import { usePrintCalculations } from "@/hooks/use-print-calculations";
 import { showError, showSuccess } from "@/utils/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EditCalculationDialog } from "@/components/EditCalculationDialog";
-import { usePrinters } from "@/hooks/use-printers"; // Importar usePrinters
+import { usePrinters } from "@/hooks/use-printers";
+import { exportCalculationToPDF } from "@/utils/pdf-export";
 
 interface CalculationListProps {
   calculations: PrintCalculation[];
@@ -19,7 +20,7 @@ interface CalculationListProps {
 
 export const CalculationList = ({ calculations }: CalculationListProps) => {
   const { deleteCalculation } = usePrintCalculations();
-  const { printers } = usePrinters(); // Obter a lista de impressoras
+  const { printers } = usePrinters();
 
   const handleDeleteCalculation = (id: string) => {
     try {
@@ -29,6 +30,23 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
       showError("Erro ao excluir cálculo.");
       console.error("Delete calculation error:", error);
     }
+  };
+
+  const handlePrint = (calc: PrintCalculation) => {
+    const baseCost = calc.materialCost + calc.electricityCost + calc.laborCost + (calc.extraCost || 0);
+    const profitAmount = calc.totalPrice - baseCost;
+
+    exportCalculationToPDF({
+      printName: calc.isProject ? (calc.projectName || "Projeto sem nome") : (calc.printName || "Impressão sem nome"),
+      materialCost: calc.materialCost,
+      electricityCost: calc.electricityCost,
+      laborCost: calc.laborCost,
+      extrasCost: calc.extraCost || 0,
+      baseCost: baseCost,
+      profitMargin: calc.profitMargin,
+      profitAmount: profitAmount,
+      totalPrice: calc.totalPrice,
+    });
   };
 
   if (calculations.length === 0) {
@@ -98,6 +116,18 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <EditCalculationDialog calculation={calc} />
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 p-0"
+                          onClick={() => handlePrint(calc)}
+                          title="Imprimir Orçamento (PDF)"
+                        >
+                          <Printer className="h-4 w-4" />
+                          <span className="sr-only">Imprimir Orçamento</span>
+                        </Button>
+
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
