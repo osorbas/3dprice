@@ -339,8 +339,12 @@ const FarmPage = () => {
                               {f.brand} {f.type}
                             </p>
                           </div>
-                          {/* Botão para adicionar stock (Dar entrada de filamento) */}
-                          <AddFilamentStockDialog filament={f} /> 
+                          <div className="flex gap-1">
+                            {/* Botão para editar (atualizar stock e outros detalhes) */}
+                            <EditFilamentDialog filament={f} />
+                            {/* Botão para adicionar stock (Dar entrada de filamento) */}
+                            <AddFilamentStockDialog filament={f} /> 
+                          </div>
                         </div>
 
                         <div className="space-y-2">
