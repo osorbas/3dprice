@@ -39,7 +39,7 @@ const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
   const { filaments } = useFilaments();
   const [now, setNow] = useState(Date.now());
-  const [manageStockEnabled, setManageStockEnabled] = useState(false); // New state for stock management setting
+  const [manageStockEnabled, setManageStockEnabled] = useState(false); // State for stock management setting
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -289,28 +289,40 @@ const FarmPage = () => {
             </div>
           ))}
 
-          {filaments.length > 0 && manageStockEnabled && (
+          {filaments.length > 0 && (
             <div className="space-y-6 pt-6">
               <Separator />
               <div className="flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
                 <h2 className="text-xl font-bold">Filamentos em Stock</h2>
+                {!manageStockEnabled && (
+                    <Badge variant="secondary" className="text-xs text-muted-foreground">Gestão de Stock Desativada</Badge>
+                )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filaments.map((f) => {
                   const currentGrams = f.currentWeightGrams;
-                  const isLowStock = currentGrams < 1000;
-                  const displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
-                  
-                  // Cálculo de percentagem baseado no peso original da bobina
                   const totalCapacityGrams = f.weight * 1000;
-                  const stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
+                  
+                  let isLowStock = false;
+                  let displayValue = "N/A";
+                  let stockPercent = 0;
+                  let stockGramsDisplay = "N/A";
+                  let stockColorClass = "text-muted-foreground";
+
+                  if (manageStockEnabled) {
+                    isLowStock = currentGrams < 1000;
+                    displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
+                    stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
+                    stockGramsDisplay = `${currentGrams.toFixed(0)}g restantes`;
+                    stockColorClass = isLowStock ? "text-orange-600" : "text-green-600";
+                  }
 
                   return (
                     <Card 
                       key={f.id} 
                       className="overflow-hidden border-l-4 shadow-sm" 
-                      style={{ borderLeftColor: isLowStock ? "#f97316" : "#22c55e" }}
+                      style={{ borderLeftColor: manageStockEnabled && isLowStock ? "#f97316" : manageStockEnabled ? "#22c55e" : "hsl(var(--border))" }}
                     >
                       <CardContent className="p-4 space-y-4">
                         <div className="flex justify-between items-start">
@@ -320,28 +332,28 @@ const FarmPage = () => {
                               {f.brand} {f.type}
                             </p>
                           </div>
-                          <AddFilamentStockDialog filament={f} />
+                          {manageStockEnabled && <AddFilamentStockDialog filament={f} />}
                         </div>
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-end text-xs">
-                            <span className={cn("font-bold", isLowStock ? "text-orange-600" : "text-green-600")}>
+                            <span className={cn("font-bold", stockColorClass)}>
                               {displayValue}
                             </span>
                             <span className="text-muted-foreground font-mono text-[10px]">
-                              {stockPercent.toFixed(0)}%
+                              {manageStockEnabled ? `${stockPercent.toFixed(0)}%` : "N/A"}
                             </span>
                           </div>
                           <Progress 
-                            value={stockPercent} 
-                            className={cn("h-2", isLowStock ? "bg-orange-100" : "bg-green-100")} 
+                            value={manageStockEnabled ? stockPercent : 0} 
+                            className={cn("h-2", manageStockEnabled ? (isLowStock ? "bg-orange-100" : "bg-green-100") : "bg-muted")} 
                           />
                         </div>
 
                         <div className="flex items-center justify-between pt-1">
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Layers className="h-3.5 w-3.5" />
-                            <span className="text-[11px] font-medium">{currentGrams.toFixed(0)}g restantes</span>
+                            <span className="text-[11px] font-medium">{stockGramsDisplay}</span>
                           </div>
                           {f.color && (
                             <div className="flex items-center gap-1.5">
