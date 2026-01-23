@@ -122,9 +122,18 @@ const SettingsPage = () => {
     if (!importFile) return;
     const reader = new FileReader();
     reader.onload = (e) => {
+      let data: any;
       try {
-        const data = JSON.parse(e.target?.result as string);
-        
+        // Tenta analisar o JSON
+        data = JSON.parse(e.target?.result as string);
+      } catch (err) {
+        // Se falhar, regista o erro exato e mostra a mensagem genérica
+        console.error("JSON Parsing Error during import:", err);
+        showError("Erro ao processar o ficheiro. Certifique-se de que é um ficheiro de backup JSON válido.");
+        return;
+      }
+      
+      try {
         // Helper function for validation
         const isValidArray = (arr: any) => Array.isArray(arr);
 
@@ -193,8 +202,8 @@ const SettingsPage = () => {
         showSuccess("Importação concluída!");
         setImportDialogOpen(false);
       } catch (err) { 
-        console.error("Import error:", err);
-        showError("Erro ao processar o ficheiro. Certifique-se de que é um ficheiro de backup JSON válido."); 
+        console.error("Import logic error:", err);
+        showError("Erro ao aplicar os dados importados."); 
       }
     };
     reader.readAsText(importFile);
