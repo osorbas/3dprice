@@ -10,6 +10,7 @@ export interface Printer {
   model: string;
   workingHours: number;
   status: PrinterStatus;
+  timerStart?: number; // Timestamp de quando a impressão começou
   timerEnd?: number; // Timestamp de quando a impressão termina
   lastMaintenance?: number; // Timestamp da última manutenção
   timestamp: number;
@@ -50,7 +51,7 @@ export function usePrinters() {
     window.addEventListener(EVENT_NAME, handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
-    // Verificar temporizadores expirados a cada minuto
+    // Verificar temporizadores expirados
     const interval = setInterval(() => {
       const currentPrinters = getStoredPrinters();
       let changed = false;
@@ -59,7 +60,7 @@ export function usePrinters() {
       const updated = currentPrinters.map(p => {
         if (p.status === "Ocupada" && p.timerEnd && now >= p.timerEnd) {
           changed = true;
-          return { ...p, status: "Pronta" as PrinterStatus, timerEnd: undefined };
+          return { ...p, status: "Pronta" as PrinterStatus, timerStart: undefined, timerEnd: undefined };
         }
         return p;
       });
@@ -69,7 +70,7 @@ export function usePrinters() {
         setPrinters(updated);
         window.dispatchEvent(new CustomEvent(EVENT_NAME));
       }
-    }, 10000);
+    }, 5000);
 
     return () => {
       window.removeEventListener(EVENT_NAME, handleUpdate);

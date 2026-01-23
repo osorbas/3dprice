@@ -71,9 +71,9 @@ const FarmPage = () => {
     let progress = 0;
     let timeRemainingStr = "";
 
-    if (printer.status === "Ocupada" && printer.timerEnd) {
-      const totalTime = printer.timerEnd - printer.timestamp;
-      const elapsedTime = now - (printer.timerEnd - (totalTime));
+    if (printer.status === "Ocupada" && printer.timerStart && printer.timerEnd) {
+      const totalTime = printer.timerEnd - printer.timerStart;
+      const elapsedTime = now - printer.timerStart;
       progress = Math.min(100, Math.max(0, (elapsedTime / totalTime) * 100));
       
       const remainingMs = printer.timerEnd - now;
@@ -81,6 +81,9 @@ const FarmPage = () => {
         const h = Math.floor(remainingMs / 3600000);
         const m = Math.floor((remainingMs % 3600000) / 60000);
         timeRemainingStr = `${h}h ${m}m restantes`;
+      } else {
+        timeRemainingStr = "Concluído";
+        progress = 100;
       }
     }
 
@@ -200,7 +203,6 @@ const FarmPage = () => {
   );
 };
 
-// Helper function needed because of scoping
 function cn(...inputs: any[]) {
   return inputs.filter(Boolean).join(" ");
 }

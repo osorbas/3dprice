@@ -234,9 +234,11 @@ const CalculatorPage = () => {
 
   const handleStartTimer = () => {
     if (pendingTimerData) {
+      const now = Date.now();
       updatePrinter(pendingTimerData.printerId, {
         status: "Ocupada",
-        timerEnd: Date.now() + (pendingTimerData.duration * 3600000)
+        timerStart: now,
+        timerEnd: now + (pendingTimerData.duration * 3600000)
       });
       showSuccess("Temporizador ativado!");
     }
