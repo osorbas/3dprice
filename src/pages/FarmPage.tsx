@@ -17,7 +17,7 @@ import {
   Package,
   Layers
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { showSuccess } from "@/utils/toast";
 import {
@@ -124,9 +124,18 @@ const FarmPage = () => {
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <div>
                 <p className="text-muted-foreground">Última Manut.</p>
-                <p className="font-semibold">
-                  {printer.lastMaintenance ? formatDistanceToNow(printer.lastMaintenance, { addSuffix: true, locale: ptBR }) : "Nunca"}
-                </p>
+                {printer.lastMaintenance ? (
+                  <div className="flex flex-col">
+                    <p className="font-semibold text-[11px] leading-tight">
+                      {formatDistanceToNow(printer.lastMaintenance, { addSuffix: true, locale: ptBR })}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground/80 leading-tight">
+                      {format(printer.lastMaintenance, "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="font-semibold">Nunca</p>
+                )}
               </div>
             </div>
           </div>
