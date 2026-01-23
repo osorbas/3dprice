@@ -279,48 +279,57 @@ const FarmPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filaments.map((f) => {
                   const currentGrams = f.currentWeightGrams;
-                  const isUnder1Kg = currentGrams < 1000;
-                  const displayValue = isUnder1Kg ? `${currentGrams.toFixed(0)}g` : `${(currentGrams / 1000).toFixed(2)}kg`;
+                  const isLowStock = currentGrams < 1000;
+                  const displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
                   
-                  const totalGrams = f.weight * 1000;
-                  const percent = Math.min(100, (currentGrams / totalGrams) * 100);
-                  const isLow = percent < 20;
+                  // Cálculo de percentagem baseado no peso original da bobina
+                  const totalCapacityGrams = f.weight * 1000;
+                  const stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
 
                   return (
-                    <Card key={f.id} className={cn("bg-muted/30 border-dashed", isLow && "border-orange-200 bg-orange-50/30")}>
-                      <CardContent className="p-4 space-y-3">
+                    <Card 
+                      key={f.id} 
+                      className="overflow-hidden border-l-4 shadow-sm" 
+                      style={{ borderLeftColor: isLowStock ? "#f97316" : "#22c55e" }}
+                    >
+                      <CardContent className="p-4 space-y-4">
                         <div className="flex justify-between items-start">
-                          <div className="space-y-0.5">
-                            <p className="text-sm font-bold truncate max-w-[150px]">{f.name || f.type}</p>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{f.brand}</p>
+                          <div className="space-y-1">
+                            <p className="font-bold text-sm truncate max-w-[140px]">{f.name || f.type}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                              {f.brand} {f.type}
+                            </p>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <AddFilamentStockDialog filament={f} />
-                            <Badge variant={isLow ? "destructive" : "secondary"} className="text-[10px] px-1.5 h-5">
-                              {f.type}
-                            </Badge>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-[10px] font-medium">
-                            <span className={isLow ? "text-red-600 font-bold" : "text-muted-foreground"}>
-                              {isLow ? "Stock Baixo" : "Disponível"}
-                            </span>
-                            <span className={cn(isUnder1Kg ? "text-orange-500 font-bold" : "text-muted-foreground font-semibold")}>
-                              {displayValue}
-                            </span>
-                          </div>
-                          <Progress value={percent} className={cn("h-1.5", isLow ? "bg-red-100" : "")} />
+                          <AddFilamentStockDialog filament={f} />
                         </div>
 
-                        <div className="flex items-center gap-2 pt-1">
-                          <Layers className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs font-medium">{f.currentWeightGrams.toFixed(0)}g</span>
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-end text-xs">
+                            <span className={cn("font-bold", isLowStock ? "text-orange-600" : "text-green-600")}>
+                              {displayValue}
+                            </span>
+                            <span className="text-muted-foreground font-mono text-[10px]">
+                              {stockPercent.toFixed(0)}%
+                            </span>
+                          </div>
+                          <Progress 
+                            value={stockPercent} 
+                            className={cn("h-2", isLowStock ? "bg-orange-100" : "bg-green-100")} 
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Layers className="h-3.5 w-3.5" />
+                            <span className="text-[11px] font-medium">{currentGrams.toFixed(0)}g restantes</span>
+                          </div>
                           {f.color && (
-                            <div className="flex items-center gap-1.5 ml-auto">
-                              <span className="text-[10px] text-muted-foreground">{f.color}</span>
-                              <div className="h-2 w-2 rounded-full border" style={{ backgroundColor: f.color.toLowerCase() }} />
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-muted-foreground font-medium">{f.color}</span>
+                              <div 
+                                className="h-2.5 w-2.5 rounded-full border border-black/10" 
+                                style={{ backgroundColor: f.color.toLowerCase() }} 
+                              />
                             </div>
                           )}
                         </div>
