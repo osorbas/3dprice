@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { AddFilamentStockDialog } from "@/components/AddFilamentStockDialog";
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
@@ -243,9 +244,12 @@ const FarmPage = () => {
                             <p className="text-sm font-bold truncate max-w-[150px]">{f.name || f.type}</p>
                             <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{f.brand}</p>
                           </div>
-                          <Badge variant={isLow ? "destructive" : "secondary"} className="text-[10px] px-1.5 h-5">
-                            {f.type}
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <AddFilamentStockDialog filament={f} />
+                            <Badge variant={isLow ? "destructive" : "secondary"} className="text-[10px] px-1.5 h-5">
+                              {f.type}
+                            </Badge>
+                          </div>
                         </div>
                         
                         <div className="space-y-1.5">

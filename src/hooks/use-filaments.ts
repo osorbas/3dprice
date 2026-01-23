@@ -90,6 +90,17 @@ export function useFilaments() {
     notifyUpdate();
   };
 
+  const addStock = (id: string, grams: number) => {
+    const updated = filaments.map((f) => {
+      if (f.id === id) {
+        return { ...f, currentWeightGrams: f.currentWeightGrams + grams };
+      }
+      return f;
+    });
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    notifyUpdate();
+  };
+
   const deleteFilament = (id: string) => {
     const updated = filaments.filter((filament) => filament.id !== id);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
@@ -115,6 +126,7 @@ export function useFilaments() {
     addFilament,
     updateFilament,
     subtractStock,
+    addStock,
     deleteFilament,
     clearFilaments,
     importFilaments,
