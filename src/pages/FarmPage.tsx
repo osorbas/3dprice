@@ -30,7 +30,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -40,10 +39,31 @@ const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
   const { filaments } = useFilaments();
   const [now, setNow] = useState(Date.now());
+  const [manageStockEnabled, setManageStockEnabled] = useState(false); // New state for stock management setting
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
+    
+    const checkStockSetting = () => {
+        if (typeof window !== "undefined") {
+            setManageStockEnabled(localStorage.getItem("manage_filament_stock") === "true");
+        }
+    };
+
+    checkStockSetting();
+
+    // Listener for storage changes (e.g., if settings page changes the value)
+    const handleStorageChange = (e: StorageEvent) => {
+        if (e.key === "manage_filament_stock" || e.key === null) {
+            checkStockSetting();
+        }
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const handleMaintenanceToggle = (printer: Printer) => {
@@ -269,7 +289,7 @@ const FarmPage = () => {
             </div>
           ))}
 
-          {filaments.length > 0 && (
+          {filaments.length > 0 && manageStockEnabled && (
             <div className="space-y-6 pt-6">
               <Separator />
               <div className="flex items-center gap-2">
