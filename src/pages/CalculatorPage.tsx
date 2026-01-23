@@ -75,7 +75,7 @@ const formSchema = z.object({
   laborTimeMinutes: z.coerce.number().optional(),
   profitMargin: z.coerce.number().optional(),
   extras: z.array(extraSchema).optional(),
-  projectName: z.string().optional(),
+  projectName: z.string().optional(), // Mantido opcional aqui, mas validado no onSubmit
   projectParts: z.array(projectPartSchema).optional(),
 });
 
@@ -124,6 +124,26 @@ const CalculatorPage = () => {
   });
 
   const watchedValues = form.watch();
+
+  // Atualiza o estado de abertura do acordeão quando as partes mudam
+  useEffect(() => {
+    if (projectPartFields.length !== openPartStates.length) {
+      // Inicializa todas as novas partes como abertas (true)
+      setOpenPartStates(prev => {
+        const newStates = Array(projectPartFields.length).fill(false);
+        // Mantém o estado das partes existentes
+        for (let i = 0; i < prev.length && i < projectPartFields.length; i++) {
+          newStates[i] = prev[i];
+        }
+        // Garante que a última parte adicionada esteja aberta
+        if (projectPartFields.length > 0) {
+            newStates[projectPartFields.length - 1] = true;
+        }
+        return newStates;
+      });
+    }
+  }, [projectPartFields.length]);
+
 
   const totals = useMemo(() => {
     let materialCost = 0;
@@ -235,7 +255,7 @@ const CalculatorPage = () => {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (activeTab === "project") {
-      if (!values.projectName) {
+      if (!values.projectName || values.projectName.trim() === "") {
         showError("O nome do projeto é obrigatório.");
         return;
       }
@@ -243,8 +263,14 @@ const CalculatorPage = () => {
         showError("Adicione pelo menos uma parte ao projeto.");
         return;
       }
+      // Verificar se todas as partes foram confirmadas
+      const allPartsConfirmed = values.projectParts.every(part => part.isConfirmed);
+      if (!allPartsConfirmed) {
+        showError("Confirme todas as partes do projeto antes de guardar.");
+        return;
+      }
     } else {
-      if (!values.printName) {
+      if (!values.printName || values.printName.trim() === "") {
         showError("O nome da impressão é obrigatório.");
         return;
       }
@@ -273,12 +299,12 @@ const CalculatorPage = () => {
       return {
         partName: part.partName,
         printerId: part.printerId,
-        materialCost: partMatCost,
-        printTimeHours: partHours,
-        electricityCost: partElecCost,
-        filamentGrams: partGrams,
+        materialCost: parseFloat(partMatCost.toFixed(2)),
+        printTimeHours: parseFloat(partHours.toFixed(2)),
+        electricityCost: parseFloat(partElecCost.toFixed(2)),
+        filamentGrams: parseFloat(partGrams.toFixed(2)),
         filamentId: part.filamentsUsed[0]?.filamentId || "",
-        totalPrice: partMatCost + partElecCost,
+        totalPrice: parseFloat((partMatCost + partElecCost).toFixed(2)),
       };
     }) : [];
 
