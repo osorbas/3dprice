@@ -75,7 +75,8 @@ const formSchema = z.object({
   laborTimeMinutes: z.coerce.number().optional(),
   profitMargin: z.coerce.number().optional(),
   extras: z.array(extraSchema).optional(),
-  projectName: z.string().optional(), // Mantido opcional aqui, mas validado no onSubmit
+  // Tornamos o projectName um campo de string normal, e a validação de obrigatoriedade será feita no onSubmit
+  projectName: z.string().optional(), 
   projectParts: z.array(projectPartSchema).optional(),
 });
 
@@ -253,9 +254,11 @@ const CalculatorPage = () => {
     }
   };
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (activeTab === "project") {
-      if (!values.projectName || values.projectName.trim() === "") {
+      // Forçar validação do nome do projeto
+      const isProjectNameValid = await form.trigger("projectName");
+      if (!isProjectNameValid || !values.projectName || values.projectName.trim() === "") {
         showError("O nome do projeto é obrigatório.");
         return;
       }
@@ -270,7 +273,9 @@ const CalculatorPage = () => {
         return;
       }
     } else {
-      if (!values.printName || values.printName.trim() === "") {
+      // Forçar validação do nome da impressão
+      const isPrintNameValid = await form.trigger("printName");
+      if (!isPrintNameValid || !values.printName || values.printName.trim() === "") {
         showError("O nome da impressão é obrigatório.");
         return;
       }
