@@ -80,7 +80,11 @@ const FarmPage = () => {
       if (remainingMs > 0) {
         const h = Math.floor(remainingMs / 3600000);
         const m = Math.floor((remainingMs % 3600000) / 60000);
-        timeRemainingStr = `${h}h ${m}m restantes`;
+        const s = Math.floor((remainingMs % 60000) / 1000);
+        
+        const hStr = h > 0 ? `${h}h ` : "";
+        const mStr = m > 0 || h > 0 ? `${m}m ` : "";
+        timeRemainingStr = `${hStr}${mStr}${s}s restantes`;
       } else {
         timeRemainingStr = "Concluído";
         progress = 100;
@@ -88,7 +92,7 @@ const FarmPage = () => {
     }
 
     return (
-      <Card key={printer.id} className="overflow-hidden border-l-4" style={{ borderLeftColor: printer.status === "Pronta" ? "#22c55e" : printer.status === "Ocupada" ? "#3b82f6" : "#ef4444" }}>
+      <Card key={printer.id} className="overflow-hidden border-l-4 shadow-sm" style={{ borderLeftColor: printer.status === "Pronta" ? "#22c55e" : printer.status === "Ocupada" ? "#3b82f6" : "#ef4444" }}>
         <CardHeader className="bg-muted/10 pb-4">
           <div className="flex justify-between items-start">
             <div className="space-y-1">
@@ -96,7 +100,7 @@ const FarmPage = () => {
                 <PrinterIcon className="h-5 w-5 opacity-70" />
                 {printer.name}
               </CardTitle>
-              <p className="text-xs text-muted-foreground">{printer.brand} {printer.model}</p>
+              <p className="text-xs text-muted-foreground font-medium">{printer.brand} {printer.model}</p>
             </div>
             <Badge variant="outline" className={getStatusColor(printer.status)}>
               {printer.status}
@@ -124,13 +128,18 @@ const FarmPage = () => {
           </div>
 
           {printer.status === "Ocupada" && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="text-blue-600 font-medium">Progresso da Impressão</span>
-                <span>{progress.toFixed(0)}%</span>
+            <div className="space-y-3 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/20">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-blue-600 dark:text-blue-400 font-bold">Progresso</span>
+                <span className="font-mono">{progress.toFixed(1)}%</span>
               </div>
-              <Progress value={progress} className="h-2" />
-              <p className="text-[10px] text-center text-muted-foreground">{timeRemainingStr}</p>
+              <Progress value={progress} className="h-2.5" />
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <Activity className="h-3 w-3 text-blue-500 animate-pulse" />
+                <p className="text-sm font-bold text-center text-blue-700 dark:text-blue-300 tabular-nums">
+                  {timeRemainingStr}
+                </p>
+              </div>
             </div>
           )}
 
