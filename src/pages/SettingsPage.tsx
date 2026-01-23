@@ -126,7 +126,7 @@ const SettingsPage = () => {
         const data = JSON.parse(e.target?.result as string);
         if (selectedImportTypes.calculations) importCalculations(data.calculations || []);
         if (selectedImportTypes.printers) importPrinters(data.printers || []);
-        if (selectedImportTypes.filaments) importFilaments(data.filaments || []);
+        if (selectedImportTypes.filaments) importFilaments(data.filaments || []); // Importa filamentos, incluindo stock
         if (selectedImportTypes.extraMaterials) importExtraMaterials(data.extraMaterials || []);
         if (selectedImportTypes.electricityProfiles) importElectricityProfiles(data.electricityProfiles || []);
         if (selectedImportTypes.appSettings && data.appSettings) {
