@@ -60,7 +60,17 @@ export function usePrinters() {
       const updated = currentPrinters.map(p => {
         if (p.status === "Ocupada" && p.timerEnd && now >= p.timerEnd) {
           changed = true;
-          return { ...p, status: "Pronta" as PrinterStatus, timerStart: undefined, timerEnd: undefined };
+          // Calcula a duração total da impressão que terminou e soma às horas de trabalho
+          const durationMs = p.timerEnd - (p.timerStart || (p.timerEnd - 1));
+          const durationHours = durationMs / 3600000;
+          
+          return { 
+            ...p, 
+            status: "Pronta" as PrinterStatus, 
+            workingHours: (p.workingHours || 0) + durationHours,
+            timerStart: undefined, 
+            timerEnd: undefined 
+          };
         }
         return p;
       });
@@ -92,7 +102,7 @@ export function usePrinters() {
   };
 
   const updatePrinter = (id: string, updatedFields: Partial<Omit<Printer, "id" | "timestamp">>) => {
-    const updated = printers.map((printer) => 
+    const updated = getStoredPrinters().map((printer) => 
       printer.id === id ? { ...printer, ...updatedFields } : printer
     );
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
