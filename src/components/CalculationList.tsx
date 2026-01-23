@@ -6,7 +6,7 @@ import { PrintCalculation } from "@/hooks/use-print-calculations";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Printer } from "lucide-react";
+import { Trash2, Printer } from "lucide-react";
 import { usePrintCalculations } from "@/hooks/use-print-calculations";
 import { showError, showSuccess } from "@/utils/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -33,19 +33,26 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
   };
 
   const handlePrint = (calc: PrintCalculation) => {
-    const baseCost = calc.materialCost + calc.electricityCost + calc.laborCost + (calc.extraCost || 0);
-    const profitAmount = calc.totalPrice - baseCost;
+    const matCost = Number(calc.materialCost) || 0;
+    const elecCost = Number(calc.electricityCost) || 0;
+    const labCost = Number(calc.laborCost) || 0;
+    const extCost = Number(calc.extraCost) || 0;
+    const totPrice = Number(calc.totalPrice) || 0;
+    const profMarg = Number(calc.profitMargin) || 0;
+
+    const baseCost = matCost + elecCost + labCost + extCost;
+    const profitAmount = totPrice - baseCost;
 
     exportCalculationToPDF({
       printName: calc.isProject ? (calc.projectName || "Projeto sem nome") : (calc.printName || "Impressão sem nome"),
-      materialCost: calc.materialCost,
-      electricityCost: calc.electricityCost,
-      laborCost: calc.laborCost,
-      extrasCost: calc.extraCost || 0,
+      materialCost: matCost,
+      electricityCost: elecCost,
+      laborCost: labCost,
+      extrasCost: extCost,
       baseCost: baseCost,
-      profitMargin: calc.profitMargin,
+      profitMargin: profMarg,
       profitAmount: profitAmount,
-      totalPrice: calc.totalPrice,
+      totalPrice: totPrice,
     });
   };
 
@@ -77,7 +84,7 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
                 <TableHead>Impressora</TableHead>
                 <TableHead>Material (€)</TableHead>
                 <TableHead>Tempo (h)</TableHead>
-                <TableHead>Eletricidade (€/h)</TableHead>
+                <TableHead>Eletricidade (€)</TableHead>
                 <TableHead>Mão de Obra (€)</TableHead>
                 <TableHead>Lucro (%)</TableHead>
                 <TableHead className="text-right">Preço Total (€)</TableHead>
@@ -102,17 +109,24 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
                   printerDisplay = printer ? printer.name : "N/A";
                 }
 
+                const matCost = Number(calc.materialCost) || 0;
+                const hours = Number(calc.printTimeHours) || 0;
+                const elecCost = Number(calc.electricityCost) || 0;
+                const labCost = Number(calc.laborCost) || 0;
+                const profMarg = Number(calc.profitMargin) || 0;
+                const totPrice = Number(calc.totalPrice) || 0;
+
                 return (
                   <TableRow key={calc.id}>
                     <TableCell>{format(new Date(calc.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}</TableCell>
                     <TableCell>{calc.isProject ? calc.projectName : calc.printName || "N/A"}</TableCell>
                     <TableCell>{printerDisplay}</TableCell>
-                    <TableCell>{calc.materialCost.toFixed(2)}</TableCell>
-                    <TableCell>{calc.printTimeHours.toFixed(1)}</TableCell>
-                    <TableCell>{calc.electricityCost.toFixed(2)}</TableCell>
-                    <TableCell>{calc.laborCost.toFixed(2)}</TableCell>
-                    <TableCell>{calc.profitMargin.toFixed(0)}</TableCell>
-                    <TableCell className="text-right font-semibold">{calc.totalPrice.toFixed(2)}</TableCell>
+                    <TableCell>{matCost.toFixed(2)}</TableCell>
+                    <TableCell>{hours.toFixed(1)}</TableCell>
+                    <TableCell>{elecCost.toFixed(2)}</TableCell>
+                    <TableCell>{labCost.toFixed(2)}</TableCell>
+                    <TableCell>{profMarg.toFixed(0)}</TableCell>
+                    <TableCell className="text-right font-semibold">{totPrice.toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <EditCalculationDialog calculation={calc} />
