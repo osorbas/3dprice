@@ -133,7 +133,6 @@ const CalculatorPage = () => {
     let totalPrintTime = 0;
     let totalFilamentGrams = 0;
 
-    // Calcular extras independentemente do modo (visto que é um campo global do formulário)
     extrasCost = watchedValues.extras?.reduce((acc, ex) => {
       const material = extraMaterials.find(m => m.id === ex.materialId);
       return acc + (material ? material.costPerUnit * ex.quantity : 0);
@@ -235,6 +234,22 @@ const CalculatorPage = () => {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    if (activeTab === "project") {
+      if (!values.projectName) {
+        showError("O nome do projeto é obrigatório.");
+        return;
+      }
+      if (!values.projectParts || values.projectParts.length === 0) {
+        showError("Adicione pelo menos uma parte ao projeto.");
+        return;
+      }
+    } else {
+      if (!values.printName) {
+        showError("O nome da impressão é obrigatório.");
+        return;
+      }
+    }
+
     const selectedPrinterId = activeTab === "single-print" ? values.printerId : values.projectParts?.[0]?.printerId;
     const printer = printers.find(p => p.id === selectedPrinterId);
     
@@ -242,6 +257,30 @@ const CalculatorPage = () => {
       showError(`A impressora ${printer.name} está em manutenção.`);
       return;
     }
+
+    // Calcular detalhes das partes para projetos
+    const projectPartsDetails = activeTab === "project" ? values.projectParts?.map(part => {
+      let partMatCost = 0;
+      let partGrams = 0;
+      part.filamentsUsed.forEach(f => {
+        const filament = filaments.find(fil => fil.id === f.filamentId);
+        if (filament) partMatCost += (filament.pricePerKg / 1000) * f.filamentGrams;
+        partGrams += f.filamentGrams;
+      });
+      const partHours = part.printTimeHours + (part.printTimeMinutes / 60);
+      const partElecCost = partHours * part.electricityCostPerHour;
+
+      return {
+        partName: part.partName,
+        printerId: part.printerId,
+        materialCost: partMatCost,
+        printTimeHours: partHours,
+        electricityCost: partElecCost,
+        filamentGrams: partGrams,
+        filamentId: part.filamentsUsed[0]?.filamentId || "",
+        totalPrice: partMatCost + partElecCost,
+      };
+    }) : [];
 
     // Abater stock se ativo
     if (localStorage.getItem("manage_filament_stock") === "true") {
@@ -268,7 +307,7 @@ const CalculatorPage = () => {
       printName: values.printName,
       projectName: values.projectName,
       printerId: values.printerId,
-      projectParts: values.projectParts as any,
+      projectParts: projectPartsDetails as any,
     };
 
     addCalculation(calculationData);
@@ -286,7 +325,7 @@ const CalculatorPage = () => {
     }
 
     setIsSummaryDialogOpen(true);
-    showSuccess("Cálculo guardado e stock atualizado!");
+    showSuccess("Cálculo guardado com sucesso!");
   };
 
   const handleStartTimer = () => {
@@ -328,7 +367,7 @@ const CalculatorPage = () => {
                 {activeTab === "single-print" ? (
                   <>
                     <FormField control={form.control} name="printName" render={({ field }) => (
-                      <FormItem><FormLabel>Nome da Impressão</FormLabel><FormControl><Input placeholder="ex: Darth Vader" {...field} /></FormControl></FormItem>
+                      <FormItem><FormLabel>Nome da Impressão *</FormLabel><FormControl><Input placeholder="ex: Darth Vader" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <div className="grid grid-cols-2 gap-4">
                       <FormField control={form.control} name="printerId" render={({ field }) => (
@@ -382,7 +421,7 @@ const CalculatorPage = () => {
                 ) : (
                   <>
                     <FormField control={form.control} name="projectName" render={({ field }) => (
-                      <FormItem><FormLabel>Nome do Projeto</FormLabel><FormControl><Input placeholder="ex: Armadura Iron Man" {...field} /></FormControl></FormItem>
+                      <FormItem><FormLabel>Nome do Projeto *</FormLabel><FormControl><Input placeholder="ex: Armadura Iron Man" {...field} /></FormControl><FormMessage /></FormItem>
                     )} />
                     <div className="space-y-4">
                       {projectPartFields.map((field, idx) => (
@@ -397,7 +436,7 @@ const CalculatorPage = () => {
                           defaultFilamentId={filaments[0]?.id || ""}
                           isConfirmed={watchedValues.projectParts?.[idx]?.isConfirmed || false}
                           onConfirmPart={handleConfirmPart}
-                          isAccordionOpen={openPartStates[idx]}
+                          isAccordionOpen={openPartStates[idx] || false}
                           setIsAccordionOpen={(open) => { const s = [...openPartStates]; s[idx] = open; setOpenPartStates(s); }}
                         />
                       ))}
@@ -465,7 +504,7 @@ const CalculatorPage = () => {
               </CardContent>
               <CardFooter className="flex flex-col gap-2">
                 <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 font-bold h-12">Guardar e Resumo</Button>
-                <Button type="button" variant="ghost" onClick={() => form.reset()} className="w-full text-muted-foreground"><Eraser className="h-4 w-4 mr-2" /> Limpar Tudo</Button>
+                <Button type="button" variant="ghost" onClick={() => { form.reset(); setOpenPartStates([]); }} className="w-full text-muted-foreground"><Eraser className="h-4 w-4 mr-2" /> Limpar Tudo</Button>
               </CardFooter>
             </Card>
           </div>
