@@ -16,7 +16,9 @@ import {
   Calendar,
   Package,
   Layers,
-  CheckCircle
+  CheckCircle,
+  PlusCircle,
+  Pencil
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -33,7 +35,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { AddFilamentStockDialog } from "@/components/AddFilamentStockDialog";
+import { AddFilamentDialog } from "@/components/AddFilamentDialog"; // Import AddFilamentDialog
+import { EditFilamentDialog } from "@/components/EditFilamentDialog"; // Import EditFilamentDialog
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
@@ -292,12 +295,15 @@ const FarmPage = () => {
           {filaments.length > 0 && (
             <div className="space-y-6 pt-6">
               <Separator />
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-bold">Filamentos em Stock</h2>
-                {!manageStockEnabled && (
-                    <Badge variant="secondary" className="text-xs text-muted-foreground">Gestão de Stock Desativada</Badge>
-                )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  <h2 className="text-xl font-bold">Filamentos em Stock</h2>
+                  {!manageStockEnabled && (
+                      <Badge variant="secondary" className="text-xs text-muted-foreground">Gestão de Stock Desativada</Badge>
+                  )}
+                </div>
+                <AddFilamentDialog /> {/* Botão para adicionar novo filamento */}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filaments.map((f) => {
@@ -332,7 +338,8 @@ const FarmPage = () => {
                               {f.brand} {f.type}
                             </p>
                           </div>
-                          {manageStockEnabled && <AddFilamentStockDialog filament={f} />}
+                          {/* Substituído AddFilamentStockDialog por EditFilamentDialog */}
+                          <EditFilamentDialog filament={f} /> 
                         </div>
 
                         <div className="space-y-2">
@@ -346,7 +353,7 @@ const FarmPage = () => {
                           </div>
                           <Progress 
                             value={manageStockEnabled ? stockPercent : 0} 
-                            className={cn("h-2", manageStockEnabled ? (isLowStock ? "bg-orange-100" : "bg-green-100") : "bg-muted")} 
+                            className={cn("h-2", manageStockEnabled ? (isLowStock ? "bg-orange-100" : "bg-orange-100") : "bg-muted")} 
                           />
                         </div>
 
