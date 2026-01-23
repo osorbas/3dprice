@@ -231,9 +231,12 @@ const FarmPage = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filaments.map((f) => {
-                  const stockKg = (f.currentWeightGrams / 1000).toFixed(2);
-                  const totalKg = f.weight;
-                  const percent = Math.min(100, (f.currentWeightGrams / (totalKg * 1000)) * 100);
+                  const currentGrams = f.currentWeightGrams;
+                  const isUnder1Kg = currentGrams < 1000;
+                  const displayValue = isUnder1Kg ? `${currentGrams.toFixed(0)}g` : `${(currentGrams / 1000).toFixed(2)}kg`;
+                  
+                  const totalGrams = f.weight * 1000;
+                  const percent = Math.min(100, (currentGrams / totalGrams) * 100);
                   const isLow = percent < 20;
 
                   return (
@@ -257,7 +260,9 @@ const FarmPage = () => {
                             <span className={isLow ? "text-red-600 font-bold" : "text-muted-foreground"}>
                               {isLow ? "Stock Baixo" : "Disponível"}
                             </span>
-                            <span>{stockKg}kg / {totalKg}kg</span>
+                            <span className={cn(isUnder1Kg ? "text-orange-500 font-bold" : "text-muted-foreground font-semibold")}>
+                              {displayValue}
+                            </span>
                           </div>
                           <Progress value={percent} className={cn("h-1.5", isLow ? "bg-red-100" : "")} />
                         </div>
