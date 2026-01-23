@@ -32,6 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
@@ -228,31 +229,49 @@ const FarmPage = () => {
                 <h2 className="text-xl font-bold">Filamentos em Stock</h2>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {filaments.map((f) => (
-                  <Card key={f.id} className="bg-muted/30 border-dashed">
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-0.5">
-                          <p className="text-sm font-bold truncate max-w-[150px]">{f.name || f.type}</p>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{f.brand}</p>
-                        </div>
-                        <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
-                          {f.type}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 pt-1">
-                        <Layers className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium">{f.weight}kg</span>
-                        {f.color && (
-                          <div className="flex items-center gap-1.5 ml-auto">
-                            <span className="text-[10px] text-muted-foreground">{f.color}</span>
-                            <div className="h-2 w-2 rounded-full border" style={{ backgroundColor: f.color.toLowerCase() }} />
+                {filaments.map((f) => {
+                  const stockKg = (f.currentWeightGrams / 1000).toFixed(2);
+                  const totalKg = f.weight;
+                  const percent = Math.min(100, (f.currentWeightGrams / (totalKg * 1000)) * 100);
+                  const isLow = percent < 20;
+
+                  return (
+                    <Card key={f.id} className={cn("bg-muted/30 border-dashed", isLow && "border-orange-200 bg-orange-50/30")}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-bold truncate max-w-[150px]">{f.name || f.type}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{f.brand}</p>
                           </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          <Badge variant={isLow ? "destructive" : "secondary"} className="text-[10px] px-1.5 h-5">
+                            {f.type}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[10px] font-medium">
+                            <span className={isLow ? "text-red-600 font-bold" : "text-muted-foreground"}>
+                              {isLow ? "Stock Baixo" : "Disponível"}
+                            </span>
+                            <span>{stockKg}kg / {totalKg}kg</span>
+                          </div>
+                          <Progress value={percent} className={cn("h-1.5", isLow ? "bg-red-100" : "")} />
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-1">
+                          <Layers className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs font-medium">{f.currentWeightGrams.toFixed(0)}g</span>
+                          {f.color && (
+                            <div className="flex items-center gap-1.5 ml-auto">
+                              <span className="text-[10px] text-muted-foreground">{f.color}</span>
+                              <div className="h-2 w-2 rounded-full border" style={{ backgroundColor: f.color.toLowerCase() }} />
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -261,9 +280,5 @@ const FarmPage = () => {
     </div>
   );
 };
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ");
-}
 
 export default FarmPage;

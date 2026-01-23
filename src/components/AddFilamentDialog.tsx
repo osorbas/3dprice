@@ -18,16 +18,12 @@ const formSchema = z.object({
   type: z.string().min(1, "O tipo é obrigatório."),
   color: z.string().optional(),
   pricePerKg: z.coerce.number().min(0.01, "O preço por kg deve ser positivo."),
-  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(), // Novo campo
+  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(),
   weight: z.coerce.number().min(0.01, "O peso deve ser positivo."),
+  currentWeightGrams: z.coerce.number().min(0, "O stock não pode ser negativo."),
 });
 
-interface AddFilamentDialogProps {
-  // Removida prop onSuccess
-}
-
-// Predefined list of popular filament brands and types
-export const predefinedFilamentOptions = [ // Exportado
+export const predefinedFilamentOptions = [
   { brand: "Genérico", type: "PLA" },
   { brand: "Genérico", type: "PETG" },
   { brand: "Genérico", type: "ABS" },
@@ -37,62 +33,31 @@ export const predefinedFilamentOptions = [ // Exportado
   { brand: "ESUN", type: "PETG" },
   { brand: "Polymaker", type: "PLA Pro" },
   { brand: "Polymaker", type: "PETG" },
-  { brand: "Hatchbox", type: "PLA" },
-  { brand: "Hatchbox", type: "PETG" },
-  { brand: "Overture", type: "PLA" },
-  { brand: "Overture", type: "PETG" },
   { brand: "Bambu Lab", type: "PLA Basic" },
   { brand: "Bambu Lab", type: "PETG Basic" },
-  { brand: "Bambu Lab", type: "ABS" },
-  { brand: "Anycubic", type: "PLA" },
-  { brand: "Anycubic", type: "PETG" },
   { brand: "Sunlu", type: "PLA" },
   { brand: "Sunlu", type: "PETG" },
-  { brand: "Geeetech", type: "PLA" },
-  { brand: "Geeetech", type: "PETG" },
-  { brand: "Amazon Basics", type: "PLA" },
-  { brand: "Amazon Basics", type: "PETG" },
 ];
 
-export const AddFilamentDialog = ({ /* onSuccess */ }: AddFilamentDialogProps) => {
+export const AddFilamentDialog = () => {
   const { addFilament } = useFilaments();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      brand: "",
-      type: "",
-      color: "",
-      pricePerKg: 0,
-      purchasePrice: 0, // Valor padrão
-      weight: 1, // Default to 1kg spool
+      name: "", brand: "", type: "", color: "", pricePerKg: 0, purchasePrice: 0, weight: 1, currentWeightGrams: 1000,
     },
   });
 
-  // Effect to reset type when brand changes
-  React.useEffect(() => {
-    if (selectedBrand !== form.getValues("brand")) {
-      form.setValue("type", "");
-    }
-  }, [selectedBrand, form]);
-
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
-      addFilament({
-        ...values,
-        name: values.name || "", // Garante que seja string vazia se não preenchido
-      });
-      const displayName = values.name || `${values.brand} (${values.color || 'N/A'})`;
-      showSuccess(`Filamento "${displayName}" adicionado com sucesso!`);
+      addFilament(values);
+      showSuccess(`Filamento adicionado!`);
       form.reset();
-      setSelectedBrand(undefined); // Reset selected brand state
       setOpen(false);
-    } catch (error) {
-      showError("Erro ao adicionar filamento. Por favor, tente novamente.");
-      console.error("Add filament error:", error);
-    }
+    } catch (err) { showError("Erro ao adicionar."); }
   };
 
   const uniqueBrands = Array.from(new Set(predefinedFilamentOptions.map((f) => f.brand))).sort();
@@ -103,167 +68,38 @@ export const AddFilamentDialog = ({ /* onSuccess */ }: AddFilamentDialogProps) =
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
-          <PlusCircle className="h-4 w-4" />
-          Adicionar Filamento
-        </Button>
+        <Button className="flex items-center gap-2"><PlusCircle className="h-4 w-4" /> Adicionar Filamento</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Adicionar Novo Filamento</DialogTitle>
-          <DialogDescription>
-            Preencha os detalhes do seu filamento. O nome é opcional.
-          </DialogDescription>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>Adicionar Novo Filamento</DialogTitle></DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ex: PLA Favorito" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="brand"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Marca</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      setSelectedBrand(value);
-                    }}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma marca" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {uniqueBrands.map((brand) => (
-                        <SelectItem key={brand} value={brand}>
-                          {brand}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={!selectedBrand || typesForSelectedBrand.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um tipo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {typesForSelectedBrand.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="color"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cor (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Preto" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="pricePerKg"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço por Kg (€)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="purchasePrice" // Novo campo
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preço de Compra por Kg (€) (Opcional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      {...field}
-                      value={field.value === 0 ? "" : field.value} // Exibe vazio se for 0
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? 0 : parseFloat(value));
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="weight"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Peso da Bobina (kg)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="submit">Adicionar Filamento</Button>
-            </DialogFooter>
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem><FormLabel>Nome (Opcional)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="brand" render={({ field }) => (
+                <FormItem><FormLabel>Marca</FormLabel><Select onValueChange={(v) => { field.onChange(v); setSelectedBrand(v); }} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl><SelectContent>{uniqueBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select></FormItem>
+              )} />
+              <FormField control={form.control} name="type" render={({ field }) => (
+                <FormItem><FormLabel>Tipo</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedBrand}><FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl><SelectContent>{typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="color" render={({ field }) => (
+              <FormItem><FormLabel>Cor</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="pricePerKg" render={({ field }) => (
+                <FormItem><FormLabel>Preço/Kg (€)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
+              )} />
+              <FormField control={form.control} name="weight" render={({ field }) => (
+                <FormItem><FormLabel>Peso Bobina (kg)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="currentWeightGrams" render={({ field }) => (
+              <FormItem><FormLabel>Stock Atual (gramas)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <DialogFooter><Button type="submit">Adicionar Filamento</Button></DialogFooter>
           </form>
         </Form>
       </DialogContent>

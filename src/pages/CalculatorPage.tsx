@@ -82,7 +82,7 @@ const formSchema = z.object({
 const CalculatorPage = () => {
   const { addCalculation } = usePrintCalculations();
   const { printers, updatePrinter } = usePrinters();
-  const { filaments } = useFilaments();
+  const { filaments, subtractStock } = useFilaments();
   const { extraMaterials } = useExtraMaterials();
   const { electricityProfiles } = useElectricityProfiles();
 
@@ -241,6 +241,17 @@ const CalculatorPage = () => {
       return;
     }
 
+    // Abater stock se ativo
+    if (localStorage.getItem("manage_filament_stock") === "true") {
+      if (activeTab === "single-print") {
+        values.filamentsUsed?.forEach(f => subtractStock(f.filamentId, f.filamentGrams));
+      } else {
+        values.projectParts?.forEach(part => {
+          part.filamentsUsed.forEach(f => subtractStock(f.filamentId, f.filamentGrams));
+        });
+      }
+    }
+
     const calculationData: Omit<PrintCalculation, "id" | "timestamp"> = {
       materialCost: totals.materialCost,
       printTimeHours: totals.totalPrintTime,
@@ -273,7 +284,7 @@ const CalculatorPage = () => {
     }
 
     setIsSummaryDialogOpen(true);
-    showSuccess("Cálculo guardado!");
+    showSuccess("Cálculo guardado e stock atualizado!");
   };
 
   const handleStartTimer = () => {

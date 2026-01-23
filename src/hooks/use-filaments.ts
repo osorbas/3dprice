@@ -8,8 +8,9 @@ export interface Filament {
   type: string;
   color: string;
   pricePerKg: number;
-  purchasePrice?: number; // Novo campo: preço de compra por kg
-  weight: number;
+  purchasePrice?: number;
+  weight: number; // Peso padrão da bobina (ex: 1kg)
+  currentWeightGrams: number; // Stock real restante em gramas
   timestamp: number;
 }
 
@@ -23,10 +24,10 @@ export function useFilaments() {
         const storedFilaments = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (storedFilaments) {
           const parsedFilaments: Filament[] = JSON.parse(storedFilaments);
-          // Garante que 'purchasePrice' tenha um valor padrão para dados existentes
           return parsedFilaments.map(filament => ({
             ...filament,
-            purchasePrice: filament.purchasePrice ?? 0 // Valor padrão 0
+            purchasePrice: filament.purchasePrice ?? 0,
+            currentWeightGrams: filament.currentWeightGrams ?? (filament.weight * 1000)
           }));
         }
         return [];
@@ -58,10 +59,11 @@ export function useFilaments() {
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
   };
 
-  const addFilament = (newFilament: Omit<Filament, "id" | "timestamp">) => {
+  const addFilament = (newFilament: Omit<Filament, "id" | "timestamp" | "currentWeightGrams"> & { currentWeightGrams?: number }) => {
     const id = Date.now().toString();
     const timestamp = Date.now();
-    const updated = [{ ...newFilament, id, timestamp }, ...filaments];
+    const grams = newFilament.currentWeightGrams ?? (newFilament.weight * 1000);
+    const updated = [{ ...newFilament, id, timestamp, currentWeightGrams: grams }, ...filaments];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     notifyUpdate();
   };
@@ -70,6 +72,20 @@ export function useFilaments() {
     const updated = filaments.map((filament) => 
       filament.id === id ? { ...filament, ...updatedFields } : filament
     );
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    notifyUpdate();
+  };
+
+  const subtractStock = (id: string, grams: number) => {
+    const isEnabled = localStorage.getItem("manage_filament_stock") === "true";
+    if (!isEnabled) return;
+
+    const updated = filaments.map((f) => {
+      if (f.id === id) {
+        return { ...f, currentWeightGrams: Math.max(0, f.currentWeightGrams - grams) };
+      }
+      return f;
+    });
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     notifyUpdate();
   };
@@ -88,7 +104,8 @@ export function useFilaments() {
   const importFilaments = (data: Filament[]) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.map(filament => ({
       ...filament,
-      purchasePrice: filament.purchasePrice ?? 0 // Garante que dados importados também tenham valor padrão
+      purchasePrice: filament.purchasePrice ?? 0,
+      currentWeightGrams: filament.currentWeightGrams ?? (filament.weight * 1000)
     }))));
     notifyUpdate();
   };
@@ -97,6 +114,7 @@ export function useFilaments() {
     filaments,
     addFilament,
     updateFilament,
+    subtractStock,
     deleteFilament,
     clearFilaments,
     importFilaments,
