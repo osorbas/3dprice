@@ -380,6 +380,7 @@ const CalculatorPage = () => {
     });
 
     // Configurar dados pendentes do temporizador, mas não abrir o diálogo ainda
+    // Corrigido: Verificar se o status NÃO é Ocupada E NÃO é Em Manutenção
     if (selectedPrinterId && printer?.status !== "Ocupada" && printer?.status !== "Em Manutenção") {
       setPendingTimerData({ printerId: selectedPrinterId, duration: totals.totalPrintTime });
     } else {

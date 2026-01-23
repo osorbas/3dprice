@@ -32,6 +32,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger, // Adicionado
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";

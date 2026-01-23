@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useFormContext, FieldPath, FieldValues } from "react-hook-form";
+import { useFormContext, useController, FieldPath, FieldValues } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +15,7 @@ interface FilamentUsageFieldProps {
   showAdd?: boolean;
   totalFields: number;
   namePrefix: FieldPath<FieldValues>; // Add namePrefix
+  disabled?: boolean; // Adicionado
 }
 
 export const FilamentUsageField = ({
@@ -24,6 +25,7 @@ export const FilamentUsageField = ({
   showAdd = false,
   totalFields,
   namePrefix, // Use namePrefix
+  disabled = false, // Adicionado
 }: FilamentUsageFieldProps) => {
   const { control } = useFormContext<FieldValues>();
   const { filaments } = useFilaments();
@@ -39,7 +41,7 @@ export const FilamentUsageField = ({
         render={({ field }) => (
           <FormItem className="w-[240px]">
             <FormLabel className={index > 0 ? "sr-only" : ""}>Filamento *</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
+            <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Tipo..." />
@@ -76,6 +78,7 @@ export const FilamentUsageField = ({
                     step="0.01"
                     className="pr-6"
                     {...field}
+                    disabled={disabled}
                   />
                 </FormControl>
                 <span className="absolute right-2 top-2 text-xs text-muted-foreground">g</span>
@@ -92,6 +95,7 @@ export const FilamentUsageField = ({
             size="icon"
             className="h-10 w-10 flex-shrink-0"
             onClick={onAdd}
+            disabled={disabled}
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -104,6 +108,7 @@ export const FilamentUsageField = ({
             size="icon"
             className="h-10 w-10 flex-shrink-0"
             onClick={() => onRemove(index)}
+            disabled={disabled}
           >
             <XCircle className="h-5 w-5 text-destructive" />
           </Button>

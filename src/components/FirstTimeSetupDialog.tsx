@@ -25,10 +25,10 @@ const printerFormSchema = z.object({
 });
 
 const filamentFormSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatório."),
+  name: z.string().optional(), // Tornar opcional para corresponder ao hook
   brand: z.string().min(1, "A marca é obrigatória."),
   type: z.string().min(1, "O tipo é obrigatório."),
-  color: z.string().optional(),
+  color: z.string().optional(), // Tornar opcional para corresponder ao hook
   pricePerKg: z.coerce.number().min(0.01, "O preço por kg deve ser positivo."),
   purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(), // Novo campo
   weight: z.coerce.number().min(0.01, "O peso deve ser positivo."),
@@ -86,6 +86,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
 
   const handleAddPrinter = (values: z.infer<typeof printerFormSchema>) => {
     try {
+      // O tipo de 'values' corresponde a Omit<Printer, "id" | "status" | "timestamp">
       addPrinter(values);
       showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
       setStep(2); // Move to next step
@@ -97,8 +98,9 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
 
   const handleAddFilament = (values: z.infer<typeof filamentFormSchema>) => {
     try {
+      // O tipo de 'values' agora corresponde ao tipo NewFilamentData definido em use-filaments.ts
       addFilament(values);
-      showSuccess(`Filamento "${values.name}" adicionado com sucesso!`);
+      showSuccess(`Filamento "${values.name || values.type}" adicionado com sucesso!`);
       if (typeof window !== "undefined") {
         localStorage.setItem("hasVisitedBefore", "true");
       }

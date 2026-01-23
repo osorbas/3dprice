@@ -32,6 +32,7 @@ export const AddElectricityProfileDialog = () => {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
+      // O tipo de 'values' agora corresponde ao tipo NewElectricityProfileData definido em use-electricity-profiles.ts
       addElectricityProfile(values);
       showSuccess(`Perfil de eletricidade "${values.name}" adicionado com sucesso!`);
       form.reset();

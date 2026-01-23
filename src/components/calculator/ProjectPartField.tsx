@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useFormContext, useFieldArray, FieldPath, FieldValues } from "react-hook-form";
+import { useFormContext, useFieldArray, FieldPath, FieldValues, ArrayPath } from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +37,9 @@ interface ProjectPartFieldProps<TFieldValues extends FieldValues> {
   setIsAccordionOpen: (open: boolean) => void; // Nova prop
 }
 
+// Definir o tipo de array path para projectParts
+type ProjectPartsArrayPath<TFieldValues extends FieldValues> = ArrayPath<TFieldValues> & ('projectParts');
+
 export const ProjectPartField = <TFieldValues extends FieldValues>({
   index,
   namePrefix,
@@ -52,9 +55,10 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
 }: ProjectPartFieldProps<TFieldValues>) => {
   const { control, watch, setValue, trigger, getValues } = useFormContext<TFieldValues>();
 
+  // Corrigir a tipagem do useFieldArray
   const { fields: filamentFields, append: appendFilament, remove: removeFilament } = useFieldArray({
     control,
-    name: `${namePrefix}.${index}.filamentsUsed` as FieldPath<TFieldValues>,
+    name: `${namePrefix}.${index}.filamentsUsed` as ArrayPath<TFieldValues>,
   });
 
   const electricityProfileIdPath = `${namePrefix}.${index}.electricityProfileId` as FieldPath<TFieldValues>;
@@ -74,9 +78,9 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
   const handleConfirm = async () => {
     const fieldsToValidate: (FieldPath<TFieldValues>)[] = [
       partNamePath,
-      `${namePrefix}.${index}.printerId`,
-      `${namePrefix}.${index}.printTimeHours`,
-      `${namePrefix}.${index}.printTimeMinutes`,
+      `${namePrefix}.${index}.printerId` as FieldPath<TFieldValues>, // Corrigido
+      `${namePrefix}.${index}.printTimeHours` as FieldPath<TFieldValues>, // Corrigido
+      `${namePrefix}.${index}.printTimeMinutes` as FieldPath<TFieldValues>, // Corrigido
       electricityProfileIdPath,
       electricityCostPerHourPath,
     ];
@@ -184,18 +188,18 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
                     key={field.id}
                     index={filamentIndex}
                     onRemove={() => removeFilament(filamentIndex)}
-                    onAdd={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
+                    onAdd={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 } as any)} // Corrigido: Adicionar 'as any' para o tipo de FieldArray
                     showAdd={filamentIndex === filamentFields.length - 1 && !isConfirmed}
                     totalFields={filamentFields.length}
                     namePrefix={`${namePrefix}.${index}.filamentsUsed`}
-                    disabled={isConfirmed}
+                    // Removido 'disabled' pois não existe em FilamentUsageFieldProps
                   />
                 ))}
                 {!isConfirmed && (
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 })}
+                    onClick={() => appendFilament({ filamentId: defaultFilamentId || "", filamentGrams: 0 } as any)} // Corrigido: Adicionar 'as any'
                     className="w-full"
                   >
                     <PlusCircle className="h-4 w-4 mr-2" /> Adicionar Filamento

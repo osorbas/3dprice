@@ -19,6 +19,11 @@ const predefinedElectricityProfiles: Omit<ElectricityProfile, "timestamp">[] = [
   { id: "default-industrial", name: "Tarifa Industrial", costPerHour: 0.18, description: "Custo para uso industrial ou comercial." },
 ];
 
+// Definir o tipo de dados que o formulário AddElectricityProfileDialog envia
+type NewElectricityProfileData = Omit<ElectricityProfile, "id" | "timestamp" | "description"> & {
+  description?: string;
+};
+
 export function useElectricityProfiles() {
   const getStoredProfiles = (): ElectricityProfile[] => {
     if (typeof window !== "undefined") {
@@ -57,10 +62,18 @@ export function useElectricityProfiles() {
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
   };
 
-  const addElectricityProfile = (newProfile: Omit<ElectricityProfile, "id" | "timestamp">) => {
+  const addElectricityProfile = (newProfile: NewElectricityProfileData) => {
     const id = Date.now().toString();
     const timestamp = Date.now();
-    const updated = [{ ...newProfile, id, timestamp }, ...electricityProfiles];
+    
+    const profileToAdd: ElectricityProfile = {
+      ...newProfile,
+      id,
+      timestamp,
+      description: newProfile.description || undefined,
+    };
+
+    const updated = [profileToAdd, ...electricityProfiles];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     notifyUpdate();
   };

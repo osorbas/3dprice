@@ -41,6 +41,7 @@ export const AddExtraDialog = ({ /* onSuccess */ }: AddExtraDialogProps) => {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
+      // O tipo de 'values' agora corresponde ao tipo NewExtraMaterialData definido em use-extras.ts
       addExtraMaterial(values);
       showSuccess(`Material extra "${values.name}" adicionado com sucesso!`);
       form.reset();

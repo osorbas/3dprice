@@ -84,7 +84,7 @@ export const CostDistributionChart = ({ data }: CostDistributionChartProps) => {
                 data={data}
                 cx="50%"
                 cy="50%"
-                labelLine={(props: any) => props.value > 0} // Só mostra a linha se houver valor
+                labelLine={(props: any) => (props.value > 0 ? true : false) as any} // Corrigido o erro de tipagem
                 label={renderCustomizedLabel}
                 outerRadius={65}
                 innerRadius={45}

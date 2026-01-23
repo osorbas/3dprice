@@ -14,6 +14,12 @@ export interface ExtraMaterial {
 const LOCAL_STORAGE_KEY = "3d_extra_materials";
 const EVENT_NAME = "3d_extra_materials_updated";
 
+// Definir o tipo de dados que o formulário AddExtraDialog envia
+type NewExtraMaterialData = Omit<ExtraMaterial, "id" | "timestamp" | "description" | "purchasePrice"> & {
+  description?: string;
+  purchasePrice?: number;
+};
+
 export function useExtraMaterials() {
   const getStoredMaterials = (): ExtraMaterial[] => {
     if (typeof window !== "undefined") {
@@ -24,7 +30,7 @@ export function useExtraMaterials() {
           // Garante que 'purchasePrice' tenha um valor padrão para dados existentes
           return parsedMaterials.map(material => ({
             ...material,
-            purchasePrice: material.purchasePrice ?? 0 // Valor padrão 0
+            purchasePrice: material.purchasePrice ?? 0
           }));
         }
         return [];
@@ -56,10 +62,19 @@ export function useExtraMaterials() {
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
   };
 
-  const addExtraMaterial = (newMaterial: Omit<ExtraMaterial, "id" | "timestamp">) => {
+  const addExtraMaterial = (newMaterial: NewExtraMaterialData) => {
     const id = Date.now().toString();
     const timestamp = Date.now();
-    const updated = [{ ...newMaterial, id, timestamp }, ...extraMaterials];
+    
+    const materialToAdd: ExtraMaterial = {
+      ...newMaterial,
+      id,
+      timestamp,
+      description: newMaterial.description || undefined,
+      purchasePrice: newMaterial.purchasePrice ?? 0,
+    };
+
+    const updated = [materialToAdd, ...extraMaterials];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     notifyUpdate();
   };

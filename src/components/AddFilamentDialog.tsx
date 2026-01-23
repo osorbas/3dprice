@@ -53,6 +53,7 @@ export const AddFilamentDialog = () => {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
+      // O tipo de 'values' agora corresponde ao tipo NewFilamentData definido em use-filaments.ts
       addFilament(values);
       showSuccess(`Filamento adicionado!`);
       form.reset();

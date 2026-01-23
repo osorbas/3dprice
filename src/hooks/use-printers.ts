@@ -111,7 +111,7 @@ export function usePrinters() {
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
   };
 
-  const addPrinter = (newPrinter: Omit<Printer, "id" | "timestamp" | "status">) => {
+  const addPrinter = (newPrinter: Omit<Printer, "id" | "status" | "timestamp">) => {
     const id = Date.now().toString();
     const timestamp = Date.now();
     const stored = JSON.parse(localStorage.getItem(PRINTERS_KEY) || "[]");
@@ -145,11 +145,18 @@ export function usePrinters() {
     setPrinters([]);
   };
 
+  const importPrinters = (data: Printer[]) => {
+    localStorage.setItem(PRINTERS_KEY, JSON.stringify(data));
+    notifyUpdate();
+    setPrinters(getCalculatedPrinters());
+  };
+
   return {
     printers,
     addPrinter,
     updatePrinter,
     deletePrinter,
     clearPrinters,
+    importPrinters,
   };
 }

@@ -17,6 +17,13 @@ export interface Filament {
 const LOCAL_STORAGE_KEY = "3d_filaments";
 const EVENT_NAME = "3d_filaments_updated";
 
+// Definir o tipo de dados que o formulário AddFilamentDialog envia
+type NewFilamentData = Omit<Filament, "id" | "timestamp" | "currentWeightGrams"> & { 
+  currentWeightGrams?: number;
+  name?: string; // Permitir que o nome seja opcional no input
+  color?: string; // Permitir que a cor seja opcional no input
+};
+
 export function useFilaments() {
   const getStoredFilaments = (): Filament[] => {
     if (typeof window !== "undefined") {
@@ -27,7 +34,9 @@ export function useFilaments() {
           return parsedFilaments.map(filament => ({
             ...filament,
             purchasePrice: filament.purchasePrice ?? 0,
-            currentWeightGrams: filament.currentWeightGrams ?? (filament.weight * 1000)
+            currentWeightGrams: filament.currentWeightGrams ?? (filament.weight * 1000),
+            name: filament.name ?? `${filament.brand} ${filament.type}`, // Garantir nome
+            color: filament.color ?? "", // Garantir cor
           }));
         }
         return [];
@@ -59,11 +68,23 @@ export function useFilaments() {
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
   };
 
-  const addFilament = (newFilament: Omit<Filament, "id" | "timestamp" | "currentWeightGrams"> & { currentWeightGrams?: number }) => {
+  const addFilament = (newFilament: NewFilamentData) => {
     const id = Date.now().toString();
     const timestamp = Date.now();
     const grams = newFilament.currentWeightGrams ?? (newFilament.weight * 1000);
-    const updated = [{ ...newFilament, id, timestamp, currentWeightGrams: grams }, ...filaments];
+    
+    // Preencher campos obrigatórios que podem ser opcionais no formulário
+    const filamentToAdd: Filament = {
+      ...newFilament,
+      id,
+      timestamp,
+      currentWeightGrams: grams,
+      name: newFilament.name || `${newFilament.brand} ${newFilament.type}`,
+      color: newFilament.color || "",
+    };
+
+    const stored = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
+    const updated = [filamentToAdd, ...stored];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     notifyUpdate();
   };

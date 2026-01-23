@@ -24,7 +24,8 @@ interface AddPrinterDialogProps {
 }
 
 // Predefined list of popular 3D printers (used for select options)
-export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours">[] = [ // Exportado
+// Omitimos 'id', 'timestamp', 'workingHours' e 'status' (que é definido no hook)
+export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [ // Exportado
   { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2" },
   { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE" },
   { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE" },
@@ -82,6 +83,7 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
+      // O tipo de 'values' corresponde a Omit<Printer, "id" | "status" | "timestamp">
       addPrinter(values);
       showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
       form.reset();
