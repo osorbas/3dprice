@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePrinters, Printer, PrinterStatus } from "@/hooks/use-printers";
+import { useFilaments, Filament } from "@/hooks/use-filaments";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,11 @@ import {
   Printer as PrinterIcon, 
   Activity, 
   Clock, 
-  AlertCircle, 
   Wrench, 
   CheckCircle2,
-  Calendar
+  Calendar,
+  Package,
+  Layers
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -29,9 +31,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
+  const { filaments } = useFilaments();
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -186,7 +190,7 @@ const FarmPage = () => {
     <div className="space-y-8 p-4">
       <div className="space-y-1">
         <h1 className="text-3xl font-bold">Print Farm</h1>
-        <p className="text-muted-foreground">Monitorização em tempo real da tua frota.</p>
+        <p className="text-muted-foreground">Monitorização em tempo real da tua frota e stock.</p>
       </div>
 
       {printers.length === 0 ? (
@@ -206,6 +210,43 @@ const FarmPage = () => {
               </div>
             </div>
           ))}
+
+          {filaments.length > 0 && (
+            <div className="space-y-6 pt-6">
+              <Separator />
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-bold">Filamentos em Stock</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {filaments.map((f) => (
+                  <Card key={f.id} className="bg-muted/30 border-dashed">
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-bold truncate max-w-[150px]">{f.name || f.type}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-tight">{f.brand}</p>
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 h-5">
+                          {f.type}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <Layers className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs font-medium">{f.weight}kg</span>
+                        {f.color && (
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            <span className="text-[10px] text-muted-foreground">{f.color}</span>
+                            <div className="h-2 w-2 rounded-full border" style={{ backgroundColor: f.color.toLowerCase() }} />
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
