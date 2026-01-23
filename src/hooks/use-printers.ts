@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export type PrinterStatus = "Pronta" | "Ocupada" | "Em Manutenção";
 
@@ -8,66 +8,83 @@ export interface Printer {
   name: string;
   brand: string;
   model: string;
-  workingHours: number;
+  workingHours: number; // Agora tratado como "Horas Base/Iniciais"
   status: PrinterStatus;
-  timerStart?: number; // Timestamp de quando a impressão começou
-  timerEnd?: number; // Timestamp de quando a impressão termina
-  lastMaintenance?: number; // Timestamp da última manutenção
+  timerStart?: number;
+  timerEnd?: number;
+  lastMaintenance?: number;
   timestamp: number;
 }
 
-const LOCAL_STORAGE_KEY = "3d_printers";
+const PRINTERS_KEY = "3d_printers";
+const CALCS_KEY = "print_calculations";
 const EVENT_NAME = "3d_printers_updated";
+const CALCS_EVENT = "print_calculations_updated";
 
 export function usePrinters() {
-  const getStoredPrinters = (): Printer[] => {
-    if (typeof window !== "undefined") {
-      try {
-        const storedPrinters = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (storedPrinters) {
-          const parsedPrinters: Printer[] = JSON.parse(storedPrinters);
-          return parsedPrinters.map(printer => ({
-            ...printer,
-            workingHours: printer.workingHours ?? 0,
-            status: printer.status ?? "Pronta",
-          }));
-        }
-        return [];
-      } catch (error) {
-        console.error("Failed to parse printers from localStorage:", error);
-        return [];
-      }
-    }
-    return [];
-  };
+  const getCalculatedPrinters = useCallback((): Printer[] => {
+    if (typeof window === "undefined") return [];
 
-  const [printers, setPrinters] = useState<Printer[]>(getStoredPrinters());
+    try {
+      // 1. Obter impressoras e cálculos
+      const storedPrinters = localStorage.getItem(PRINTERS_KEY);
+      const storedCalcs = localStorage.getItem(CALCS_KEY);
+      
+      const printers: Printer[] = storedPrinters ? JSON.parse(storedPrinters) : [];
+      const calculations: any[] = storedCalcs ? JSON.parse(storedCalcs) : [];
+
+      // 2. Mapear horas do histórico por impressora
+      const historyHoursMap: Record<string, number> = {};
+      
+      calculations.forEach(calc => {
+        if (calc.isProject && calc.projectParts) {
+          calc.projectParts.forEach((part: any) => {
+            if (part.printerId) {
+              historyHoursMap[part.printerId] = (historyHoursMap[part.printerId] || 0) + (Number(part.printTimeHours) || 0);
+            }
+          });
+        } else if (calc.printerId) {
+          historyHoursMap[calc.printerId] = (historyHoursMap[calc.printerId] || 0) + (Number(calc.printTimeHours) || 0);
+        }
+      });
+
+      // 3. Retornar impressoras com o Uso Total (Base + Histórico)
+      return printers.map(p => ({
+        ...p,
+        status: p.status ?? "Pronta",
+        // O valor exibido é a soma das horas base (manuais) + as horas encontradas no histórico
+        workingHours: (p.workingHours || 0) + (historyHoursMap[p.id] || 0)
+      }));
+    } catch (error) {
+      console.error("Erro ao calcular horas das impressoras:", error);
+      return [];
+    }
+  }, []);
+
+  const [printers, setPrinters] = useState<Printer[]>(getCalculatedPrinters());
 
   useEffect(() => {
     const handleUpdate = () => {
-      setPrinters(getStoredPrinters());
+      setPrinters(getCalculatedPrinters());
     };
 
     window.addEventListener(EVENT_NAME, handleUpdate);
+    window.addEventListener(CALCS_EVENT, handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
-    // Verificar temporizadores expirados
     const interval = setInterval(() => {
-      const currentPrinters = getStoredPrinters();
+      const currentPrinters = getCalculatedPrinters();
       let changed = false;
       const now = Date.now();
 
-      const updated = currentPrinters.map(p => {
+      // Verificar temporizadores (Apenas altera estado, pois as horas já estão no histórico)
+      const rawPrinters: Printer[] = JSON.parse(localStorage.getItem(PRINTERS_KEY) || "[]");
+      const updated = rawPrinters.map(p => {
         if (p.status === "Ocupada" && p.timerEnd && now >= p.timerEnd) {
           changed = true;
-          // Calcula a duração total da impressão que terminou e soma às horas de trabalho
-          const durationMs = p.timerEnd - (p.timerStart || (p.timerEnd - 1));
-          const durationHours = durationMs / 3600000;
-          
           return { 
             ...p, 
             status: "Pronta" as PrinterStatus, 
-            workingHours: (p.workingHours || 0) + durationHours,
             timerStart: undefined, 
             timerEnd: undefined 
           };
@@ -76,18 +93,19 @@ export function usePrinters() {
       });
 
       if (changed) {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
-        setPrinters(updated);
+        localStorage.setItem(PRINTERS_KEY, JSON.stringify(updated));
+        setPrinters(getCalculatedPrinters());
         window.dispatchEvent(new CustomEvent(EVENT_NAME));
       }
     }, 5000);
 
     return () => {
       window.removeEventListener(EVENT_NAME, handleUpdate);
+      window.removeEventListener(CALCS_EVENT, handleUpdate);
       window.removeEventListener('storage', handleUpdate);
       clearInterval(interval);
     };
-  }, []);
+  }, [getCalculatedPrinters]);
 
   const notifyUpdate = () => {
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
@@ -96,29 +114,35 @@ export function usePrinters() {
   const addPrinter = (newPrinter: Omit<Printer, "id" | "timestamp" | "status">) => {
     const id = Date.now().toString();
     const timestamp = Date.now();
-    const updated = [{ ...newPrinter, id, timestamp, status: "Pronta" as PrinterStatus }, ...printers];
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    const stored = JSON.parse(localStorage.getItem(PRINTERS_KEY) || "[]");
+    const updated = [{ ...newPrinter, id, timestamp, status: "Pronta" as PrinterStatus }, ...stored];
+    localStorage.setItem(PRINTERS_KEY, JSON.stringify(updated));
     notifyUpdate();
+    setPrinters(getCalculatedPrinters());
   };
 
   const updatePrinter = (id: string, updatedFields: Partial<Omit<Printer, "id" | "timestamp">>) => {
-    const updated = getStoredPrinters().map((printer) => 
+    const stored: Printer[] = JSON.parse(localStorage.getItem(PRINTERS_KEY) || "[]");
+    const updated = stored.map((printer) => 
       printer.id === id ? { ...printer, ...updatedFields } : printer
     );
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(PRINTERS_KEY, JSON.stringify(updated));
     notifyUpdate();
-    setPrinters(updated);
+    setPrinters(getCalculatedPrinters());
   };
 
   const deletePrinter = (id: string) => {
-    const updated = printers.filter((printer) => printer.id !== id);
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+    const stored: Printer[] = JSON.parse(localStorage.getItem(PRINTERS_KEY) || "[]");
+    const updated = stored.filter((printer) => printer.id !== id);
+    localStorage.setItem(PRINTERS_KEY, JSON.stringify(updated));
     notifyUpdate();
+    setPrinters(getCalculatedPrinters());
   };
 
   const clearPrinters = () => {
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    localStorage.removeItem(PRINTERS_KEY);
     notifyUpdate();
+    setPrinters([]);
   };
 
   return {
