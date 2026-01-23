@@ -28,6 +28,7 @@ import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDial
 import { StartTimerDialog } from "@/components/calculator/StartTimerDialog";
 import { ProjectPartField } from "@/components/calculator/ProjectPartField";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
+import { toast } from "sonner";
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
@@ -188,6 +189,34 @@ const CalculatorPage = () => {
     setOpenPartStates(newOpenStates);
   };
 
+  const handlePrinterChange = (printerId: string, fieldOnChange: (val: string) => void) => {
+    const printer = printers.find(p => p.id === printerId);
+    if (printer?.status === "Ocupada") {
+      toast.warning(`A impressora ${printer.name} está atualmente OCUPADA. Tens a certeza que a queres utilizar?`, {
+        action: {
+          label: "Sim",
+          onClick: () => fieldOnChange(printerId)
+        }
+      });
+    } else {
+      fieldOnChange(printerId);
+    }
+  };
+
+  const handleCloseSummary = (open: boolean) => {
+    setIsSummaryDialogOpen(open);
+    if (!open) {
+      // Limpar formulário quando o diálogo fecha
+      form.reset({
+        printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
+        printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
+        laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
+        extras: [], projectName: "", projectParts: [],
+      });
+      setOpenPartStates([]);
+    }
+  };
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     const selectedPrinterId = activeTab === "single-print" ? values.printerId : values.projectParts?.[0]?.printerId;
     const printer = printers.find(p => p.id === selectedPrinterId);
@@ -277,9 +306,9 @@ const CalculatorPage = () => {
                       <FormField control={form.control} name="printerId" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Impressora</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                          <Select onValueChange={(val) => handlePrinterChange(val, field.onChange)} value={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
-                            <SelectContent>{printers.map(p => <SelectItem key={p.id} value={p.id} disabled={p.status === "Em Manutenção"}>{p.name} {p.status === "Em Manutenção" ? "(Manutenção)" : ""}</SelectItem>)}</SelectContent>
+                            <SelectContent>{printers.map(p => <SelectItem key={p.id} value={p.id} disabled={p.status === "Em Manutenção"}>{p.name} {p.status === "Em Manutenção" ? "(Manutenção)" : p.status === "Ocupada" ? "(Ocupada)" : ""}</SelectItem>)}</SelectContent>
                           </Select>
                         </FormItem>
                       )} />
@@ -415,7 +444,7 @@ const CalculatorPage = () => {
         </form>
       </Form>
 
-      <PaymentSummaryDialog isOpen={isSummaryDialogOpen} onOpenChange={setIsSummaryDialogOpen} data={summaryData} onDelete={() => {}} />
+      <PaymentSummaryDialog isOpen={isSummaryDialogOpen} onOpenChange={handleCloseSummary} data={summaryData} onDelete={() => {}} />
       <StartTimerDialog isOpen={isTimerDialogOpen} onOpenChange={setIsTimerDialogOpen} printer={printers.find(p => p.id === pendingTimerData?.printerId)} durationHours={pendingTimerData?.duration || 0} onConfirm={handleStartTimer} />
     </div>
   );
