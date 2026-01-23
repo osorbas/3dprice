@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { FileText, Save, PlusCircle, History, Eraser, FileCode } from "lucide-react"; 
+import { FileText, Save, PlusCircle, History, Eraser, FileCode, Upload, Trash2 } from "lucide-react"; 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -14,13 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
-import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
@@ -29,8 +26,8 @@ import { ExtraMaterialField } from "@/components/calculator/ExtraMaterialField";
 import { FilamentUsageField } from "@/components/calculator/FilamentUsageField";
 import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDialog";
 import { StartTimerDialog } from "@/components/calculator/StartTimerDialog";
-import { parseGCodeMetadata } from "@/utils/gcode-parser";
 import { ProjectPartField } from "@/components/calculator/ProjectPartField";
+import { parseGCodeMetadata } from "@/utils/gcode-parser";
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
@@ -46,8 +43,8 @@ const filamentUsageSchema = z.object({
 
 const projectPartSchema = z.object({
   partName: z.string().min(1, "O nome da parte é obrigatório."),
-  printerId: z.string().min(1, "Selecione uma impressora para a parte."),
-  filamentsUsed: z.array(filamentUsageSchema).min(1, "Adicione pelo menos um filamento para a parte."),
+  printerId: z.string().min(1, "Selecione uma impressora."),
+  filamentsUsed: z.array(filamentUsageSchema).min(1, "Adicione filamento."),
   printTimeHours: z.coerce.number().min(0),
   printTimeMinutes: z.coerce.number().min(0).max(59),
   electricityProfileId: z.string().optional(),
@@ -73,21 +70,20 @@ const formSchema = z.object({
 });
 
 const CalculatorPage = () => {
-  const { addCalculation, calculations } = usePrintCalculations();
+  const { addCalculation } = usePrintCalculations();
   const { printers, updatePrinter } = usePrinters();
   const { filaments } = useFilaments();
   const { extraMaterials } = useExtraMaterials();
   const { electricityProfiles } = useElectricityProfiles();
 
-  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"single-print" | "project">("single-print");
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [isTimerDialogOpen, setIsTimerDialogOpen] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"single-print" | "project">("single-print");
   const [pendingTimerData, setPendingTimerData] = useState<{ printerId: string, duration: number } | null>(null);
+  const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -114,49 +110,121 @@ const CalculatorPage = () => {
     name: "projectParts",
   });
 
-  const handleStartTimer = () => {
-    if (pendingTimerData) {
-      const printer = printers.find(p => p.id === pendingTimerData.printerId);
-      if (printer) {
-        updatePrinter(printer.id, {
-          status: "Ocupada",
-          timerEnd: Date.now() + (pendingTimerData.duration * 3600000)
+  const watchedValues = form.watch();
+
+  const totals = useMemo(() => {
+    let materialCost = 0;
+    let electricityCost = 0;
+    let laborCost = 0;
+    let extrasCost = 0;
+    let totalPrintTime = 0;
+    let totalFilamentGrams = 0;
+
+    if (activeTab === "single-print") {
+      watchedValues.filamentsUsed?.forEach(f => {
+        const filament = filaments.find(fil => fil.id === f.filamentId);
+        if (filament) materialCost += (filament.pricePerKg / 1000) * f.filamentGrams;
+        totalFilamentGrams += f.filamentGrams;
+      });
+      const hours = (watchedValues.printTimeHours || 0) + ((watchedValues.printTimeMinutes || 0) / 60);
+      electricityCost = hours * (watchedValues.electricityCostPerHour || 0);
+      totalPrintTime = hours;
+      extrasCost = watchedValues.extras?.reduce((acc, ex) => {
+        const material = extraMaterials.find(m => m.id === ex.materialId);
+        return acc + (material ? material.costPerUnit * ex.quantity : 0);
+      }, 0) || 0;
+    } else {
+      watchedValues.projectParts?.forEach(part => {
+        part.filamentsUsed.forEach(f => {
+          const filament = filaments.find(fil => fil.id === f.filamentId);
+          if (filament) materialCost += (filament.pricePerKg / 1000) * f.filamentGrams;
+          totalFilamentGrams += f.filamentGrams;
         });
-        showSuccess(`Temporizador ativado para ${printer.name}!`);
-      }
+        const hours = (part.printTimeHours || 0) + ((part.printTimeMinutes || 0) / 60);
+        electricityCost += hours * (part.electricityCostPerHour || 0);
+        totalPrintTime += hours;
+      });
     }
-    setPendingTimerData(null);
+
+    laborCost = ((watchedValues.laborTimeHours || 0) + ((watchedValues.laborTimeMinutes || 0) / 60)) * (watchedValues.laborCostPerHour || 0);
+    
+    const baseCost = materialCost + electricityCost + laborCost + extrasCost;
+    const profitAmount = baseCost * ((watchedValues.profitMargin || 0) / 100);
+    const totalPrice = baseCost + profitAmount;
+
+    return { materialCost, electricityCost, laborCost, extrasCost, baseCost, profitAmount, totalPrice, totalPrintTime, totalFilamentGrams };
+  }, [watchedValues, filaments, extraMaterials, activeTab]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const metadata = parseGCodeMetadata(content);
+      if (metadata.filamentGrams) {
+        if (activeTab === "single-print") {
+          form.setValue("filamentsUsed.0.filamentGrams", parseFloat(metadata.filamentGrams.toFixed(2)));
+        }
+      }
+      if (metadata.totalTimeSeconds) {
+        const h = Math.floor(metadata.totalTimeSeconds / 3600);
+        const m = Math.floor((metadata.totalTimeSeconds % 3600) / 60);
+        if (activeTab === "single-print") {
+          form.setValue("printTimeHours", h);
+          form.setValue("printTimeMinutes", m);
+        }
+      }
+      showSuccess("Dados importados do G-code com sucesso!");
+    };
+    reader.readAsText(file);
+  };
+
+  const handleConfirmPart = (index: number, confirmed: boolean) => {
+    form.setValue(`projectParts.${index}.isConfirmed`, confirmed);
+    const newOpenStates = [...openPartStates];
+    newOpenStates[index] = !confirmed;
+    setOpenPartStates(newOpenStates);
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Validação de manutenção antes de prosseguir
     const selectedPrinterId = activeTab === "single-print" ? values.printerId : values.projectParts?.[0]?.printerId;
     const printer = printers.find(p => p.id === selectedPrinterId);
     
     if (printer?.status === "Em Manutenção") {
-      showError(`A impressora ${printer.name} está em manutenção e não pode ser usada.`);
+      showError(`A impressora ${printer.name} está em manutenção.`);
       return;
     }
 
-    let totalPrintTimeHours = 0;
-    if (activeTab === "single-print") {
-      totalPrintTimeHours = (values.printTimeHours || 0) + ((values.printTimeMinutes || 0) / 60);
-    } else {
-      totalPrintTimeHours = (values.projectParts || []).reduce((acc, p) => acc + (p.printTimeHours || 0) + (p.printTimeMinutes || 0) / 60, 0);
-    }
+    const calculationData: Omit<PrintCalculation, "id" | "timestamp"> = {
+      materialCost: totals.materialCost,
+      printTimeHours: totals.totalPrintTime,
+      electricityCost: totals.electricityCost,
+      laborCost: totals.laborCost,
+      extraCost: totals.extrasCost,
+      profitMargin: values.profitMargin || 0,
+      totalPrice: totals.totalPrice,
+      filamentGrams: totals.totalFilamentGrams,
+      filamentId: values.filamentsUsed?.[0]?.filamentId || "",
+      isProject: activeTab === "project",
+      printName: values.printName,
+      projectName: values.projectName,
+      printerId: values.printerId,
+      projectParts: values.projectParts as any,
+    };
 
-    // Lógica de guardar cálculo (simplificada para o exemplo)
-    const id = Date.now().toString();
-    const finalPrice = 100; // Placeholder para o preço real calculado
+    addCalculation(calculationData);
 
     setSummaryData({
-      id, printName: activeTab === "single-print" ? values.printName : values.projectName,
-      totalPrice: finalPrice, materialCost: 20, electricityCost: 5, laborCost: 50, extrasCost: 10,
-      baseCost: 85, profitMargin: 15, profitAmount: 15,
+      id: Date.now().toString(),
+      printName: activeTab === "single-print" ? values.printName : values.projectName,
+      ...totals,
+      profitMargin: values.profitMargin
     });
 
     if (selectedPrinterId) {
-      setPendingTimerData({ printerId: selectedPrinterId, duration: totalPrintTimeHours });
+      setPendingTimerData({ printerId: selectedPrinterId, duration: totals.totalPrintTime });
       setIsTimerDialogOpen(true);
     }
 
@@ -164,73 +232,189 @@ const CalculatorPage = () => {
     showSuccess("Cálculo guardado!");
   };
 
-  const calculatedTotalPrice = 0; // Placeholder
+  const handleStartTimer = () => {
+    if (pendingTimerData) {
+      updatePrinter(pendingTimerData.printerId, {
+        status: "Ocupada",
+        timerEnd: Date.now() + (pendingTimerData.duration * 3600000)
+      });
+      showSuccess("Temporizador ativado!");
+    }
+    setPendingTimerData(null);
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full p-4">
-      <Card className="w-full max-w-2xl shadow-lg flex flex-col max-h-[85vh]">
-        <CardHeader className="pb-4 flex-shrink-0 flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-3xl font-bold">Calcular Preço</CardTitle>
-            <p className="text-muted-foreground">Insira os detalhes da impressão.</p>
-          </div>
-          <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="w-auto">
-            <TabsList><TabsTrigger value="single-print">Individual</TabsTrigger><TabsTrigger value="project">Projeto</TabsTrigger></TabsList>
-          </Tabs>
-        </CardHeader>
-        <CardContent className="flex-grow overflow-y-auto">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {activeTab === "single-print" ? (
-                <div className="space-y-4">
-                  <FormField control={form.control} name="printName" render={({ field }) => (
-                    <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="printerId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Impressora</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
-                        <SelectContent>
-                          {printers.map(p => (
-                            <SelectItem key={p.id} value={p.id} disabled={p.status === "Em Manutenção"}>
-                              {p.name} {p.status === "Em Manutenção" ? "(Em Manutenção)" : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )} />
-                  <div className="flex gap-2">
-                    <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                      <FormItem className="flex-grow"><FormLabel>Horas</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+    <div className="flex flex-col items-center p-4 max-w-5xl mx-auto w-full">
+      <div className="w-full flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Calculadora de Preço</h1>
+        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)}>
+          <TabsList>
+            <TabsTrigger value="single-print">Individual</TabsTrigger>
+            <TabsTrigger value="project">Projeto</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  {activeTab === "single-print" ? "Detalhes da Impressão" : "Detalhes do Projeto"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {activeTab === "single-print" ? (
+                  <>
+                    <FormField control={form.control} name="printName" render={({ field }) => (
+                      <FormItem><FormLabel>Nome da Impressão</FormLabel><FormControl><Input placeholder="ex: Darth Vader" {...field} /></FormControl></FormItem>
                     )} />
-                    <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                      <FormItem className="flex-grow"><FormLabel>Minutos</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField control={form.control} name="printerId" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Impressora</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                            <SelectContent>{printers.map(p => <SelectItem key={p.id} value={p.id} disabled={p.status === "Em Manutenção"}>{p.name} {p.status === "Em Manutenção" ? "(Manutenção)" : ""}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="electricityProfileId" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Perfil Energia</FormLabel>
+                          <Select onValueChange={(val) => { field.onChange(val); const p = electricityProfiles.find(ep => ep.id === val); if(p) form.setValue("electricityCostPerHour", p.costPerHour); }} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                            <SelectContent>{electricityProfiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </FormItem>
+                      )} />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Filamentos Usados</FormLabel>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendSingleFilament({ filamentId: "", filamentGrams: 0 })}><PlusCircle className="h-4 w-4 mr-1" /> Adicionar</Button>
+                      </div>
+                      {singleFilamentFields.map((field, idx) => (
+                        <FilamentUsageField key={field.id} index={idx} totalFields={singleFilamentFields.length} onRemove={removeSingleFilament} namePrefix="filamentsUsed" />
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <FormLabel>Tempo de Impressão</FormLabel>
+                        <div className="flex gap-2">
+                          <FormField control={form.control} name="printTimeHours" render={({ field }) => (
+                            <FormItem className="flex-1"><FormControl><Input type="number" placeholder="Horas" {...field} /></FormControl></FormItem>
+                          )} />
+                          <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
+                            <FormItem className="flex-1"><FormControl><Input type="number" max="59" placeholder="Min" {...field} /></FormControl></FormItem>
+                          )} />
+                        </div>
+                      </div>
+                      <div className="flex flex-col justify-end">
+                        <Button type="button" variant="secondary" onClick={() => fileInputRef.current?.click()} className="gap-2"><Upload className="h-4 w-4" /> Importar G-code</Button>
+                        <input type="file" ref={fileInputRef} className="hidden" accept=".gcode" onChange={handleFileUpload} />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <FormField control={form.control} name="projectName" render={({ field }) => (
+                      <FormItem><FormLabel>Nome do Projeto</FormLabel><FormControl><Input placeholder="ex: Armadura Iron Man" {...field} /></FormControl></FormItem>
                     )} />
-                  </div>
+                    <div className="space-y-4">
+                      {projectPartFields.map((field, idx) => (
+                        <ProjectPartField
+                          key={field.id}
+                          index={idx}
+                          namePrefix="projectParts"
+                          onRemove={removeProjectPart}
+                          printers={printers}
+                          filaments={filaments}
+                          electricityProfiles={electricityProfiles}
+                          defaultFilamentId={filaments[0]?.id || ""}
+                          isConfirmed={watchedValues.projectParts?.[idx]?.isConfirmed || false}
+                          onConfirmPart={handleConfirmPart}
+                          isAccordionOpen={openPartStates[idx]}
+                          setIsAccordionOpen={(open) => { const s = [...openPartStates]; s[idx] = open; setOpenPartStates(s); }}
+                        />
+                      ))}
+                      <Button type="button" variant="outline" className="w-full gap-2" onClick={() => { appendProjectPart({ partName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }], printTimeHours: 0, printTimeMinutes: 0, electricityCostPerHour: 0.15, isConfirmed: false }); setOpenPartStates([...openPartStates, true]); }}>
+                        <PlusCircle className="h-4 w-4" /> Adicionar Parte
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2">Mão de Obra e Extras</CardTitle></CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField control={form.control} name="laborCostPerHour" render={({ field }) => (
+                    <FormItem><FormLabel>Custo Mão de Obra (€/h)</FormLabel><FormControl><Input type="number" step="0.5" {...field} /></FormControl></FormItem>
+                  )} />
+                  <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
+                    <FormItem><FormLabel>Horas Mão de Obra</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                  )} />
+                  <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
+                    <FormItem><FormLabel>Min Mão de Obra</FormLabel><FormControl><Input type="number" max="59" {...field} /></FormControl></FormItem>
+                  )} />
                 </div>
-              ) : (
-                <div className="text-center py-8">Lógica de Projeto Ativa</div>
-              )}
-            </form>
-          </Form>
-        </CardContent>
-        <CardFooter className="border-t bg-muted/30 p-6 flex flex-col gap-4">
-          <Button onClick={form.handleSubmit(onSubmit)} className="w-full bg-orange-500 hover:bg-orange-600 font-bold">
-            Guardar e Resumo
-          </Button>
-        </CardFooter>
-      </Card>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Materiais Extras</FormLabel>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendSingleExtra({ materialId: "", quantity: 0 })}><PlusCircle className="h-4 w-4 mr-1" /> Adicionar</Button>
+                  </div>
+                  {singleExtraFields.map((field, idx) => (
+                    <ExtraMaterialField key={field.id} index={idx} namePrefix="extras" onRemove={removeSingleExtra} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="sticky top-4 border-primary/20 shadow-primary/5">
+              <CardHeader className="bg-primary/5"><CardTitle>Resumo do Orçamento</CardTitle></CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span>Filamento:</span><span>€{totals.materialCost.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Energia:</span><span>€{totals.electricityCost.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Mão de Obra:</span><span>€{totals.laborCost.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Extras:</span><span>€{totals.extrasCost.toFixed(2)}</span></div>
+                  <Separator />
+                  <div className="flex justify-between font-semibold"><span>Custo Base:</span><span>€{totals.baseCost.toFixed(2)}</span></div>
+                </div>
+
+                <FormField control={form.control} name="profitMargin" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Margem de Lucro (%)</FormLabel>
+                    <FormControl><Input type="number" {...field} /></FormControl>
+                  </FormItem>
+                )} />
+
+                <div className="bg-primary/10 p-4 rounded-lg">
+                  <div className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Preço Final Estimado</div>
+                  <div className="text-3xl font-black text-primary">€{totals.totalPrice.toFixed(2)}</div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-2">
+                <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 font-bold h-12">Guardar e Resumo</Button>
+                <Button type="button" variant="ghost" onClick={() => form.reset()} className="w-full text-muted-foreground"><Eraser className="h-4 w-4 mr-2" /> Limpar Tudo</Button>
+              </CardFooter>
+            </Card>
+          </div>
+        </form>
+      </Form>
 
       <PaymentSummaryDialog isOpen={isSummaryDialogOpen} onOpenChange={setIsSummaryDialogOpen} data={summaryData} onDelete={() => {}} />
-      <StartTimerDialog 
-        isOpen={isTimerDialogOpen} 
-        onOpenChange={setIsTimerDialogOpen} 
-        printer={printers.find(p => p.id === pendingTimerData?.printerId)} 
-        durationHours={pendingTimerData?.duration || 0}
-        onConfirm={handleStartTimer}
-      />
+      <StartTimerDialog isOpen={isTimerDialogOpen} onOpenChange={setIsTimerDialogOpen} printer={printers.find(p => p.id === pendingTimerData?.printerId)} durationHours={pendingTimerData?.duration || 0} onConfirm={handleStartTimer} />
     </div>
   );
 };
