@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import DashboardPage from "./pages/DashboardPage";
 import CalculatorPage from "./pages/CalculatorPage";
 import CalculationHistoryPage from "./pages/CalculationHistoryPage";
+import FarmPage from "./pages/FarmPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -22,6 +23,7 @@ function App() {
             <Route path="overview" element={<DashboardPage />} />
             <Route path="calculator" element={<CalculatorPage />} />
             <Route path="history" element={<CalculationHistoryPage />} />
+            <Route path="farm" element={<FarmPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />

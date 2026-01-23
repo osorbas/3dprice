@@ -3,8 +3,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Calculator, History, Settings } from "lucide-react";
-// Removido: import { MadeWithDyad } from "@/components/made-with-dyad";
+import { LayoutDashboard, Calculator, History, Settings, Cpu } from "lucide-react";
 
 export const Sidebar = () => {
   const navItems = [
@@ -22,6 +21,11 @@ export const Sidebar = () => {
       name: "Histórico",
       path: "/dashboard/history",
       icon: History,
+    },
+    {
+      name: "Farm",
+      path: "/dashboard/farm",
+      icon: Cpu,
     },
     {
       name: "Definições",
@@ -55,7 +59,6 @@ export const Sidebar = () => {
           ))}
         </nav>
       </div>
-      {/* Removido: <MadeWithDyad /> */}
     </div>
   );
 };
