@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { FileText, Save, PlusCircle, History, Eraser, FileCode, Upload, Trash2 } from "lucide-react"; 
+import { FileText, Save, PlusCircle, History, Eraser, FileCode, Upload, Trash2, AlertTriangle } from "lucide-react"; 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -15,6 +15,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
 import { showSuccess, showError } from "@/utils/toast";
@@ -28,7 +38,6 @@ import { PaymentSummaryDialog } from "@/components/calculator/PaymentSummaryDial
 import { StartTimerDialog } from "@/components/calculator/StartTimerDialog";
 import { ProjectPartField } from "@/components/calculator/ProjectPartField";
 import { parseGCodeMetadata } from "@/utils/gcode-parser";
-import { toast } from "sonner";
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
@@ -80,8 +89,11 @@ const CalculatorPage = () => {
   const [activeTab, setActiveTab] = useState<"single-print" | "project">("single-print");
   const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false);
   const [isTimerDialogOpen, setIsTimerDialogOpen] = useState(false);
+  const [isBusyPrinterAlertOpen, setIsBusyPrinterAlertOpen] = useState(false);
+  
   const [summaryData, setSummaryData] = useState<any>(null);
   const [pendingTimerData, setPendingTimerData] = useState<{ printerId: string, duration: number } | null>(null);
+  const [busyPrinterInfo, setBusyPrinterInfo] = useState<{ id: string, name: string, onChange: (val: string) => void } | null>(null);
   const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -192,21 +204,24 @@ const CalculatorPage = () => {
   const handlePrinterChange = (printerId: string, fieldOnChange: (val: string) => void) => {
     const printer = printers.find(p => p.id === printerId);
     if (printer?.status === "Ocupada") {
-      toast.warning(`A impressora ${printer.name} está atualmente OCUPADA. Tens a certeza que a queres utilizar?`, {
-        action: {
-          label: "Sim",
-          onClick: () => fieldOnChange(printerId)
-        }
-      });
+      setBusyPrinterInfo({ id: printerId, name: printer.name, onChange: fieldOnChange });
+      setIsBusyPrinterAlertOpen(true);
     } else {
       fieldOnChange(printerId);
     }
   };
 
+  const confirmBusyPrinterSelection = () => {
+    if (busyPrinterInfo) {
+      busyPrinterInfo.onChange(busyPrinterInfo.id);
+    }
+    setIsBusyPrinterAlertOpen(false);
+    setBusyPrinterInfo(null);
+  };
+
   const handleCloseSummary = (open: boolean) => {
     setIsSummaryDialogOpen(open);
     if (!open) {
-      // Limpar formulário quando o diálogo fecha
       form.reset({
         printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
         printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
@@ -446,6 +461,27 @@ const CalculatorPage = () => {
 
       <PaymentSummaryDialog isOpen={isSummaryDialogOpen} onOpenChange={handleCloseSummary} data={summaryData} onDelete={() => {}} />
       <StartTimerDialog isOpen={isTimerDialogOpen} onOpenChange={setIsTimerDialogOpen} printer={printers.find(p => p.id === pendingTimerData?.printerId)} durationHours={pendingTimerData?.duration || 0} onConfirm={handleStartTimer} />
+      
+      <AlertDialog open={isBusyPrinterAlertOpen} onOpenChange={setIsBusyPrinterAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Impressora Ocupada
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              A impressora <strong>{busyPrinterInfo?.name}</strong> está atualmente a realizar outra impressão. 
+              Tens a certeza que a queres selecionar para este novo cálculo?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBusyPrinterInfo(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBusyPrinterSelection} className="bg-orange-500 hover:bg-orange-600">
+              Sim, utilizar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
