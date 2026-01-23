@@ -8,6 +8,11 @@ import { LayoutDashboard, Calculator, History, Settings, Cpu } from "lucide-reac
 export const Sidebar = () => {
   const navItems = [
     {
+      name: "Farm",
+      path: "/dashboard/farm",
+      icon: Cpu,
+    },
+    {
       name: "Dashboard",
       path: "/dashboard/overview",
       icon: LayoutDashboard,
@@ -21,11 +26,6 @@ export const Sidebar = () => {
       name: "Histórico",
       path: "/dashboard/history",
       icon: History,
-    },
-    {
-      name: "Farm",
-      path: "/dashboard/farm",
-      icon: Cpu,
     },
     {
       name: "Definições",

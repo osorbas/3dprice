@@ -5,7 +5,7 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    navigate("/dashboard/overview"); // Redireciona para a visão geral do dashboard
+    navigate("/dashboard/farm"); // Redireciona para a Print Farm por predefinição
   }, [navigate]);
 
   return null;
