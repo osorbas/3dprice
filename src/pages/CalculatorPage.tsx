@@ -243,15 +243,44 @@ const CalculatorPage = () => {
 
   const handleCloseSummary = (open: boolean) => {
     setIsSummaryDialogOpen(open);
+    
     if (!open) {
-      form.reset({
-        printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
-        printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
-        laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
-        extras: [], projectName: "", projectParts: [],
-      });
-      setOpenPartStates([]);
+      // Se o diálogo de resumo fechar, verificar se há um temporizador pendente
+      if (pendingTimerData) {
+        setIsTimerDialogOpen(true);
+      } else {
+        // Se não houver temporizador pendente, resetar o formulário
+        form.reset({
+          printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
+          printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
+          laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
+          extras: [], projectName: "", projectParts: [],
+        });
+        setOpenPartStates([]);
+      }
     }
+  };
+
+  const handleStartTimer = () => {
+    if (pendingTimerData) {
+      const now = Date.now();
+      updatePrinter(pendingTimerData.printerId, {
+        status: "Ocupada",
+        timerStart: now,
+        timerEnd: now + (pendingTimerData.duration * 3600000)
+      });
+      showSuccess("Temporizador ativado!");
+    }
+    setPendingTimerData(null);
+    
+    // Resetar o formulário após iniciar o timer
+    form.reset({
+      printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
+      printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
+      laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
+      extras: [], projectName: "", projectParts: [],
+    });
+    setOpenPartStates([]);
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -350,26 +379,15 @@ const CalculatorPage = () => {
       profitMargin: values.profitMargin
     });
 
-    if (selectedPrinterId) {
+    // Configurar dados pendentes do temporizador, mas não abrir o diálogo ainda
+    if (selectedPrinterId && printer?.status !== "Ocupada" && printer?.status !== "Em Manutenção") {
       setPendingTimerData({ printerId: selectedPrinterId, duration: totals.totalPrintTime });
-      setIsTimerDialogOpen(true);
+    } else {
+      setPendingTimerData(null);
     }
 
     setIsSummaryDialogOpen(true);
     showSuccess("Cálculo guardado com sucesso!");
-  };
-
-  const handleStartTimer = () => {
-    if (pendingTimerData) {
-      const now = Date.now();
-      updatePrinter(pendingTimerData.printerId, {
-        status: "Ocupada",
-        timerStart: now,
-        timerEnd: now + (pendingTimerData.duration * 3600000)
-      });
-      showSuccess("Temporizador ativado!");
-    }
-    setPendingTimerData(null);
   };
 
   return (
@@ -543,7 +561,26 @@ const CalculatorPage = () => {
       </Form>
 
       <PaymentSummaryDialog isOpen={isSummaryDialogOpen} onOpenChange={handleCloseSummary} data={summaryData} onDelete={() => {}} />
-      <StartTimerDialog isOpen={isTimerDialogOpen} onOpenChange={setIsTimerDialogOpen} printer={printers.find(p => p.id === pendingTimerData?.printerId)} durationHours={pendingTimerData?.duration || 0} onConfirm={handleStartTimer} />
+      <StartTimerDialog 
+        isOpen={isTimerDialogOpen} 
+        onOpenChange={(open) => {
+          setIsTimerDialogOpen(open);
+          // Se o diálogo do timer for fechado (cancelado), resetar o formulário
+          if (!open) {
+            setPendingTimerData(null);
+            form.reset({
+              printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
+              printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
+              laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
+              extras: [], projectName: "", projectParts: [],
+            });
+            setOpenPartStates([]);
+          }
+        }} 
+        printer={printers.find(p => p.id === pendingTimerData?.printerId)} 
+        durationHours={pendingTimerData?.duration || 0} 
+        onConfirm={handleStartTimer} 
+      />
       
       <AlertDialog open={isBusyPrinterAlertOpen} onOpenChange={setIsBusyPrinterAlertOpen}>
         <AlertDialogContent>
