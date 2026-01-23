@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   Calendar,
   Package,
-  Layers
+  Layers,
+  CheckCircle
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -58,10 +59,27 @@ const FarmPage = () => {
     }
   };
 
+  const handleManualComplete = (printer: Printer) => {
+    // Calcular as horas reais trabalhadas até o momento da conclusão manual
+    let additionalHours = 0;
+    if (printer.timerStart) {
+      const elapsedMs = now - printer.timerStart;
+      additionalHours = elapsedMs / 3600000;
+    }
+
+    updatePrinter(printer.id, { 
+      status: "Pronta",
+      workingHours: (printer.workingHours || 0) + additionalHours,
+      timerStart: undefined,
+      timerEnd: undefined
+    });
+    showSuccess(`Impressão em ${printer.name} marcada como concluída.`);
+  };
+
   const getStatusColor = (status: PrinterStatus) => {
     switch (status) {
       case "Pronta": return "bg-green-500/10 text-green-600 border-green-200";
-      case "Ocupada": return "bg-blue-500/10 text-blue-600 border-blue-200";
+      case "Ocupada": return "bg-blue-500/10 text-blue-600 border-blue-200 cursor-pointer hover:bg-blue-500/20";
       case "Em Manutenção": return "bg-red-500/10 text-red-600 border-red-200";
       default: return "";
     }
@@ -108,9 +126,38 @@ const FarmPage = () => {
               </CardTitle>
               <p className="text-xs text-muted-foreground font-medium">{printer.brand} {printer.model}</p>
             </div>
-            <Badge variant="outline" className={getStatusColor(printer.status)}>
-              {printer.status}
-            </Badge>
+            
+            {printer.status === "Ocupada" ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Badge variant="outline" className={getStatusColor(printer.status)}>
+                    {printer.status}
+                  </Badge>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      Concluir Impressão?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Desejas marcar a impressão na <strong>{printer.name}</strong> como concluída manualmente? 
+                      Isto libertará a impressora e atualizará as horas de trabalho.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Não, continuar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleManualComplete(printer)} className="bg-green-600 hover:bg-green-700">
+                      Sim, concluída
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Badge variant="outline" className={getStatusColor(printer.status)}>
+                {printer.status}
+              </Badge>
+            )}
           </div>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
