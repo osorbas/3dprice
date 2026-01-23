@@ -133,6 +133,12 @@ const CalculatorPage = () => {
     let totalPrintTime = 0;
     let totalFilamentGrams = 0;
 
+    // Calcular extras independentemente do modo (visto que é um campo global do formulário)
+    extrasCost = watchedValues.extras?.reduce((acc, ex) => {
+      const material = extraMaterials.find(m => m.id === ex.materialId);
+      return acc + (material ? material.costPerUnit * ex.quantity : 0);
+    }, 0) || 0;
+
     if (activeTab === "single-print") {
       watchedValues.filamentsUsed?.forEach(f => {
         const filament = filaments.find(fil => fil.id === f.filamentId);
@@ -142,10 +148,6 @@ const CalculatorPage = () => {
       const hours = (watchedValues.printTimeHours || 0) + ((watchedValues.printTimeMinutes || 0) / 60);
       electricityCost = hours * (watchedValues.electricityCostPerHour || 0);
       totalPrintTime = hours;
-      extrasCost = watchedValues.extras?.reduce((acc, ex) => {
-        const material = extraMaterials.find(m => m.id === ex.materialId);
-        return acc + (material ? material.costPerUnit * ex.quantity : 0);
-      }, 0) || 0;
     } else {
       watchedValues.projectParts?.forEach(part => {
         part.filamentsUsed.forEach(f => {
