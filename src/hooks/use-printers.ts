@@ -1,12 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 
+export type PrinterStatus = "Pronta" | "Ocupada" | "Em Manutenção";
+
 export interface Printer {
   id: string;
   name: string;
   brand: string;
   model: string;
-  workingHours: number; // Adicionado: Horas de trabalho
+  workingHours: number;
+  status: PrinterStatus;
+  timerEnd?: number; // Timestamp de quando a impressão termina
+  lastMaintenance?: number; // Timestamp da última manutenção
   timestamp: number;
 }
 
@@ -20,10 +25,10 @@ export function usePrinters() {
         const storedPrinters = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (storedPrinters) {
           const parsedPrinters: Printer[] = JSON.parse(storedPrinters);
-          // Garante que 'workingHours' tenha um valor padrão para dados existentes
           return parsedPrinters.map(printer => ({
             ...printer,
-            workingHours: printer.workingHours ?? 0 // Valor padrão 0
+            workingHours: printer.workingHours ?? 0,
+            status: printer.status ?? "Pronta",
           }));
         }
         return [];
@@ -43,11 +48,33 @@ export function usePrinters() {
     };
 
     window.addEventListener(EVENT_NAME, handleUpdate);
-    window.addEventListener('storage', handleUpdate); // Sincroniza entre abas
+    window.addEventListener('storage', handleUpdate);
+
+    // Verificar temporizadores expirados a cada minuto
+    const interval = setInterval(() => {
+      const currentPrinters = getStoredPrinters();
+      let changed = false;
+      const now = Date.now();
+
+      const updated = currentPrinters.map(p => {
+        if (p.status === "Ocupada" && p.timerEnd && now >= p.timerEnd) {
+          changed = true;
+          return { ...p, status: "Pronta" as PrinterStatus, timerEnd: undefined };
+        }
+        return p;
+      });
+
+      if (changed) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+        setPrinters(updated);
+        window.dispatchEvent(new CustomEvent(EVENT_NAME));
+      }
+    }, 10000);
 
     return () => {
       window.removeEventListener(EVENT_NAME, handleUpdate);
       window.removeEventListener('storage', handleUpdate);
+      clearInterval(interval);
     };
   }, []);
 
@@ -55,10 +82,10 @@ export function usePrinters() {
     window.dispatchEvent(new CustomEvent(EVENT_NAME));
   };
 
-  const addPrinter = (newPrinter: Omit<Printer, "id" | "timestamp">) => {
+  const addPrinter = (newPrinter: Omit<Printer, "id" | "timestamp" | "status">) => {
     const id = Date.now().toString();
     const timestamp = Date.now();
-    const updated = [{ ...newPrinter, id, timestamp }, ...printers];
+    const updated = [{ ...newPrinter, id, timestamp, status: "Pronta" as PrinterStatus }, ...printers];
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     notifyUpdate();
   };
@@ -69,6 +96,7 @@ export function usePrinters() {
     );
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
     notifyUpdate();
+    setPrinters(updated);
   };
 
   const deletePrinter = (id: string) => {
@@ -82,20 +110,11 @@ export function usePrinters() {
     notifyUpdate();
   };
 
-  const importPrinters = (data: Printer[]) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.map(printer => ({
-      ...printer,
-      workingHours: printer.workingHours ?? 0 // Garante que dados importados também tenham valor padrão
-    }))));
-    notifyUpdate();
-  };
-
   return {
     printers,
     addPrinter,
     updatePrinter,
     deletePrinter,
     clearPrinters,
-    importPrinters,
   };
 }

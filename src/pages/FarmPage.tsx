@@ -1,83 +1,208 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePrinters } from "@/hooks/use-printers";
+import { usePrinters, Printer, PrinterStatus } from "@/hooks/use-printers";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Printer, Activity, Clock, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  Printer as PrinterIcon, 
+  Activity, 
+  Clock, 
+  AlertCircle, 
+  Wrench, 
+  CheckCircle2,
+  Calendar
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { showSuccess } from "@/utils/toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const FarmPage = () => {
-  const { printers } = usePrinters();
+  const { printers, updatePrinter } = usePrinters();
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleMaintenanceToggle = (printer: Printer) => {
+    if (printer.status === "Em Manutenção") {
+      updatePrinter(printer.id, { 
+        status: "Pronta", 
+        lastMaintenance: Date.now() 
+      });
+      showSuccess(`Manutenção de ${printer.name} concluída!`);
+    } else {
+      updatePrinter(printer.id, { status: "Em Manutenção" });
+      showSuccess(`${printer.name} colocada em manutenção.`);
+    }
+  };
+
+  const getStatusColor = (status: PrinterStatus) => {
+    switch (status) {
+      case "Pronta": return "bg-green-500/10 text-green-600 border-green-200";
+      case "Ocupada": return "bg-blue-500/10 text-blue-600 border-blue-200";
+      case "Em Manutenção": return "bg-red-500/10 text-red-600 border-red-200";
+      default: return "";
+    }
+  };
+
+  const groupedPrinters = {
+    "Ocupada": printers.filter(p => p.status === "Ocupada"),
+    "Pronta": printers.filter(p => p.status === "Pronta"),
+    "Em Manutenção": printers.filter(p => p.status === "Em Manutenção"),
+  };
+
+  const renderPrinterCard = (printer: Printer) => {
+    let progress = 0;
+    let timeRemainingStr = "";
+
+    if (printer.status === "Ocupada" && printer.timerEnd) {
+      const totalTime = printer.timerEnd - printer.timestamp;
+      const elapsedTime = now - (printer.timerEnd - (totalTime));
+      progress = Math.min(100, Math.max(0, (elapsedTime / totalTime) * 100));
+      
+      const remainingMs = printer.timerEnd - now;
+      if (remainingMs > 0) {
+        const h = Math.floor(remainingMs / 3600000);
+        const m = Math.floor((remainingMs % 3600000) / 60000);
+        timeRemainingStr = `${h}h ${m}m restantes`;
+      }
+    }
+
+    return (
+      <Card key={printer.id} className="overflow-hidden border-l-4" style={{ borderLeftColor: printer.status === "Pronta" ? "#22c55e" : printer.status === "Ocupada" ? "#3b82f6" : "#ef4444" }}>
+        <CardHeader className="bg-muted/10 pb-4">
+          <div className="flex justify-between items-start">
+            <div className="space-y-1">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <PrinterIcon className="h-5 w-5 opacity-70" />
+                {printer.name}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">{printer.brand} {printer.model}</p>
+            </div>
+            <Badge variant="outline" className={getStatusColor(printer.status)}>
+              {printer.status}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-4">
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-muted-foreground">Uso Total</p>
+                <p className="font-semibold">{Math.floor(printer.workingHours)}h</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-muted-foreground">Última Manut.</p>
+                <p className="font-semibold">
+                  {printer.lastMaintenance ? formatDistanceToNow(printer.lastMaintenance, { addSuffix: true, locale: ptBR }) : "Nunca"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {printer.status === "Ocupada" && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span className="text-blue-600 font-medium">Progresso da Impressão</span>
+                <span>{progress.toFixed(0)}%</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+              <p className="text-[10px] text-center text-muted-foreground">{timeRemainingStr}</p>
+            </div>
+          )}
+
+          <div className="pt-2 flex gap-2">
+            {printer.status === "Em Manutenção" ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full gap-2 border-green-200 text-green-600 hover:bg-green-50">
+                    <CheckCircle2 className="h-4 w-4" /> Concluir Manutenção
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Manutenção Concluída?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Confirmas que a manutenção de <strong>{printer.name}</strong> foi realizada com sucesso? 
+                      A impressora ficará disponível para novos cálculos.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Não, continuar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleMaintenanceToggle(printer)}>Sim, concluída</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => handleMaintenanceToggle(printer)}
+                disabled={printer.status === "Ocupada"}
+              >
+                <Wrench className="h-4 w-4" /> Colocar em Manutenção
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div className="space-y-6 p-4">
+    <div className="space-y-8 p-4">
       <div className="space-y-1">
         <h1 className="text-3xl font-bold">Print Farm</h1>
-        <p className="text-muted-foreground">Monitorização e gestão da tua frota de impressoras.</p>
+        <p className="text-muted-foreground">Monitorização em tempo real da tua frota.</p>
       </div>
 
       {printers.length === 0 ? (
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle>Nenhuma impressora registada</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-center text-muted-foreground">
-              Regista impressoras nas Definições para as visualizares aqui na Farm.
-            </p>
-          </CardContent>
+        <Card className="p-12 text-center text-muted-foreground">
+          Nenhuma impressora registada. Adiciona-as nas Definições.
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {printers.map((printer) => (
-            <Card key={printer.id} className="overflow-hidden">
-              <CardHeader className="bg-muted/30 pb-4">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <CardTitle className="text-xl">{printer.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{printer.brand} {printer.model}</p>
-                  </div>
-                  <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
-                    Pronta
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div className="text-xs">
-                      <p className="text-muted-foreground">Uso Total</p>
-                      <p className="font-semibold">{Math.floor(printer.workingHours)}h</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                    <div className="text-xs">
-                      <p className="text-muted-foreground">Status</p>
-                      <p className="font-semibold">Idle</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">Manutenção Preventiva</span>
-                    <span>75%</span>
-                  </div>
-                  <Progress value={75} className="h-2" />
-                  <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" /> Revisão sugerida daqui a 50h
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="space-y-10">
+          {Object.entries(groupedPrinters).map(([status, items]) => items.length > 0 && (
+            <div key={status} className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <span className={cn("h-3 w-3 rounded-full", status === "Pronta" ? "bg-green-500" : status === "Ocupada" ? "bg-blue-500" : "bg-red-500")} />
+                {status} ({items.length})
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {items.map(renderPrinterCard)}
+              </div>
+            </div>
           ))}
         </div>
       )}
     </div>
   );
 };
+
+// Helper function needed because of scoping
+function cn(...inputs: any[]) {
+  return inputs.filter(Boolean).join(" ");
+}
 
 export default FarmPage;
