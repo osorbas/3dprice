@@ -37,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { AddFilamentDialog } from "@/components/AddFilamentDialog"; // Import AddFilamentDialog
 import { EditFilamentDialog } from "@/components/EditFilamentDialog"; // Import EditFilamentDialog
+import { AddFilamentStockDialog } from "@/components/AddFilamentStockDialog"; // Re-import AddFilamentStockDialog
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
@@ -338,8 +339,8 @@ const FarmPage = () => {
                               {f.brand} {f.type}
                             </p>
                           </div>
-                          {/* Substituído AddFilamentStockDialog por EditFilamentDialog */}
-                          <EditFilamentDialog filament={f} /> 
+                          {/* Botão para adicionar stock (Dar entrada de filamento) */}
+                          <AddFilamentStockDialog filament={f} /> 
                         </div>
 
                         <div className="space-y-2">
@@ -353,7 +354,7 @@ const FarmPage = () => {
                           </div>
                           <Progress 
                             value={manageStockEnabled ? stockPercent : 0} 
-                            className={cn("h-2", manageStockEnabled ? (isLowStock ? "bg-orange-100" : "bg-orange-100") : "bg-muted")} 
+                            className={cn("h-2", manageStockEnabled ? (isLowStock ? "bg-orange-100" : "bg-green-100") : "bg-muted")} 
                           />
                         </div>
 
