@@ -13,7 +13,6 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
   const dashboardData = useMemo(() => {
     const today = startOfDay(new Date());
     let startDate: Date;
-    let endPeriodDate = today;
     let numPeriods = 30;
 
     switch (timeframe) {
@@ -61,15 +60,23 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
     let totalExtraCost = 0;
 
     calculations.forEach((calc) => {
-      totalRevenue += calc.totalPrice;
-      const baseCost = calc.materialCost + calc.electricityCost + calc.laborCost + (calc.extraCost || 0);
-      totalEstimatedProfit += (calc.totalPrice - baseCost);
-      totalPrintTimeHours += calc.printTimeHours;
-      totalFilamentUsedGrams += calc.filamentGrams;
-      totalMaterialCost += calc.materialCost;
-      totalElectricityCost += calc.electricityCost;
-      totalLaborCost += calc.laborCost;
-      totalExtraCost += (calc.extraCost || 0);
+      const revenue = Number(calc.totalPrice) || 0;
+      const matCost = Number(calc.materialCost) || 0;
+      const elecCost = Number(calc.electricityCost) || 0;
+      const labCost = Number(calc.laborCost) || 0;
+      const extCost = Number(calc.extraCost) || 0;
+      const grams = Number(calc.filamentGrams) || 0;
+      const hours = Number(calc.printTimeHours) || 0;
+
+      totalRevenue += revenue;
+      const baseCost = matCost + elecCost + labCost + extCost;
+      totalEstimatedProfit += (revenue - baseCost);
+      totalPrintTimeHours += hours;
+      totalFilamentUsedGrams += grams;
+      totalMaterialCost += matCost;
+      totalElectricityCost += elecCost;
+      totalLaborCost += labCost;
+      totalExtraCost += extCost;
     });
 
     const totalCosts = totalMaterialCost + totalElectricityCost + totalLaborCost + totalExtraCost;
@@ -128,8 +135,8 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
       }
 
       const entry = periodDataMap.get(periodKey) || { revenue: 0, costs: 0, calculations: 0 };
-      entry.revenue += calc.totalPrice;
-      entry.costs += (calc.materialCost + calc.electricityCost + calc.laborCost + (calc.extraCost || 0));
+      entry.revenue += Number(calc.totalPrice) || 0;
+      entry.costs += (Number(calc.materialCost) || 0) + (Number(calc.electricityCost) || 0) + (Number(calc.laborCost) || 0) + (Number(calc.extraCost) || 0);
       entry.calculations += 1;
       periodDataMap.set(periodKey, entry);
     });
