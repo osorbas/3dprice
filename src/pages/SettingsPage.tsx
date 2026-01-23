@@ -124,20 +124,78 @@ const SettingsPage = () => {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target?.result as string);
-        if (selectedImportTypes.calculations) importCalculations(data.calculations || []);
-        if (selectedImportTypes.printers) importPrinters(data.printers || []);
-        if (selectedImportTypes.filaments) importFilaments(data.filaments || []); // Importa filamentos, incluindo stock
-        if (selectedImportTypes.extraMaterials) importExtraMaterials(data.extraMaterials || []);
-        if (selectedImportTypes.electricityProfiles) importElectricityProfiles(data.electricityProfiles || []);
+        
+        // Helper function for validation
+        const isValidArray = (arr: any) => Array.isArray(arr);
+
+        if (selectedImportTypes.calculations) {
+          const calcs = data.calculations;
+          if (calcs && isValidArray(calcs)) {
+            importCalculations(calcs);
+          } else if (calcs) {
+            console.error("Invalid calculations data:", calcs);
+            showError("Erro: Dados de cálculos inválidos.");
+            return;
+          }
+        }
+        
+        if (selectedImportTypes.printers) {
+          const prts = data.printers;
+          if (prts && isValidArray(prts)) {
+            importPrinters(prts);
+          } else if (prts) {
+            console.error("Invalid printers data:", prts);
+            showError("Erro: Dados de impressoras inválidos.");
+            return;
+          }
+        }
+        
+        if (selectedImportTypes.filaments) {
+          const fils = data.filaments;
+          if (fils && isValidArray(fils)) {
+            importFilaments(fils);
+          } else if (fils) {
+            console.error("Invalid filaments data:", fils);
+            showError("Erro: Dados de filamentos inválidos.");
+            return;
+          }
+        }
+        
+        if (selectedImportTypes.extraMaterials) {
+          const extras = data.extraMaterials;
+          if (extras && isValidArray(extras)) {
+            importExtraMaterials(extras);
+          } else if (extras) {
+            console.error("Invalid extra materials data:", extras);
+            showError("Erro: Dados de materiais extras inválidos.");
+            return;
+          }
+        }
+        
+        if (selectedImportTypes.electricityProfiles) {
+          const elec = data.electricityProfiles;
+          if (elec && isValidArray(elec)) {
+            importElectricityProfiles(elec);
+          } else if (elec) {
+            console.error("Invalid electricity profiles data:", elec);
+            showError("Erro: Dados de perfis de eletricidade inválidos.");
+            return;
+          }
+        }
+        
         if (selectedImportTypes.appSettings && data.appSettings) {
           Object.entries(data.appSettings).forEach(([k, v]) => {
             if (v !== null) localStorage.setItem(k, v as string);
           });
           if (data.appSettings.manage_filament_stock) setManageStock(data.appSettings.manage_filament_stock === "true");
         }
+        
         showSuccess("Importação concluída!");
         setImportDialogOpen(false);
-      } catch (err) { showError("Backup inválido."); }
+      } catch (err) { 
+        console.error("Import error:", err);
+        showError("Erro ao processar o ficheiro. Certifique-se de que é um ficheiro de backup JSON válido."); 
+      }
     };
     reader.readAsText(importFile);
   };
