@@ -53,7 +53,7 @@ export function usePrinters() {
       return printers.map(p => ({
         ...p,
         status: p.status ?? "Pronta",
-        powerConsumptionWatts: p.powerConsumptionWatts ?? 50, // Default to 50W if not set
+        powerConsumptionWatts: p.powerConsumptionWatts ?? 120, // Atualizado fallback para 120W
         // O valor exibido é a soma das horas base (manuais) + as horas encontradas no histórico
         workingHours: (p.workingHours || 0) + (historyHoursMap[p.id] || 0)
       }));
@@ -117,7 +117,7 @@ export function usePrinters() {
     const id = Date.now().toString();
     const timestamp = Date.now();
     const stored = JSON.parse(localStorage.getItem(PRINTERS_KEY) || "[]");
-    const updated = [{ ...newPrinter, id, timestamp, status: "Pronta" as PrinterStatus, powerConsumptionWatts: newPrinter.powerConsumptionWatts ?? 50 }, ...stored];
+    const updated = [{ ...newPrinter, id, timestamp, status: "Pronta" as PrinterStatus, powerConsumptionWatts: newPrinter.powerConsumptionWatts ?? 120 }, ...stored];
     localStorage.setItem(PRINTERS_KEY, JSON.stringify(updated));
     notifyUpdate();
     setPrinters(getCalculatedPrinters());
