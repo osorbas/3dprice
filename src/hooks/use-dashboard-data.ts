@@ -49,7 +49,7 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
       isAfter(new Date(calc.timestamp), startDate) || format(new Date(calc.timestamp), 'yyyy-MM-dd') === format(startDate, 'yyyy-MM-dd')
     );
 
-    const totalCalculations = calculations.length;
+    const totalCalculations = filteredCalculations.length;
     let totalRevenue = 0;
     let totalEstimatedProfit = 0;
     let totalPrintTimeHours = 0;
@@ -59,7 +59,8 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
     let totalLaborCost = 0;
     let totalExtraCost = 0;
 
-    calculations.forEach((calc) => {
+    // Calculando estatísticas baseadas apenas nas impressões filtradas pelo período
+    filteredCalculations.forEach((calc) => {
       const revenue = Number(calc.totalPrice) || 0;
       const matCost = Number(calc.materialCost) || 0;
       const elecCost = Number(calc.electricityCost) || 0;
