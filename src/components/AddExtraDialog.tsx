@@ -8,18 +8,21 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useExtraMaterials } from "@/hooks/use-extras";
+import { useExtraMaterials, NewExtraMaterialData } from "@/hooks/use-extras"; // Import NewExtraMaterialData
 import { showSuccess, showError } from "@/utils/toast";
 import { PlusCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
-  name: z.string().optional(), // Made optional
+  name: z.string().optional(),
   description: z.string().optional(),
   costPerUnit: z.coerce.number().min(0.01, "O custo por unidade deve ser positivo."),
-  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(), // Novo campo
+  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(),
   unit: z.string().min(1, "A unidade é obrigatória."),
 });
+
+// Explicitly define the type for the form values
+type AddExtraMaterialFormValues = z.infer<typeof formSchema>;
 
 interface AddExtraDialogProps {
   // Removida prop onSuccess
@@ -28,7 +31,7 @@ interface AddExtraDialogProps {
 export const AddExtraDialog = ({ /* onSuccess */ }: AddExtraDialogProps) => {
   const { addExtraMaterial } = useExtraMaterials();
   const [open, setOpen] = React.useState(false);
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<AddExtraMaterialFormValues>({ // Use the explicit type here
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -39,10 +42,10 @@ export const AddExtraDialog = ({ /* onSuccess */ }: AddExtraDialogProps) => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: AddExtraMaterialFormValues) => { // Use the explicit type here
     try {
-      // O tipo de 'values' agora corresponde ao tipo NewExtraMaterialData definido em use-extras.ts
-      addExtraMaterial(values);
+      // The 'values' type is now AddExtraMaterialFormValues, which is compatible with NewExtraMaterialData
+      addExtraMaterial(values as NewExtraMaterialData); // Cast to NewExtraMaterialData for the hook
       showSuccess(`Material extra "${values.name || 'Sem Nome'}" adicionado com sucesso!`);
       form.reset();
       setOpen(false);

@@ -8,20 +8,23 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
+import { useElectricityProfiles, NewElectricityProfileData } from "@/hooks/use-electricity-profiles"; // Import NewElectricityProfileData
 import { showSuccess, showError } from "@/utils/toast";
 import { PlusCircle } from "lucide-react";
 
 const formSchema = z.object({
-  name: z.string().optional(), // Made optional
+  name: z.string().optional(),
   costPerHour: z.coerce.number().min(0, "O custo por hora não pode ser negativo."),
   description: z.string().optional(),
 });
 
+// Explicitly define the type for the form values
+type AddElectricityProfileFormValues = z.infer<typeof formSchema>;
+
 export const AddElectricityProfileDialog = () => {
   const { addElectricityProfile } = useElectricityProfiles();
   const [open, setOpen] = React.useState(false);
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<AddElectricityProfileFormValues>({ // Use the explicit type here
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -30,10 +33,10 @@ export const AddElectricityProfileDialog = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: AddElectricityProfileFormValues) => { // Use the explicit type here
     try {
-      // O tipo de 'values' agora corresponde ao tipo NewElectricityProfileData definido em use-electricity-profiles.ts
-      addElectricityProfile(values);
+      // The 'values' type is now AddElectricityProfileFormValues, which is compatible with NewElectricityProfileData
+      addElectricityProfile(values as NewElectricityProfileData); // Cast to NewElectricityProfileData for the hook
       showSuccess(`Perfil de eletricidade "${values.name || 'Sem Nome'}" adicionado com sucesso!`);
       form.reset();
       setOpen(false);

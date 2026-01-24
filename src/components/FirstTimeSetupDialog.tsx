@@ -8,8 +8,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { usePrinters } from "@/hooks/use-printers";
-import { useFilaments } from "@/hooks/use-filaments";
+import { usePrinters, Printer } from "@/hooks/use-printers";
+import { useFilaments, NewFilamentData } from "@/hooks/use-filaments"; // Import NewFilamentData
 import { showSuccess, showError } from "@/utils/toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { predefinedPrinters } from "@/components/AddPrinterDialog";
@@ -21,19 +21,23 @@ const printerFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
-  powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50), // Adicionado
+  powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50),
   workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0),
 });
 
 const filamentFormSchema = z.object({
-  name: z.string().optional(), // Tornar opcional para corresponder ao hook
+  name: z.string().optional(),
   brand: z.string().min(1, "A marca é obrigatória."),
   type: z.string().min(1, "O tipo é obrigatório."),
-  color: z.string().optional(), // Tornar opcional para corresponder ao hook
+  color: z.string().optional(),
   pricePerKg: z.coerce.number().min(0.01, "O preço por kg deve ser positivo."),
-  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(), // Novo campo
+  purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(),
   weight: z.coerce.number().min(0.01, "O peso deve ser positivo."),
 });
+
+// Explicitly define the types for the forms
+type FirstTimePrinterFormValues = z.infer<typeof printerFormSchema>;
+type FirstTimeFilamentFormValues = z.infer<typeof filamentFormSchema>;
 
 interface FirstTimeSetupDialogProps {
   open: boolean;
@@ -45,7 +49,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
   const { addFilament } = useFilaments();
   const [step, setStep] = useState(1); // 1: Add Printer, 2: Add Filament
 
-  const printerForm = useForm<z.infer<typeof printerFormSchema>>({
+  const printerForm = useForm<FirstTimePrinterFormValues>({ // Use the explicit type here
     resolver: zodResolver(printerFormSchema),
     defaultValues: {
       name: "",
@@ -56,7 +60,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     },
   });
 
-  const filamentForm = useForm<z.infer<typeof filamentFormSchema>>({
+  const filamentForm = useForm<FirstTimeFilamentFormValues>({ // Use the explicit type here
     resolver: zodResolver(filamentFormSchema),
     defaultValues: {
       name: "",
@@ -86,9 +90,9 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     }
   }, [selectedFilamentBrand, filamentForm]);
 
-  const handleAddPrinter = (values: z.infer<typeof printerFormSchema>) => {
+  const handleAddPrinter = (values: FirstTimePrinterFormValues) => { // Use the explicit type here
     try {
-      // O tipo de 'values' corresponde a Omit<Printer, "id" | "status" | "timestamp">
+      // The 'values' type is now FirstTimePrinterFormValues, which is compatible with Omit<Printer, "id" | "status" | "timestamp">
       addPrinter(values);
       showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
       setStep(2); // Move to next step
@@ -98,10 +102,10 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     }
   };
 
-  const handleAddFilament = (values: z.infer<typeof filamentFormSchema>) => {
+  const handleAddFilament = (values: FirstTimeFilamentFormValues) => { // Use the explicit type here
     try {
-      // O tipo de 'values' agora corresponde ao tipo NewFilamentData definido em use-filaments.ts
-      addFilament({ ...values, currentWeightGrams: values.weight * 1000 }); // Add currentWeightGrams default
+      // The 'values' type is now FirstTimeFilamentFormValues, which is compatible with NewFilamentData
+      addFilament({ ...values, currentWeightGrams: values.weight * 1000 } as NewFilamentData); // Cast to NewFilamentData for the hook
       showSuccess(`Filamento "${values.name || values.type}" adicionado com sucesso!`);
       if (typeof window !== "undefined") {
         localStorage.setItem("hasVisitedBefore", "true");

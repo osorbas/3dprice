@@ -16,9 +16,12 @@ const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
-  powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50), // Adicionado
+  powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50),
   workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0),
 });
+
+// Explicitly define the type for the form values
+type AddPrinterFormValues = z.infer<typeof formSchema>;
 
 interface AddPrinterDialogProps {
   // Removida prop onSuccess
@@ -65,7 +68,7 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
   const { addPrinter } = usePrinters();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<AddPrinterFormValues>({ // Use the explicit type here
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
@@ -83,7 +86,7 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
     }
   }, [selectedBrand, form]);
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: AddPrinterFormValues) => { // Use the explicit type here
     try {
       // O tipo de 'values' corresponde a Omit<Printer, "id" | "status" | "timestamp">
       addPrinter(values);

@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useFilaments } from "@/hooks/use-filaments";
+import { useFilaments, NewFilamentData } from "@/hooks/use-filaments"; // Import NewFilamentData
 import { showSuccess, showError } from "@/utils/toast";
 import { PlusCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +22,9 @@ const formSchema = z.object({
   weight: z.coerce.number().min(0.01, "O peso deve ser positivo."),
   currentWeightGrams: z.coerce.number().min(0, "O stock não pode ser negativo."),
 });
+
+// Explicitly define the type for the form values
+type AddFilamentFormValues = z.infer<typeof formSchema>;
 
 export const predefinedFilamentOptions = [
   { brand: "Genérico", type: "PLA" },
@@ -44,17 +47,17 @@ export const AddFilamentDialog = () => {
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<AddFilamentFormValues>({ // Use the explicit type here
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "", brand: "", type: "", color: "", pricePerKg: 0, purchasePrice: 0, weight: 1, currentWeightGrams: 1000,
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: AddFilamentFormValues) => { // Use the explicit type here
     try {
-      // O tipo de 'values' agora corresponde ao tipo NewFilamentData definido em use-filaments.ts
-      addFilament(values);
+      // The 'values' type is now AddFilamentFormValues, which is compatible with NewFilamentData
+      addFilament(values as NewFilamentData); // Cast to NewFilamentData for the hook
       showSuccess(`Filamento adicionado!`);
       form.reset();
       setOpen(false);
@@ -69,7 +72,7 @@ export const AddFilamentDialog = () => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="flex items-center gap-2"><PlusCircle className="h-4 w-4" /> Adicionar Filamento</Button>
+        <Button className="flex items-center gap-2"><PlusCircle className="h-4 w-4 mr-2" /> Adicionar Filamento</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Adicionar Novo Filamento</DialogTitle></DialogHeader>
