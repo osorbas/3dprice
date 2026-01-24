@@ -78,9 +78,9 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
   const handleConfirm = async () => {
     const fieldsToValidate: (FieldPath<TFieldValues>)[] = [
       partNamePath,
-      `${namePrefix}.${index}.printerId` as FieldPath<TFieldValues>, // Corrigido
-      `${namePrefix}.${index}.printTimeHours` as FieldPath<TFieldValues>, // Corrigido
-      `${namePrefix}.${index}.printTimeMinutes` as FieldPath<TFieldValues>, // Corrigido
+      `${namePrefix}.${index}.printerId` as FieldPath<TFieldValues>,
+      `${namePrefix}.${index}.printTimeHours` as FieldPath<TFieldValues>,
+      `${namePrefix}.${index}.printTimeMinutes` as FieldPath<TFieldValues>,
       electricityProfileIdPath,
       electricityCostPerHourPath,
     ];

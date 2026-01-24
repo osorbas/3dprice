@@ -99,7 +99,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
   const handleAddFilament = (values: z.infer<typeof filamentFormSchema>) => {
     try {
       // O tipo de 'values' agora corresponde ao tipo NewFilamentData definido em use-filaments.ts
-      addFilament(values);
+      addFilament({ ...values, currentWeightGrams: values.weight * 1000 }); // Add currentWeightGrams default
       showSuccess(`Filamento "${values.name || values.type}" adicionado com sucesso!`);
       if (typeof window !== "undefined") {
         localStorage.setItem("hasVisitedBefore", "true");
