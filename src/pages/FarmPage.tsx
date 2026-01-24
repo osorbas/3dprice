@@ -32,13 +32,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger, // Adicionado
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { AddFilamentDialog } from "@/components/AddFilamentDialog"; // Import AddFilamentDialog
-import { EditFilamentDialog } from "@/components/EditFilamentDialog"; // Import EditFilamentDialog
-import { AddFilamentStockDialog } from "@/components/AddFilamentStockDialog"; // Re-import AddFilamentStockDialog
+import { AddFilamentDialog } from "@/components/AddFilamentDialog";
+import { EditFilamentDialog } from "@/components/EditFilamentDialog";
+import { AddFilamentStockDialog } from "@/components/AddFilamentStockDialog";
+import { AddPrinterDialog } from "@/components/AddPrinterDialog"; // Import AddPrinterDialog
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
@@ -271,14 +272,17 @@ const FarmPage = () => {
 
   return (
     <div className="space-y-8 p-4">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold">Print Farm</h1>
-        <p className="text-muted-foreground">Monitorização em tempo real da tua frota e stock.</p>
+      <div className="flex items-center justify-between space-y-1"> {/* Added flex container */}
+        <div>
+          <h1 className="text-3xl font-bold">Print Farm</h1>
+          <p className="text-muted-foreground">Monitorização em tempo real da tua frota e stock.</p>
+        </div>
+        <AddPrinterDialog /> {/* Add Printer button */}
       </div>
 
       {printers.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
-          Nenhuma impressora registada. Adiciona-as nas Definições.
+          Nenhuma impressora registada. Adiciona-as para começar a gerir a tua farm.
         </Card>
       ) : (
         <div className="space-y-10">
