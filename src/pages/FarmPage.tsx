@@ -18,7 +18,8 @@ import {
   Layers,
   CheckCircle,
   PlusCircle,
-  Pencil
+  Pencil,
+  Palette
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,13 +40,13 @@ import { cn } from "@/lib/utils";
 import { AddFilamentDialog } from "@/components/AddFilamentDialog";
 import { EditFilamentDialog } from "@/components/EditFilamentDialog";
 import { AddFilamentStockDialog } from "@/components/AddFilamentStockDialog";
-import { AddPrinterDialog } from "@/components/AddPrinterDialog"; // Import AddPrinterDialog
+import { AddPrinterDialog } from "@/components/AddPrinterDialog"; 
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
   const { filaments } = useFilaments();
   const [now, setNow] = useState(Date.now());
-  const [manageStockEnabled, setManageStockEnabled] = useState(false); // State for stock management setting
+  const [manageStockEnabled, setManageStockEnabled] = useState(false); 
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -58,7 +59,6 @@ const FarmPage = () => {
 
     checkStockSetting();
 
-    // Listener for storage changes (e.g., if settings page changes the value)
     const handleStorageChange = (e: StorageEvent) => {
         if (e.key === "manage_filament_stock" || e.key === null) {
             checkStockSetting();
@@ -86,7 +86,6 @@ const FarmPage = () => {
   };
 
   const handleManualComplete = (printer: Printer) => {
-    // Calcular as horas reais trabalhadas até o momento da conclusão manual
     let additionalHours = 0;
     if (printer.timerStart) {
       const elapsedMs = now - printer.timerStart;
@@ -272,12 +271,12 @@ const FarmPage = () => {
 
   return (
     <div className="space-y-8 p-4">
-      <div className="flex items-center justify-between space-y-1"> {/* Added flex container */}
+      <div className="flex items-center justify-between space-y-1">
         <div>
           <h1 className="text-3xl font-bold">Print Farm</h1>
           <p className="text-muted-foreground">Monitorização em tempo real da tua frota e stock.</p>
         </div>
-        <AddPrinterDialog /> {/* Add Printer button */}
+        <AddPrinterDialog />
       </div>
 
       {printers.length === 0 ? (
@@ -309,7 +308,7 @@ const FarmPage = () => {
                       <Badge variant="secondary" className="text-xs text-muted-foreground">Gestão de Stock Desativada</Badge>
                   )}
                 </div>
-                <AddFilamentDialog /> {/* Botão para adicionar novo filamento */}
+                <AddFilamentDialog />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {filaments.map((f) => {
@@ -340,14 +339,19 @@ const FarmPage = () => {
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <p className="font-bold text-sm truncate max-w-[140px]">{f.name || f.type}</p>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-                              {f.brand} {f.type}
-                            </p>
+                            <div className="flex flex-col">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                                {f.brand} {f.type}
+                              </p>
+                              {f.color && (
+                                <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                                  <Palette className="h-2.5 w-2.5" /> {f.color}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <div className="flex gap-1">
-                            {/* Botão para editar (atualizar stock e outros detalhes) */}
                             <EditFilamentDialog filament={f} />
-                            {/* Botão para adicionar stock (Dar entrada de filamento) */}
                             <AddFilamentStockDialog filament={f} /> 
                           </div>
                         </div>
@@ -376,6 +380,7 @@ const FarmPage = () => {
                             <div 
                               className="h-2.5 w-2.5 rounded-full border border-black/10" 
                               style={{ backgroundColor: f.color.toLowerCase() }} 
+                              title={`Cor: ${f.color}`}
                             />
                           )}
                         </div>
