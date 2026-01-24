@@ -93,7 +93,7 @@ const CalculatorPage = () => {
   
   const [summaryData, setSummaryData] = useState<any>(null);
   const [pendingTimerData, setPendingTimerData] = useState<{ printerId: string, duration: number } | null>(null);
-  const [busyPrinterInfo, setBusyPrinterInfo] = setBusyPrinterInfo = useState<{ id: string, name: string, onChange: (val: string) => void } | null>(null);
+  const [busyPrinterInfo, setBusyPrinterInfo] = useState<{ id: string, name: string, onChange: (val: string) => void } | null>(null);
   const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
