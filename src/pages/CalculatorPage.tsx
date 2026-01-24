@@ -75,7 +75,6 @@ const formSchema = z.object({
   laborTimeMinutes: z.coerce.number().optional(),
   profitMargin: z.coerce.number().optional(),
   extras: z.array(extraSchema).optional(),
-  // Tornamos o projectName um campo de string normal, e a validação de obrigatoriedade será feita no onSubmit
   projectName: z.string().optional(), 
   projectParts: z.array(projectPartSchema).optional(),
 });
@@ -94,7 +93,7 @@ const CalculatorPage = () => {
   
   const [summaryData, setSummaryData] = useState<any>(null);
   const [pendingTimerData, setPendingTimerData] = useState<{ printerId: string, duration: number } | null>(null);
-  const [busyPrinterInfo, setBusyPrinterInfo] = useState<{ id: string, name: string, onChange: (val: string) => void } | null>(null);
+  const [busyPrinterInfo, setBusyPrinterInfo] = setBusyPrinterInfo = useState<{ id: string, name: string, onChange: (val: string) => void } | null>(null);
   const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,18 +125,14 @@ const CalculatorPage = () => {
 
   const watchedValues = form.watch();
 
-  // Atualiza o estado de abertura do acordeão quando as partes mudam
   useEffect(() => {
     if (projectPartFields.length !== openPartStates.length) {
-      // Inicializa todas as novas partes como abertas (true)
       setOpenPartStates(prev => {
         const newStates = Array(projectPartFields.length).fill(false);
-        // Mantém o estado das partes existentes
         for (let i = 0; i < prev.length && i < projectPartFields.length; i++) {
           newStates[i] = prev[i];
         }
-        // Garante que a última parte adicionada esteja aberta
-        if (projectPartFields.length > 0) {
+        if (projectPartFields.length > 0 && projectPartFields.length > prev.length) {
             newStates[projectPartFields.length - 1] = true;
         }
         return newStates;
@@ -245,11 +240,9 @@ const CalculatorPage = () => {
     setIsSummaryDialogOpen(open);
     
     if (!open) {
-      // Se o diálogo de resumo fechar, verificar se há um temporizador pendente
       if (pendingTimerData) {
         setIsTimerDialogOpen(true);
       } else {
-        // Se não houver temporizador pendente, resetar o formulário
         form.reset({
           printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
           printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
@@ -272,8 +265,6 @@ const CalculatorPage = () => {
       showSuccess("Temporizador ativado!");
     }
     setPendingTimerData(null);
-    
-    // Resetar o formulário após iniciar o timer
     form.reset({
       printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
       printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
@@ -285,9 +276,7 @@ const CalculatorPage = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (activeTab === "project") {
-      // Forçar validação do nome do projeto
-      const isProjectNameValid = await form.trigger("projectName");
-      if (!isProjectNameValid || !values.projectName || values.projectName.trim() === "") {
+      if (!values.projectName || values.projectName.trim() === "") {
         showError("O nome do projeto é obrigatório.");
         return;
       }
@@ -295,16 +284,13 @@ const CalculatorPage = () => {
         showError("Adicione pelo menos uma parte ao projeto.");
         return;
       }
-      // Verificar se todas as partes foram confirmadas
       const allPartsConfirmed = values.projectParts.every(part => part.isConfirmed);
       if (!allPartsConfirmed) {
         showError("Confirme todas as partes do projeto antes de guardar.");
         return;
       }
     } else {
-      // Forçar validação do nome da impressão
-      const isPrintNameValid = await form.trigger("printName");
-      if (!isPrintNameValid || !values.printName || values.printName.trim() === "") {
+      if (!values.printName || values.printName.trim() === "") {
         showError("O nome da impressão é obrigatório.");
         return;
       }
@@ -318,7 +304,6 @@ const CalculatorPage = () => {
       return;
     }
 
-    // Calcular detalhes das partes para projetos
     const projectPartsDetails = activeTab === "project" ? values.projectParts?.map(part => {
       let partMatCost = 0;
       let partGrams = 0;
@@ -342,7 +327,6 @@ const CalculatorPage = () => {
       };
     }) : [];
 
-    // Abater stock se ativo
     if (localStorage.getItem("manage_filament_stock") === "true") {
       if (activeTab === "single-print") {
         values.filamentsUsed?.forEach(f => subtractStock(f.filamentId, f.filamentGrams));
@@ -379,8 +363,6 @@ const CalculatorPage = () => {
       profitMargin: values.profitMargin
     });
 
-    // Configurar dados pendentes do temporizador, mas não abrir o diálogo ainda
-    // Corrigido: Verificar se o status é 'Pronta'
     if (selectedPrinterId && printer?.status === "Pronta") {
       setPendingTimerData({ printerId: selectedPrinterId, duration: totals.totalPrintTime });
     } else {
@@ -388,7 +370,6 @@ const CalculatorPage = () => {
     }
 
     setIsSummaryDialogOpen(true);
-    showSuccess("Cálculo guardado com sucesso!");
   };
 
   return (
@@ -471,7 +452,13 @@ const CalculatorPage = () => {
                 ) : (
                   <>
                     <FormField control={form.control} name="projectName" render={({ field }) => (
-                      <FormItem><FormLabel>Nome do Projeto *</FormLabel><FormControl><Input placeholder="ex: Armadura Iron Man" {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>Nome do Projeto *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ex: Armadura Iron Man" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                     <div className="space-y-4">
                       {projectPartFields.map((field, idx) => (
@@ -566,7 +553,6 @@ const CalculatorPage = () => {
         isOpen={isTimerDialogOpen} 
         onOpenChange={(open) => {
           setIsTimerDialogOpen(open);
-          // Se o diálogo do timer for fechado (cancelado), resetar o formulário
           if (!open) {
             setPendingTimerData(null);
             form.reset({
