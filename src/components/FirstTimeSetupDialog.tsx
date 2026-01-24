@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import * => z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { usePrinters, Printer } from "@/hooks/use-printers";
 import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
@@ -143,7 +143,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="grid gap-4 py-4">
+          <form id="setup-form" onSubmit={(e) => { e.preventDefault(); handleNextStep(); }} className="grid gap-4 py-4">
             {step === 1 && (
               <>
                 <h3 className="text-lg font-semibold">1. Adicionar Impressora</h3>
@@ -394,20 +394,21 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                 />
               </>
             )}
-            <DialogFooter className="pt-4">
-              {step === 1 && (
-                <Button type="submit" className="flex items-center gap-2">
-                  Adicionar Impressora <ArrowRight className="h-4 w-4" />
-                </Button>
-              )}
-              {step === 2 && (
-                <Button type="submit" className="flex items-center gap-2">
-                  Concluir Configuração <Check className="h-4 w-4" />
-                </Button>
-              )}
-            </DialogFooter>
           </form>
         </Form>
+
+        <DialogFooter className="pt-4">
+          {step === 1 && (
+            <Button type="submit" form="setup-form" className="flex items-center gap-2">
+              Adicionar Impressora <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+          {step === 2 && (
+            <Button type="submit" form="setup-form" className="flex items-center gap-2">
+              Concluir Configuração <Check className="h-4 w-4" />
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
