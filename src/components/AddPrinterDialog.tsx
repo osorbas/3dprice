@@ -23,34 +23,34 @@ const formSchema = z.object({
 type AddPrinterFormValues = z.infer<typeof formSchema>;
 
 export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [
-  { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2", powerConsumptionWatts: 150 },
-  { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE", powerConsumptionWatts: 200 },
-  { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE", powerConsumptionWatts: 250 },
+  { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2", powerConsumptionWatts: 350 },
+  { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE", powerConsumptionWatts: 350 },
+  { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE", powerConsumptionWatts: 350 },
   { name: "Creality K1", brand: "Creality", model: "K1", powerConsumptionWatts: 350 },
-  { name: "Creality K1 Max", brand: "Creality", model: "K1 Max", powerConsumptionWatts: 400 },
-  { name: "Creality CR-10 Smart Pro", brand: "Creality", model: "CR-10 Smart Pro", powerConsumptionWatts: 300 },
-  { name: "Prusa i3 MK3S+", brand: "Prusa Research", model: "i3 MK3S+", powerConsumptionWatts: 180 },
-  { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+", powerConsumptionWatts: 100 },
-  { name: "Prusa XL (1 Toolhead)", brand: "Prusa Research", model: "XL (1 Toolhead)", powerConsumptionWatts: 300 },
-  { name: "Prusa XL (5 Toolheads)", brand: "Prusa Research", model: "XL (5 Toolheads)", powerConsumptionWatts: 450 },
-  { name: "Bambu Lab P1P", brand: "Bambu Lab", model: "P1P", powerConsumptionWatts: 300 },
-  { name: "Bambu Lab P1S", brand: "Bambu Lab", model: "P1S", powerConsumptionWatts: 300 },
-  { name: "Bambu Lab A1", brand: "Bambu Lab", model: "A1", powerConsumptionWatts: 250 },
+  { name: "Creality K1 Max", brand: "Creality", model: "K1 Max", powerConsumptionWatts: 1000 },
+  { name: "Creality CR-10 Smart Pro", brand: "Creality", model: "CR-10 Smart Pro", powerConsumptionWatts: 350 },
+  { name: "Prusa i3 MK3S+", brand: "Prusa Research", model: "i3 MK3S+", powerConsumptionWatts: 240 },
+  { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+", powerConsumptionWatts: 160 },
+  { name: "Prusa XL (1 Toolhead)", brand: "Prusa Research", model: "XL (1 Toolhead)", powerConsumptionWatts: 450 },
+  { name: "Prusa XL (5 Toolheads)", brand: "Prusa Research", model: "XL (5 Toolheads)", powerConsumptionWatts: 1100 },
+  { name: "Bambu Lab P1P", brand: "Bambu Lab", model: "P1P", powerConsumptionWatts: 1000 },
+  { name: "Bambu Lab P1S", brand: "Bambu Lab", model: "P1S", powerConsumptionWatts: 1000 },
+  { name: "Bambu Lab A1", brand: "Bambu Lab", model: "A1", powerConsumptionWatts: 1300 },
   { name: "Bambu Lab A1 Mini", brand: "Bambu Lab", model: "A1 Mini", powerConsumptionWatts: 150 },
-  { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon", powerConsumptionWatts: 350 },
-  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E", powerConsumptionWatts: 400 },
-  { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo", powerConsumptionWatts: 200 },
-  { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro", powerConsumptionWatts: 250 },
-  { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus", powerConsumptionWatts: 300 },
-  { name: "Anycubic Kobra 2 Max", brand: "Anycubic", model: "Kobra 2 Max", powerConsumptionWatts: 350 },
-  { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper", powerConsumptionWatts: 220 },
-  { name: "Elegoo Neptune 4", brand: "Elegoo", model: "Neptune 4", powerConsumptionWatts: 200 },
-  { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro", powerConsumptionWatts: 250 },
-  { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus", powerConsumptionWatts: 300 },
-  { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max", powerConsumptionWatts: 350 },
+  { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon", powerConsumptionWatts: 1000 },
+  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E", powerConsumptionWatts: 1000 },
+  { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo", powerConsumptionWatts: 400 },
+  { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro", powerConsumptionWatts: 400 },
+  { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus", powerConsumptionWatts: 400 },
+  { name: "Anycubic Kobra 2 Max", brand: "Anycubic", model: "Kobra 2 Max", powerConsumptionWatts: 400 },
+  { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper", powerConsumptionWatts: 350 },
+  { name: "Elegoo Neptune 4", brand: "Elegoo", model: "Neptune 4", powerConsumptionWatts: 400 },
+  { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro", powerConsumptionWatts: 400 },
+  { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus", powerConsumptionWatts: 400 },
+  { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max", powerConsumptionWatts: 400 },
   { name: "Blocks Zero", brand: "Blocks", model: "Zero", powerConsumptionWatts: 180 },
   { name: "Blocks One", brand: "Blocks", model: "One", powerConsumptionWatts: 250 },
-  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado", powerConsumptionWatts: 100 },
+  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado", powerConsumptionWatts: 200 },
 ];
 
 export const AddPrinterDialog = () => {
@@ -71,6 +71,14 @@ export const AddPrinterDialog = () => {
   React.useEffect(() => {
     if (selectedBrand !== form.getValues("brand")) {
       form.setValue("model", "");
+    }
+    // Ao selecionar um modelo, preenchemos a potência automaticamente
+    const currentModel = form.getValues("model");
+    if (currentModel) {
+      const preset = predefinedPrinters.find(p => p.model === currentModel && p.brand === selectedBrand);
+      if (preset) {
+        form.setValue("powerConsumptionWatts", preset.powerConsumptionWatts);
+      }
     }
   }, [selectedBrand, form]);
 
@@ -94,6 +102,17 @@ export const AddPrinterDialog = () => {
         .sort()
     : [];
 
+  const handleModelChange = (model: string) => {
+    form.setValue("model", model);
+    const preset = predefinedPrinters.find(p => p.model === model && p.brand === selectedBrand);
+    if (preset) {
+      form.setValue("powerConsumptionWatts", preset.powerConsumptionWatts);
+      if (!form.getValues("name")) {
+        form.setValue("name", preset.name);
+      }
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -111,19 +130,6 @@ export const AddPrinterDialog = () => {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Minha Ender 3" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="brand"
@@ -161,7 +167,7 @@ export const AddPrinterDialog = () => {
                 <FormItem>
                   <FormLabel>Modelo</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={handleModelChange}
                     value={field.value}
                     disabled={!selectedBrand || modelsForSelectedBrand.length === 0}
                   >
@@ -178,6 +184,19 @@ export const AddPrinterDialog = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome Personalizado (Opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Minha Ender 3" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -206,7 +225,7 @@ export const AddPrinterDialog = () => {
               name="workingHours"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Horas de Trabalho (h)</FormLabel>
+                  <FormLabel>Horas de Trabalho Iniciais (h)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
