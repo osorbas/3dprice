@@ -3,23 +3,22 @@ import { useState, useEffect } from "react";
 
 export interface ExtraMaterial {
   id: string;
-  name?: string; // Made optional
+  name?: string;
   description?: string;
   costPerUnit: number;
-  purchasePrice?: number; // Novo campo: preço de compra por unidade
+  purchasePrice?: number;
   unit: string;
   timestamp: number;
 }
 
-const LOCAL_STORAGE_KEY = "3d_extra_materials";
-const EVENT_NAME = "3d_extra_materials_updated";
-
-// Definir o tipo de dados que o formulário AddExtraDialog envia
 export type NewExtraMaterialData = Omit<ExtraMaterial, "id" | "timestamp" | "description" | "purchasePrice"> & {
   description?: string;
   purchasePrice?: number;
-  name?: string; // Permitir que o nome seja opcional no input
+  name?: string;
 };
+
+const LOCAL_STORAGE_KEY = "3d_extra_materials";
+const EVENT_NAME = "3d_extra_materials_updated";
 
 export function useExtraMaterials() {
   const getStoredMaterials = (): ExtraMaterial[] => {
@@ -28,7 +27,6 @@ export function useExtraMaterials() {
         const storedMaterials = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (storedMaterials) {
           const parsedMaterials: ExtraMaterial[] = JSON.parse(storedMaterials);
-          // Garante que 'purchasePrice' tenha um valor padrão para dados existentes
           return parsedMaterials.map(material => ({
             ...material,
             purchasePrice: material.purchasePrice ?? 0
@@ -71,7 +69,7 @@ export function useExtraMaterials() {
       ...newMaterial,
       id,
       timestamp,
-      name: newMaterial.name || "Material Extra Sem Nome", // Provide a default name if optional
+      name: newMaterial.name || "Material Extra Sem Nome",
       description: newMaterial.description || undefined,
       purchasePrice: newMaterial.purchasePrice ?? 0,
     };
@@ -103,7 +101,7 @@ export function useExtraMaterials() {
   const importExtraMaterials = (data: ExtraMaterial[]) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.map(material => ({
       ...material,
-      purchasePrice: material.purchasePrice ?? 0 // Garante que dados importados também tenham valor padrão
+      purchasePrice: material.purchasePrice ?? 0
     }))));
     notifyUpdate();
   };

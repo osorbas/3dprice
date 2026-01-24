@@ -20,16 +20,9 @@ const formSchema = z.object({
   workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0),
 });
 
-// Explicitly define the type for the form values
 type AddPrinterFormValues = z.infer<typeof formSchema>;
 
-interface AddPrinterDialogProps {
-  // Removida prop onSuccess
-}
-
-// Predefined list of popular 3D printers (used for select options)
-// Omitimos 'id', 'timestamp', 'workingHours' e 'status' (que é definido no hook)
-export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [ // Exportado
+export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [
   { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2", powerConsumptionWatts: 150 },
   { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE", powerConsumptionWatts: 200 },
   { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE", powerConsumptionWatts: 250 },
@@ -46,10 +39,6 @@ export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHour
   { name: "Bambu Lab A1 Mini", brand: "Bambu Lab", model: "A1 Mini", powerConsumptionWatts: 150 },
   { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon", powerConsumptionWatts: 350 },
   { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E", powerConsumptionWatts: 400 },
-  { name: "Bambu Lab P1S Pro", brand: "Bambu Lab", model: "P1S Pro", powerConsumptionWatts: 320 },
-  { name: "Bambu Lab H2D", brand: "Bambu Lab", model: "H2D", powerConsumptionWatts: 280 },
-  { name: "Bambu Lab H2S", brand: "Bambu Lab", model: "H2S", powerConsumptionWatts: 280 },
-  { name: "Bambu Lab H2C", brand: "Bambu Lab", model: "H2C", powerConsumptionWatts: 280 },
   { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo", powerConsumptionWatts: 200 },
   { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro", powerConsumptionWatts: 250 },
   { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus", powerConsumptionWatts: 300 },
@@ -64,40 +53,36 @@ export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHour
   { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado", powerConsumptionWatts: 100 },
 ];
 
-export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => {
+export const AddPrinterDialog = () => {
   const { addPrinter } = usePrinters();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
-  const form = useForm<AddPrinterFormValues>({ // Use the explicit type here
+  const form = useForm<AddPrinterFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       brand: "",
       model: "",
-      powerConsumptionWatts: 50, // Default value
+      powerConsumptionWatts: 50,
       workingHours: 0,
     },
   });
 
-  // Effect to reset model when brand changes
   React.useEffect(() => {
     if (selectedBrand !== form.getValues("brand")) {
       form.setValue("model", "");
     }
   }, [selectedBrand, form]);
 
-  const onSubmit = (values: AddPrinterFormValues) => { // Use the explicit type here
+  const onSubmit = (values: AddPrinterFormValues) => {
     try {
-      // O tipo de 'values' corresponde a Omit<Printer, "id" | "status" | "timestamp">
-      addPrinter(values as Omit<Printer, "id" | "status" | "timestamp">); // Explicitly cast here
+      addPrinter(values as any);
       showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
       form.reset();
-      setSelectedBrand(undefined); // Reset selected brand state
+      setSelectedBrand(undefined);
       setOpen(false);
-      // onSuccess?.(); // Não é mais necessário chamar o callback
     } catch (error) {
-      showError("Erro ao adicionar impressora. Por favor, tente novamente.");
-      console.error("Add printer error:", error);
+      showError("Erro ao adicionar impressora.");
     }
   };
 
@@ -149,13 +134,6 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                     onValueChange={(value) => {
                       field.onChange(value);
                       setSelectedBrand(value);
-                      // Set default power consumption when brand/model changes
-                      const selectedPrinter = predefinedPrinters.find(p => p.brand === value && p.model === form.getValues("model"));
-                      if (selectedPrinter) {
-                        form.setValue("powerConsumptionWatts", selectedPrinter.powerConsumptionWatts);
-                      } else {
-                        form.setValue("powerConsumptionWatts", 50); // Fallback default
-                      }
                     }}
                     value={field.value}
                   >
@@ -183,16 +161,7 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                 <FormItem>
                   <FormLabel>Modelo</FormLabel>
                   <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Set default power consumption when model changes
-                      const selectedPrinter = predefinedPrinters.find(p => p.brand === form.getValues("brand") && p.model === value);
-                      if (selectedPrinter) {
-                        form.setValue("powerConsumptionWatts", selectedPrinter.powerConsumptionWatts);
-                      } else {
-                        form.setValue("powerConsumptionWatts", 50); // Fallback default
-                      }
-                    }}
+                    onValueChange={field.onChange}
                     value={field.value}
                     disabled={!selectedBrand || modelsForSelectedBrand.length === 0}
                   >
@@ -226,11 +195,6 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                       step="1"
                       placeholder="50"
                       {...field}
-                      value={field.value === 0 ? "" : field.value}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? 0 : value);
-                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -250,11 +214,6 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                       step="1"
                       placeholder="0"
                       {...field}
-                      value={field.value === 0 ? "" : field.value}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        field.onChange(value === "" ? 0 : value);
-                      }}
                     />
                   </FormControl>
                   <FormMessage />

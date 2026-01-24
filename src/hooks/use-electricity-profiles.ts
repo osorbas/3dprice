@@ -3,11 +3,16 @@ import { useState, useEffect } from "react";
 
 export interface ElectricityProfile {
   id: string;
-  name?: string; // Made optional
+  name?: string;
   costPerHour: number;
   description?: string;
   timestamp: number;
 }
+
+export type NewElectricityProfileData = Omit<ElectricityProfile, "id" | "timestamp" | "description"> & {
+  description?: string;
+  name?: string;
+};
 
 const LOCAL_STORAGE_KEY = "3d_electricity_profiles";
 const EVENT_NAME = "3d_electricity_profiles_updated";
@@ -18,12 +23,6 @@ const predefinedElectricityProfiles: Omit<ElectricityProfile, "timestamp">[] = [
   { id: "default-peak", name: "Tarifa Bi-Horária (Pico)", costPerHour: 0.25, description: "Custo da eletricidade em horas de ponta (dia útil)." },
   { id: "default-industrial", name: "Tarifa Industrial", costPerHour: 0.18, description: "Custo para uso industrial ou comercial." },
 ];
-
-// Definir o tipo de dados que o formulário AddElectricityProfileDialog envia
-export type NewElectricityProfileData = Omit<ElectricityProfile, "id" | "timestamp" | "description"> & {
-  description?: string;
-  name?: string; // Permitir que o nome seja opcional no input
-};
 
 export function useElectricityProfiles() {
   const getStoredProfiles = (): ElectricityProfile[] => {
@@ -71,7 +70,7 @@ export function useElectricityProfiles() {
       ...newProfile,
       id,
       timestamp,
-      name: newProfile.name || "Perfil Sem Nome", // Provide a default name if optional
+      name: newProfile.name || "Perfil Sem Nome",
       description: newProfile.description || undefined,
     };
 

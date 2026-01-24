@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { usePrinters, Printer } from "@/hooks/use-printers";
+import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
 import { showSuccess, showError } from "@/utils/toast";
 import {
@@ -111,7 +111,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
       if (isValid) {
         try {
           const printerValues = form.getValues("printer");
-          addPrinter(printerValues as Omit<Printer, "id" | "status" | "timestamp">);
+          addPrinter(printerValues as any);
           showSuccess(`Impressora "${printerValues.name}" adicionada!`);
           setStep(2);
         } catch (error) {

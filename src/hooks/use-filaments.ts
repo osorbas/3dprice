@@ -3,26 +3,25 @@ import { useState, useEffect } from "react";
 
 export interface Filament {
   id: string;
-  name?: string; // Made optional
+  name?: string;
   brand: string;
   type: string;
-  color?: string; // Made optional
+  color?: string;
   pricePerKg: number;
   purchasePrice?: number;
-  weight: number; // Peso padrão da bobina (ex: 1kg)
-  currentWeightGrams: number; // Stock real restante em gramas
+  weight: number; 
+  currentWeightGrams: number;
   timestamp: number;
 }
 
-const LOCAL_STORAGE_KEY = "3d_filaments";
-const EVENT_NAME = "3d_filaments_updated";
-
-// Definir o tipo de dados que o formulário AddFilamentDialog envia
 export type NewFilamentData = Omit<Filament, "id" | "timestamp" | "currentWeightGrams"> & { 
   currentWeightGrams?: number;
-  name?: string; // Permitir que o nome seja opcional no input
-  color?: string; // Permitir que a cor seja opcional no input
+  name?: string;
+  color?: string;
 };
+
+const LOCAL_STORAGE_KEY = "3d_filaments";
+const EVENT_NAME = "3d_filaments_updated";
 
 export function useFilaments() {
   const getStoredFilaments = (): Filament[] => {
@@ -35,8 +34,8 @@ export function useFilaments() {
             ...filament,
             purchasePrice: filament.purchasePrice ?? 0,
             currentWeightGrams: filament.currentWeightGrams ?? (filament.weight * 1000),
-            name: filament.name ?? `${filament.brand} ${filament.type}`, // Garantir nome
-            color: filament.color ?? "", // Garantir cor
+            name: filament.name ?? `${filament.brand} ${filament.type}`,
+            color: filament.color ?? "",
           }));
         }
         return [];
@@ -73,7 +72,6 @@ export function useFilaments() {
     const timestamp = Date.now();
     const grams = newFilament.currentWeightGrams ?? (newFilament.weight * 1000);
     
-    // Preencher campos obrigatórios que podem ser opcionais no formulário
     const filamentToAdd: Filament = {
       ...newFilament,
       id,
