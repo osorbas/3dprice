@@ -239,12 +239,12 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="submit" className="flex items-center gap-2">
-                  Adicionar Impressora <ArrowRight className="h-4 w-4" />
-                </Button>
-              </DialogFooter>
             </form>
+            <DialogFooter className="pt-4"> {/* Moved DialogFooter outside <form> */}
+              <Button type="submit" className="flex items-center gap-2" form={printerForm.formState.isSubmitting ? undefined : printerForm.formState.isValid ? undefined : "printer-form"}> {/* Added form attribute to link button to form */}
+                Adicionar Impressora <ArrowRight className="h-4 w-4" />
+              </Button>
+            </DialogFooter>
           </Form>
         )}
 
@@ -326,7 +326,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
               <FormField
                 control={filamentForm.control}
                 name="color"
-                render={({ field }) => (
+              render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cor (Opcional)</FormLabel>
                     <FormControl>
@@ -396,12 +396,12 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   </FormItem>
                 )}
               />
-              <DialogFooter>
-                <Button type="submit" className="flex items-center gap-2">
-                  Concluir Configuração <Check className="h-4 w-4" />
-                </Button>
-              </DialogFooter>
             </form>
+            <DialogFooter className="pt-4"> {/* Moved DialogFooter outside <form> */}
+              <Button type="submit" className="flex items-center gap-2" form={filamentForm.formState.isSubmitting ? undefined : filamentForm.formState.isValid ? undefined : "filament-form"}> {/* Added form attribute to link button to form */}
+                Concluir Configuração <Check className="h-4 w-4" />
+              </Button>
+            </DialogFooter>
           </Form>
         )}
       </DialogContent>
