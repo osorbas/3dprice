@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { usePrinters, Printer } from "@/hooks/use-printers";
-import { useFilaments, NewFilamentData } from "@/hooks/use-filaments"; // Import NewFilamentData
+import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
 import { showSuccess, showError } from "@/utils/toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { predefinedPrinters } from "@/components/AddPrinterDialog";
@@ -134,7 +134,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Bem-vindo ao 3D Print Price Calculator!</TDialogTitle>
+          <DialogTitle>Bem-vindo ao 3D Print Price Calculator!</DialogTitle>
           <DialogDescription>
             Para começar, por favor adicione uma impressora e um filamento.
           </DialogDescription>
@@ -406,5 +406,3 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
         )}
       </DialogContent>
     </Dialog>
-  );
-};
