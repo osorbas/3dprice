@@ -243,7 +243,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
               </form>
             </Form>
             <DialogFooter className="pt-4">
-              <Button type="submit" className="flex items-center gap-2" form={printerForm.formState.isSubmitting ? undefined : printerForm.formState.isValid ? undefined : "printer-form"}>
+              <Button type="button" onClick={printerForm.handleSubmit(handleAddPrinter)} className="flex items-center gap-2">
                 Adicionar Impressora <ArrowRight className="h-4 w-4" />
               </Button>
             </DialogFooter>
@@ -402,7 +402,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
               </form>
             </Form>
             <DialogFooter className="pt-4">
-              <Button type="submit" className="flex items-center gap-2">
+              <Button type="button" onClick={filamentForm.handleSubmit(handleAddFilament)} className="flex items-center gap-2">
                 Concluir Configuração <Check className="h-4 w-4" />
               </Button>
             </DialogFooter>
