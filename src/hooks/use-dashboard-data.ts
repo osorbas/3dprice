@@ -2,7 +2,25 @@
 
 import { useMemo } from "react";
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
-import { format, subDays, isAfter, startOfDay, startOfWeek, startOfMonth, startOfYear, addDays, addWeeks, addMonths, addYears, subMonths, subYears } from "date-fns";
+import { 
+  format, 
+  isAfter, 
+  startOfDay, 
+  startOfWeek, 
+  startOfMonth, 
+  startOfYear, 
+  subDays,
+  subMonths,
+  subYears,
+  addDays,
+  addWeeks,
+  addMonths,
+  addYears,
+  isSameDay,
+  isSameWeek,
+  isSameMonth,
+  isSameYear
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 type Timeframe = "daily" | "weekly" | "biweekly" | "monthly" | "yearly";
@@ -11,45 +29,58 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
   const { calculations, clearCalculations } = usePrintCalculations();
 
   const dashboardData = useMemo(() => {
-    const today = startOfDay(new Date());
-    let startDate: Date;
+    const now = new Date();
+    const today = startOfDay(now);
+    
+    // Configuração do Histórico (Gráficos)
+    let historyStartDate: Date;
     let numPeriods = 30;
 
     switch (timeframe) {
       case "daily":
-        startDate = subDays(today, 29);
+        historyStartDate = subDays(today, 29);
         numPeriods = 30;
         break;
       case "weekly":
-        startDate = subDays(today, 29 * 7);
-        startDate = startOfWeek(startDate, { locale: ptBR });
+        historyStartDate = subWeeks(startOfWeek(today, { locale: ptBR }), 29);
         numPeriods = 30;
         break;
       case "biweekly":
-        startDate = subDays(today, 29 * 14);
-        startDate = startOfWeek(startDate, { locale: ptBR });
+        historyStartDate = subDays(today, 29 * 14);
         numPeriods = 30;
         break;
       case "monthly":
-        startDate = subMonths(today, 11);
-        startDate = startOfMonth(startDate);
+        historyStartDate = subMonths(startOfMonth(today), 11);
         numPeriods = 12;
         break;
       case "yearly":
-        startDate = subYears(today, 4);
-        startDate = startOfYear(startDate);
+        historyStartDate = subYears(startOfYear(today), 4);
         numPeriods = 5;
         break;
       default:
-        startDate = subDays(today, 29);
+        historyStartDate = subDays(today, 29);
         numPeriods = 30;
     }
 
-    const filteredCalculations = calculations.filter(calc =>
-      isAfter(new Date(calc.timestamp), startDate) || format(new Date(calc.timestamp), 'yyyy-MM-dd') === format(startDate, 'yyyy-MM-dd')
+    // Filtrar cálculos para o gráfico (Histórico completo)
+    const historyCalculations = calculations.filter(calc =>
+      isAfter(new Date(calc.timestamp), historyStartDate) || isSameDay(new Date(calc.timestamp), historyStartDate)
     );
 
-    const totalCalculations = filteredCalculations.length;
+    // Filtrar cálculos para os cartões de resumo (Período específico e atual)
+    const summaryCalculations = calculations.filter(calc => {
+      const calcDate = new Date(calc.timestamp);
+      switch (timeframe) {
+        case "daily": return isSameDay(calcDate, now);
+        case "weekly": return isSameWeek(calcDate, now, { locale: ptBR });
+        case "biweekly": return isAfter(calcDate, subDays(now, 14));
+        case "monthly": return isSameMonth(calcDate, now);
+        case "yearly": return isSameYear(calcDate, now);
+        default: return isSameDay(calcDate, now);
+      }
+    });
+
+    // Totais para os cartões de resumo
     let totalRevenue = 0;
     let totalEstimatedProfit = 0;
     let totalPrintTimeHours = 0;
@@ -59,33 +90,32 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
     let totalLaborCost = 0;
     let totalExtraCost = 0;
 
-    // Calculando estatísticas baseadas apenas nas impressões filtradas pelo período
-    filteredCalculations.forEach((calc) => {
+    summaryCalculations.forEach((calc) => {
       const revenue = Number(calc.totalPrice) || 0;
       const matCost = Number(calc.materialCost) || 0;
       const elecCost = Number(calc.electricityCost) || 0;
       const labCost = Number(calc.laborCost) || 0;
       const extCost = Number(calc.extraCost) || 0;
-      const grams = Number(calc.filamentGrams) || 0;
-      const hours = Number(calc.printTimeHours) || 0;
-
+      
       totalRevenue += revenue;
-      const baseCost = matCost + elecCost + labCost + extCost;
-      totalEstimatedProfit += (revenue - baseCost);
-      totalPrintTimeHours += hours;
-      totalFilamentUsedGrams += grams;
       totalMaterialCost += matCost;
       totalElectricityCost += elecCost;
       totalLaborCost += labCost;
       totalExtraCost += extCost;
+      totalFilamentUsedGrams += Number(calc.filamentGrams) || 0;
+      totalPrintTimeHours += Number(calc.printTimeHours) || 0;
+      
+      const baseCost = matCost + elecCost + labCost + extCost;
+      totalEstimatedProfit += (revenue - baseCost);
     });
 
     const totalCosts = totalMaterialCost + totalElectricityCost + totalLaborCost + totalExtraCost;
     const averageProfitMargin = totalRevenue > 0 ? (totalEstimatedProfit / totalRevenue) * 100 : 0;
 
+    // Gerar dados do gráfico (mantendo a lógica de histórico)
     const periodDataMap = new Map<string, { revenue: number; costs: number; calculations: number }>();
+    let currentPeriodStart = historyStartDate;
 
-    let currentPeriodStart = startDate;
     for (let i = 0; i < numPeriods; i++) {
       let periodKey = "";
       let nextPeriodStart: Date;
@@ -114,18 +144,19 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
       currentPeriodStart = nextPeriodStart;
     }
 
-    filteredCalculations.forEach(calc => {
+    historyCalculations.forEach(calc => {
       const calcDate = new Date(calc.timestamp);
       let periodKey = "";
 
       if (timeframe === "daily") {
         periodKey = format(startOfDay(calcDate), "dd/MM", { locale: ptBR });
       } else if (timeframe === "weekly") {
-        periodKey = format(startOfWeek(calcDate, { locale: ptBR }), "dd/MM", { locale: ptBR }) + " - " + format(addDays(startOfWeek(calcDate, { locale: ptBR }), 6), "dd/MM", { locale: ptBR });
+        const sw = startOfWeek(calcDate, { locale: ptBR });
+        periodKey = format(sw, "dd/MM", { locale: ptBR }) + " - " + format(addDays(sw, 6), "dd/MM", { locale: ptBR });
       } else if (timeframe === "biweekly") {
-        const diffWeeks = Math.floor((startOfWeek(calcDate, { locale: ptBR }).getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+        const diffWeeks = Math.floor((startOfWeek(calcDate, { locale: ptBR }).getTime() - historyStartDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
         const biWeekOffset = Math.floor(diffWeeks / 2) * 2;
-        const startOfBiWeek = addWeeks(startDate, biWeekOffset);
+        const startOfBiWeek = addWeeks(historyStartDate, biWeekOffset);
         periodKey = format(startOfBiWeek, "dd/MM", { locale: ptBR }) + " - " + format(addDays(startOfBiWeek, 13), "dd/MM", { locale: ptBR });
       } else if (timeframe === "monthly") {
         periodKey = format(startOfMonth(calcDate), "MM/yyyy", { locale: ptBR });
@@ -135,43 +166,35 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
         periodKey = format(startOfDay(calcDate), "dd/MM", { locale: ptBR });
       }
 
-      const entry = periodDataMap.get(periodKey) || { revenue: 0, costs: 0, calculations: 0 };
-      entry.revenue += Number(calc.totalPrice) || 0;
-      entry.costs += (Number(calc.materialCost) || 0) + (Number(calc.electricityCost) || 0) + (Number(calc.laborCost) || 0) + (Number(calc.extraCost) || 0);
-      entry.calculations += 1;
-      periodDataMap.set(periodKey, entry);
+      const entry = periodDataMap.get(periodKey);
+      if (entry) {
+        entry.revenue += Number(calc.totalPrice) || 0;
+        entry.costs += (Number(calc.materialCost) || 0) + (Number(calc.electricityCost) || 0) + (Number(calc.laborCost) || 0) + (Number(calc.extraCost) || 0);
+        entry.calculations += 1;
+        periodDataMap.set(periodKey, entry);
+      }
     });
 
-    const revenueVsCostsData = Array.from(periodDataMap.entries()).map(([date, data]) => ({
-      name: date,
+    const revenueVsCostsData = Array.from(periodDataMap.entries()).map(([name, data]) => ({
+      name,
       Receita: parseFloat(data.revenue.toFixed(2)),
       Custos: parseFloat(data.costs.toFixed(2)),
     }));
 
-    const calculationsPerPeriodData = Array.from(periodDataMap.entries()).map(([date, data]) => ({
-      name: date,
+    const calculationsPerPeriodData = Array.from(periodDataMap.entries()).map(([name, data]) => ({
+      name,
       "Cálculos": data.calculations,
     }));
 
-    const costDistributionData = [];
-    if (totalCosts > 0) {
-      costDistributionData.push(
-        { name: "Material", value: parseFloat(totalMaterialCost.toFixed(2)), percentage: (totalMaterialCost / totalCosts) * 100 },
-        { name: "Eletricidade", value: parseFloat(totalElectricityCost.toFixed(2)), percentage: (totalElectricityCost / totalCosts) * 100 },
-        { name: "Mão de Obra", value: parseFloat(totalLaborCost.toFixed(2)), percentage: (totalLaborCost / totalCosts) * 100 },
-        { name: "Extras", value: parseFloat(totalExtraCost.toFixed(2)), percentage: (totalExtraCost / totalCosts) * 100 },
-      );
-    } else {
-      costDistributionData.push(
-        { name: "Material", value: 0, percentage: 0 },
-        { name: "Eletricidade", value: 0, percentage: 0 },
-        { name: "Mão de Obra", value: 0, percentage: 0 },
-        { name: "Extras", value: 0, percentage: 0 },
-      );
-    }
+    const costDistributionData = [
+      { name: "Material", value: totalMaterialCost, percentage: totalCosts > 0 ? (totalMaterialCost / totalCosts) * 100 : 0 },
+      { name: "Eletricidade", value: totalElectricityCost, percentage: totalCosts > 0 ? (totalElectricityCost / totalCosts) * 100 : 0 },
+      { name: "Mão de Obra", value: totalLaborCost, percentage: totalCosts > 0 ? (totalLaborCost / totalCosts) * 100 : 0 },
+      { name: "Extras", value: totalExtraCost, percentage: totalCosts > 0 ? (totalExtraCost / totalCosts) * 100 : 0 },
+    ];
 
     return {
-      totalCalculations,
+      totalCalculations: summaryCalculations.length,
       totalRevenue: parseFloat(totalRevenue.toFixed(2)),
       estimatedProfit: parseFloat(totalEstimatedProfit.toFixed(2)),
       averageProfitMargin: parseFloat(averageProfitMargin.toFixed(0)),
