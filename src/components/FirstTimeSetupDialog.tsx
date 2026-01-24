@@ -93,7 +93,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
   const handleAddPrinter = (values: FirstTimePrinterFormValues) => { // Use the explicit type here
     try {
       // The 'values' type is now FirstTimePrinterFormValues, which is compatible with Omit<Printer, "id" | "status" | "timestamp">
-      addPrinter(values);
+      addPrinter(values as Omit<Printer, "id" | "status" | "timestamp">); // Explicitly cast here
       showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
       setStep(2); // Move to next step
     } catch (error) {
@@ -134,7 +134,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Bem-vindo ao 3D Print Price Calculator!</DialogTitle>
+          <DialogTitle>Bem-vindo ao 3D Print Price Calculator!</TDialogTitle>
           <DialogDescription>
             Para começar, por favor adicione uma impressora e um filamento.
           </DialogDescription>

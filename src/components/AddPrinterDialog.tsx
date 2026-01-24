@@ -89,7 +89,7 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
   const onSubmit = (values: AddPrinterFormValues) => { // Use the explicit type here
     try {
       // O tipo de 'values' corresponde a Omit<Printer, "id" | "status" | "timestamp">
-      addPrinter(values);
+      addPrinter(values as Omit<Printer, "id" | "status" | "timestamp">); // Explicitly cast here
       showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
       form.reset();
       setSelectedBrand(undefined); // Reset selected brand state

@@ -20,7 +20,7 @@ const predefinedElectricityProfiles: Omit<ElectricityProfile, "timestamp">[] = [
 ];
 
 // Definir o tipo de dados que o formulário AddElectricityProfileDialog envia
-type NewElectricityProfileData = Omit<ElectricityProfile, "id" | "timestamp" | "description"> & {
+export type NewElectricityProfileData = Omit<ElectricityProfile, "id" | "timestamp" | "description"> & {
   description?: string;
   name?: string; // Permitir que o nome seja opcional no input
 };

@@ -15,7 +15,7 @@ const LOCAL_STORAGE_KEY = "3d_extra_materials";
 const EVENT_NAME = "3d_extra_materials_updated";
 
 // Definir o tipo de dados que o formulário AddExtraDialog envia
-type NewExtraMaterialData = Omit<ExtraMaterial, "id" | "timestamp" | "description" | "purchasePrice"> & {
+export type NewExtraMaterialData = Omit<ExtraMaterial, "id" | "timestamp" | "description" | "purchasePrice"> & {
   description?: string;
   purchasePrice?: number;
   name?: string; // Permitir que o nome seja opcional no input

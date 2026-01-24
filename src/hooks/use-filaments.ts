@@ -18,7 +18,7 @@ const LOCAL_STORAGE_KEY = "3d_filaments";
 const EVENT_NAME = "3d_filaments_updated";
 
 // Definir o tipo de dados que o formulário AddFilamentDialog envia
-type NewFilamentData = Omit<Filament, "id" | "timestamp" | "currentWeightGrams"> & { 
+export type NewFilamentData = Omit<Filament, "id" | "timestamp" | "currentWeightGrams"> & { 
   currentWeightGrams?: number;
   name?: string; // Permitir que o nome seja opcional no input
   color?: string; // Permitir que a cor seja opcional no input
