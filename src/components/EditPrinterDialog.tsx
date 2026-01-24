@@ -17,6 +17,7 @@ const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
+  powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50), // Adicionado
   // workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0), // Removido
 });
 
@@ -35,6 +36,7 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
       name: printer.name,
       brand: printer.brand,
       model: printer.model,
+      powerConsumptionWatts: printer.powerConsumptionWatts, // Default value
       // workingHours: printer.workingHours, // Removido
     },
   });
@@ -53,12 +55,13 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
-      // Ao atualizar, apenas passamos os campos que estão no formulário (name, brand, model)
+      // Ao atualizar, apenas passamos os campos que estão no formulário (name, brand, model, powerConsumptionWatts)
       // O campo workingHours não é editável aqui, então não é incluído no objeto de atualização
       updatePrinter(printer.id, {
         name: values.name,
         brand: values.brand,
         model: values.model,
+        powerConsumptionWatts: values.powerConsumptionWatts,
         // workingHours permanece inalterado no objeto original da impressora
       });
       showSuccess(`Impressora "${values.name}" atualizada com sucesso!`);
@@ -162,6 +165,30 @@ export const EditPrinterDialog = ({ printer /* onSuccess */ }: EditPrinterDialog
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="powerConsumptionWatts"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Consumo de Energia (Watts)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="50"
+                      {...field}
+                      value={field.value === 0 ? "" : field.value}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? 0 : value);
+                      }}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

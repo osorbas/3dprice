@@ -8,6 +8,7 @@ export interface Printer {
   name: string;
   brand: string;
   model: string;
+  powerConsumptionWatts: number; // Novo campo: Consumo de energia em Watts
   workingHours: number; // Agora tratado como "Horas Base/Iniciais"
   status: PrinterStatus;
   timerStart?: number;
@@ -52,6 +53,7 @@ export function usePrinters() {
       return printers.map(p => ({
         ...p,
         status: p.status ?? "Pronta",
+        powerConsumptionWatts: p.powerConsumptionWatts ?? 50, // Default to 50W if not set
         // O valor exibido é a soma das horas base (manuais) + as horas encontradas no histórico
         workingHours: (p.workingHours || 0) + (historyHoursMap[p.id] || 0)
       }));
@@ -115,7 +117,7 @@ export function usePrinters() {
     const id = Date.now().toString();
     const timestamp = Date.now();
     const stored = JSON.parse(localStorage.getItem(PRINTERS_KEY) || "[]");
-    const updated = [{ ...newPrinter, id, timestamp, status: "Pronta" as PrinterStatus }, ...stored];
+    const updated = [{ ...newPrinter, id, timestamp, status: "Pronta" as PrinterStatus, powerConsumptionWatts: newPrinter.powerConsumptionWatts ?? 50 }, ...stored];
     localStorage.setItem(PRINTERS_KEY, JSON.stringify(updated));
     notifyUpdate();
     setPrinters(getCalculatedPrinters());

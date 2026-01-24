@@ -6,7 +6,7 @@ import { usePrinters } from "@/hooks/use-printers";
 import { AddPrinterDialog } from "@/components/AddPrinterDialog";
 import { EditPrinterDialog } from "@/components/EditPrinterDialog";
 import { Button } from "@/components/ui/button";
-import { Trash2, Printer as PrinterIcon } from "lucide-react";
+import { Trash2, Printer as PrinterIcon, Zap } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -129,6 +129,8 @@ const PrintersPage = () => {
                   <div className="grid grid-cols-2 gap-1 text-sm">
                     <p>Horas de Trabalho:</p>
                     <p className="text-right font-medium">{formattedWorkingHours}</p> {/* Exibe as horas de trabalho formatadas */}
+                    <p>Consumo (Watts):</p>
+                    <p className="text-right font-medium">{printer.powerConsumptionWatts} W</p>
                   </div>
                   <p className="col-span-2 text-xs text-muted-foreground mt-2">
                     Adicionada em: {format(new Date(printer.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR })}

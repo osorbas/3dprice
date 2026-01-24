@@ -21,6 +21,7 @@ const printerFormSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
+  powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50), // Adicionado
   workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0),
 });
 
@@ -50,6 +51,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
       name: "",
       brand: "",
       model: "",
+      powerConsumptionWatts: 50, // Default value
       workingHours: 0,
     },
   });
@@ -205,6 +207,30 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={printerForm.control}
+                name="powerConsumptionWatts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Consumo de Energia (Watts)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="50"
+                        {...field}
+                        value={field.value === 0 ? "" : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value === "" ? 0 : value);
+                        }}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

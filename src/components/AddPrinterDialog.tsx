@@ -16,7 +16,8 @@ const formSchema = z.object({
   name: z.string().min(1, "O nome é obrigatório."),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
-  workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0), // Adicionado
+  powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50), // Adicionado
+  workingHours: z.coerce.number().min(0, "As horas de trabalho não podem ser negativas.").default(0),
 });
 
 interface AddPrinterDialogProps {
@@ -25,7 +26,7 @@ interface AddPrinterDialogProps {
 
 // Predefined list of popular 3D printers (used for select options)
 // Omitimos 'id', 'timestamp', 'workingHours' e 'status' (que é definido no hook)
-export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [ // Exportado
+export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status" | "powerConsumptionWatts">[] = [ // Exportado
   { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2" },
   { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE" },
   { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE" },
@@ -70,7 +71,8 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
       name: "",
       brand: "",
       model: "",
-      workingHours: 0, // Inicializa o novo campo
+      powerConsumptionWatts: 50, // Default value
+      workingHours: 0,
     },
   });
 
@@ -188,6 +190,30 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="powerConsumptionWatts"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Consumo de Energia (Watts)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="50"
+                      {...field}
+                      value={field.value === 0 ? "" : field.value}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        field.onChange(value === "" ? 0 : value);
+                      }}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
