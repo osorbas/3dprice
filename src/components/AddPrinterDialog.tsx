@@ -23,34 +23,34 @@ const formSchema = z.object({
 type AddPrinterFormValues = z.infer<typeof formSchema>;
 
 export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [
-  { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2", powerConsumptionWatts: 350 },
-  { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE", powerConsumptionWatts: 350 },
-  { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE", powerConsumptionWatts: 350 },
-  { name: "Creality K1", brand: "Creality", model: "K1", powerConsumptionWatts: 350 },
-  { name: "Creality K1 Max", brand: "Creality", model: "K1 Max", powerConsumptionWatts: 1000 },
-  { name: "Creality CR-10 Smart Pro", brand: "Creality", model: "CR-10 Smart Pro", powerConsumptionWatts: 350 },
-  { name: "Prusa i3 MK3S+", brand: "Prusa Research", model: "i3 MK3S+", powerConsumptionWatts: 240 },
-  { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+", powerConsumptionWatts: 160 },
-  { name: "Prusa XL (1 Toolhead)", brand: "Prusa Research", model: "XL (1 Toolhead)", powerConsumptionWatts: 450 },
-  { name: "Prusa XL (5 Toolheads)", brand: "Prusa Research", model: "XL (5 Toolheads)", powerConsumptionWatts: 1100 },
-  { name: "Bambu Lab P1P", brand: "Bambu Lab", model: "P1P", powerConsumptionWatts: 1000 },
-  { name: "Bambu Lab P1S", brand: "Bambu Lab", model: "P1S", powerConsumptionWatts: 1000 },
-  { name: "Bambu Lab A1", brand: "Bambu Lab", model: "A1", powerConsumptionWatts: 1300 },
-  { name: "Bambu Lab A1 Mini", brand: "Bambu Lab", model: "A1 Mini", powerConsumptionWatts: 150 },
-  { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon", powerConsumptionWatts: 1000 },
-  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E", powerConsumptionWatts: 1000 },
-  { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo", powerConsumptionWatts: 400 },
-  { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro", powerConsumptionWatts: 400 },
-  { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus", powerConsumptionWatts: 400 },
-  { name: "Anycubic Kobra 2 Max", brand: "Anycubic", model: "Kobra 2 Max", powerConsumptionWatts: 400 },
-  { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper", powerConsumptionWatts: 350 },
-  { name: "Elegoo Neptune 4", brand: "Elegoo", model: "Neptune 4", powerConsumptionWatts: 400 },
-  { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro", powerConsumptionWatts: 400 },
-  { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus", powerConsumptionWatts: 400 },
-  { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max", powerConsumptionWatts: 400 },
-  { name: "Blocks Zero", brand: "Blocks", model: "Zero", powerConsumptionWatts: 180 },
-  { name: "Blocks One", brand: "Blocks", model: "One", powerConsumptionWatts: 250 },
-  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado", powerConsumptionWatts: 200 },
+  { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2", powerConsumptionWatts: 120 },
+  { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE", powerConsumptionWatts: 130 },
+  { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE", powerConsumptionWatts: 150 },
+  { name: "Creality K1", brand: "Creality", model: "K1", powerConsumptionWatts: 150 },
+  { name: "Creality K1 Max", brand: "Creality", model: "K1 Max", powerConsumptionWatts: 250 },
+  { name: "Creality CR-10 Smart Pro", brand: "Creality", model: "CR-10 Smart Pro", powerConsumptionWatts: 180 },
+  { name: "Prusa i3 MK3S+", brand: "Prusa Research", model: "i3 MK3S+", powerConsumptionWatts: 100 },
+  { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+", powerConsumptionWatts: 70 },
+  { name: "Prusa XL (1 Toolhead)", brand: "Prusa Research", model: "XL (1 Toolhead)", powerConsumptionWatts: 200 },
+  { name: "Prusa XL (5 Toolheads)", brand: "Prusa Research", model: "XL (5 Toolheads)", powerConsumptionWatts: 400 },
+  { name: "Bambu Lab P1P", brand: "Bambu Lab", model: "P1P", powerConsumptionWatts: 150 },
+  { name: "Bambu Lab P1S", brand: "Bambu Lab", model: "P1S", powerConsumptionWatts: 150 },
+  { name: "Bambu Lab A1", brand: "Bambu Lab", model: "A1", powerConsumptionWatts: 150 },
+  { name: "Bambu Lab A1 Mini", brand: "Bambu Lab", model: "A1 Mini", powerConsumptionWatts: 80 },
+  { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon", powerConsumptionWatts: 150 },
+  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E", powerConsumptionWatts: 180 },
+  { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo", powerConsumptionWatts: 150 },
+  { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro", powerConsumptionWatts: 180 },
+  { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus", powerConsumptionWatts: 200 },
+  { name: "Anycubic Kobra 2 Max", brand: "Anycubic", model: "Kobra 2 Max", powerConsumptionWatts: 250 },
+  { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper", powerConsumptionWatts: 150 },
+  { name: "Elegoo Neptune 4", brand: "Elegoo", model: "Neptune 4", powerConsumptionWatts: 150 },
+  { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro", powerConsumptionWatts: 180 },
+  { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus", powerConsumptionWatts: 220 },
+  { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max", powerConsumptionWatts: 250 },
+  { name: "Blocks Zero", brand: "Blocks", model: "Zero", powerConsumptionWatts: 100 },
+  { name: "Blocks One", brand: "Blocks", model: "One", powerConsumptionWatts: 150 },
+  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado", powerConsumptionWatts: 150 },
 ];
 
 export const AddPrinterDialog = () => {
@@ -206,13 +206,13 @@ export const AddPrinterDialog = () => {
               name="powerConsumptionWatts"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Consumo de Energia (Watts)</FormLabel>
+                  <FormLabel>Consumo Médio em Impressão (Watts)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min="0"
                       step="1"
-                      placeholder="50"
+                      placeholder="150"
                       {...field}
                     />
                   </FormControl>
