@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 
 export interface Filament {
   id: string;
-  name: string;
+  name?: string; // Made optional
   brand: string;
   type: string;
-  color: string;
+  color?: string; // Made optional
   pricePerKg: number;
   purchasePrice?: number;
   weight: number; // Peso padrão da bobina (ex: 1kg)

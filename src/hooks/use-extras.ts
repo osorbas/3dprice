@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 export interface ExtraMaterial {
   id: string;
-  name: string;
+  name?: string; // Made optional
   description?: string;
   costPerUnit: number;
   purchasePrice?: number; // Novo campo: preço de compra por unidade
@@ -70,6 +70,7 @@ export function useExtraMaterials() {
       ...newMaterial,
       id,
       timestamp,
+      name: newMaterial.name || "Material Extra Sem Nome", // Provide a default name if optional
       description: newMaterial.description || undefined,
       purchasePrice: newMaterial.purchasePrice ?? 0,
     };

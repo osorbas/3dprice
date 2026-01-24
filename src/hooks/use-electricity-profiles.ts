@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 
 export interface ElectricityProfile {
   id: string;
-  name: string;
+  name?: string; // Made optional
   costPerHour: number;
   description?: string;
   timestamp: number;
@@ -70,6 +70,7 @@ export function useElectricityProfiles() {
       ...newProfile,
       id,
       timestamp,
+      name: newProfile.name || "Perfil Sem Nome", // Provide a default name if optional
       description: newProfile.description || undefined,
     };
 

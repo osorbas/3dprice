@@ -192,7 +192,7 @@ export const ProjectPartField = <TFieldValues extends FieldValues>({
                     showAdd={filamentIndex === filamentFields.length - 1 && !isConfirmed}
                     totalFields={filamentFields.length}
                     namePrefix={`${namePrefix}.${index}.filamentsUsed`}
-                    // Removido 'disabled' pois não existe em FilamentUsageFieldProps
+                    disabled={isConfirmed} // Adicionado
                   />
                 ))}
                 {!isConfirmed && (

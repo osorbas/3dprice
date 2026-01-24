@@ -13,7 +13,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import { PlusCircle } from "lucide-react";
 
 const formSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatório."),
+  name: z.string().optional(), // Made optional
   costPerHour: z.coerce.number().min(0, "O custo por hora não pode ser negativo."),
   description: z.string().optional(),
 });
@@ -34,7 +34,7 @@ export const AddElectricityProfileDialog = () => {
     try {
       // O tipo de 'values' agora corresponde ao tipo NewElectricityProfileData definido em use-electricity-profiles.ts
       addElectricityProfile(values);
-      showSuccess(`Perfil de eletricidade "${values.name}" adicionado com sucesso!`);
+      showSuccess(`Perfil de eletricidade "${values.name || 'Sem Nome'}" adicionado com sucesso!`);
       form.reset();
       setOpen(false);
     } catch (error) {
@@ -65,7 +65,7 @@ export const AddElectricityProfileDialog = () => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do Perfil</FormLabel>
+                  <FormLabel>Nome do Perfil (Opcional)</FormLabel>
                   <FormControl>
                     <Input placeholder="ex: Tarifa Normal" {...field} />
                   </FormControl>

@@ -14,7 +14,7 @@ import { PlusCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatório."),
+  name: z.string().optional(), // Made optional
   description: z.string().optional(),
   costPerUnit: z.coerce.number().min(0.01, "O custo por unidade deve ser positivo."),
   purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(), // Novo campo
@@ -43,7 +43,7 @@ export const AddExtraDialog = ({ /* onSuccess */ }: AddExtraDialogProps) => {
     try {
       // O tipo de 'values' agora corresponde ao tipo NewExtraMaterialData definido em use-extras.ts
       addExtraMaterial(values);
-      showSuccess(`Material extra "${values.name}" adicionado com sucesso!`);
+      showSuccess(`Material extra "${values.name || 'Sem Nome'}" adicionado com sucesso!`);
       form.reset();
       setOpen(false);
       // onSuccess?.(); // Não é mais necessário chamar o callback
@@ -75,7 +75,7 @@ export const AddExtraDialog = ({ /* onSuccess */ }: AddExtraDialogProps) => {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome</FormLabel>
+                  <FormLabel>Nome (Opcional)</FormLabel>
                   <FormControl>
                     <Input placeholder="ex: Parafuso M3" {...field} />
                   </FormControl>

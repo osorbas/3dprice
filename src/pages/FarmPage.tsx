@@ -369,13 +369,10 @@ const FarmPage = () => {
                             <span className="text-[11px] font-medium">{stockGramsDisplay}</span>
                           </div>
                           {f.color && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] text-muted-foreground font-medium">{f.color}</span>
-                              <div 
-                                className="h-2.5 w-2.5 rounded-full border border-black/10" 
-                                style={{ backgroundColor: f.color.toLowerCase() }} 
-                              />
-                            </div>
+                            <div 
+                              className="h-2.5 w-2.5 rounded-full border border-black/10" 
+                              style={{ backgroundColor: f.color.toLowerCase() }} 
+                            />
                           )}
                         </div>
                       </CardContent>
