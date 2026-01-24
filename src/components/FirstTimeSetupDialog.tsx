@@ -49,18 +49,18 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
   const { addFilament } = useFilaments();
   const [step, setStep] = useState(1); // 1: Add Printer, 2: Add Filament
 
-  const printerForm = useForm<FirstTimePrinterFormValues>({ // Use the explicit type here
+  const printerForm = useForm<FirstTimePrinterFormValues>({
     resolver: zodResolver(printerFormSchema),
     defaultValues: {
       name: "",
       brand: "",
       model: "",
-      powerConsumptionWatts: 50, // Default value
+      powerConsumptionWatts: 50,
       workingHours: 0,
     },
   });
 
-  const filamentForm = useForm<FirstTimeFilamentFormValues>({ // Use the explicit type here
+  const filamentForm = useForm<FirstTimeFilamentFormValues>({
     resolver: zodResolver(filamentFormSchema),
     defaultValues: {
       name: "",
@@ -68,7 +68,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
       type: "",
       color: "",
       pricePerKg: 0,
-      purchasePrice: 0, // Valor padrão
+      purchasePrice: 0,
       weight: 1,
     },
   });
@@ -90,10 +90,9 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     }
   }, [selectedFilamentBrand, filamentForm]);
 
-  const handleAddPrinter = (values: FirstTimePrinterFormValues) => { // Use the explicit type here
+  const handleAddPrinter = (values: FirstTimePrinterFormValues) => {
     try {
-      // The 'values' type is now FirstTimePrinterFormValues, which is compatible with Omit<Printer, "id" | "status" | "timestamp">
-      addPrinter(values as Omit<Printer, "id" | "status" | "timestamp">); // Explicitly cast here
+      addPrinter(values as Omit<Printer, "id" | "status" | "timestamp">);
       showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
       setStep(2); // Move to next step
     } catch (error) {
@@ -102,10 +101,9 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     }
   };
 
-  const handleAddFilament = (values: FirstTimeFilamentFormValues) => { // Use the explicit type here
+  const handleAddFilament = (values: FirstTimeFilamentFormValues) => {
     try {
-      // The 'values' type is now FirstTimeFilamentFormValues, which is compatible with NewFilamentData
-      addFilament({ ...values, currentWeightGrams: values.weight * 1000 } as NewFilamentData); // Cast to NewFilamentData for the hook
+      addFilament({ ...values, currentWeightGrams: values.weight * 1000 } as NewFilamentData);
       showSuccess(`Filamento "${values.name || values.type}" adicionado com sucesso!`);
       if (typeof window !== "undefined") {
         localStorage.setItem("hasVisitedBefore", "true");
@@ -141,272 +139,268 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
         </DialogHeader>
 
         {step === 1 && (
-          <>
-            <Form {...printerForm}>
-              <form id="printer-form" onSubmit={printerForm.handleSubmit(handleAddPrinter)} className="grid gap-4 py-4">
-                <h3 className="text-lg font-semibold">1. Adicionar Impressora</h3>
-                <FormField
-                  control={printerForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
+          <Form {...printerForm}>
+            <form onSubmit={printerForm.handleSubmit(handleAddPrinter)} className="grid gap-4 py-4">
+              <h3 className="text-lg font-semibold">1. Adicionar Impressora</h3>
+              <FormField
+                control={printerForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Minha Ender 3" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={printerForm.control}
+                name="brand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marca</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedPrinterBrand(value);
+                      }}
+                      value={field.value}
+                    >
                       <FormControl>
-                        <Input placeholder="Minha Ender 3" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma marca" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={printerForm.control}
-                  name="brand"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marca</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setSelectedPrinterBrand(value);
+                      <SelectContent>
+                        {uniquePrinterBrands.map((brand) => (
+                          <SelectItem key={brand} value={brand}>
+                            {brand}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={printerForm.control}
+                name="model"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modelo</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!selectedPrinterBrand || printerModelsForSelectedBrand.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um modelo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {printerModelsForSelectedBrand.map((model) => (
+                          <SelectItem key={model} value={model}>
+                            {model}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={printerForm.control}
+                name="powerConsumptionWatts"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Consumo de Energia (Watts)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        placeholder="50"
+                        {...field}
+                        value={field.value === 0 ? "" : field.value}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value === "" ? 0 : value);
                         }}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma marca" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {uniquePrinterBrands.map((brand) => (
-                            <SelectItem key={brand} value={brand}>
-                              {brand}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={printerForm.control}
-                  name="model"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modelo</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!selectedPrinterBrand || printerModelsForSelectedBrand.length === 0}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um modelo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {printerModelsForSelectedBrand.map((model) => (
-                            <SelectItem key={model} value={model}>
-                              {model}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={printerForm.control}
-                  name="powerConsumptionWatts"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Consumo de Energia (Watts)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
-                          placeholder="50"
-                          {...field}
-                          value={field.value === 0 ? "" : field.value}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === "" ? 0 : value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-            <DialogFooter className="pt-4">
-              <Button type="submit" form="printer-form" className="flex items-center gap-2">
-                Adicionar Impressora <ArrowRight className="h-4 w-4" />
-              </Button>
-            </DialogFooter>
-          </>
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button type="submit" className="flex items-center gap-2">
+                  Adicionar Impressora <ArrowRight className="h-4 w-4" />
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         )}
 
         {step === 2 && (
-          <>
-            <Form {...filamentForm}>
-              <form id="filament-form" onSubmit={filamentForm.handleSubmit(handleAddFilament)} className="grid gap-4 py-4">
-                <h3 className="text-lg font-semibold">2. Adicionar Filamento</h3>
-                <FormField
-                  control={filamentForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
+          <Form {...filamentForm}>
+            <form onSubmit={filamentForm.handleSubmit(handleAddFilament)} className="grid gap-4 py-4">
+              <h3 className="text-lg font-semibold">2. Adicionar Filamento</h3>
+              <FormField
+                control={filamentForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome</FormLabel>
+                    <FormControl>
+                      <Input placeholder="PLA Preto Prusament" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={filamentForm.control}
+                name="brand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marca</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedFilamentBrand(value);
+                      }}
+                      value={field.value}
+                    >
                       <FormControl>
-                        <Input placeholder="PLA Preto Prusament" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma marca" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={filamentForm.control}
-                  name="brand"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marca</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setSelectedFilamentBrand(value);
+                      <SelectContent>
+                        {uniqueFilamentBrands.map((brand) => (
+                          <SelectItem key={brand} value={brand}>
+                            {brand}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={filamentForm.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!selectedFilamentBrand || filamentTypesForSelectedBrand.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um tipo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filamentTypesForSelectedBrand.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={filamentForm.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cor (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Preto" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={filamentForm.control}
+                name="pricePerKg"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço por Kg (€)</Label>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={filamentForm.control}
+                name="purchasePrice" // Novo campo
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Preço de Compra por Kg (€) (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        value={field.value === 0 ? "" : field.value} // Exibe vazio se for 0
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value === "" ? 0 : parseFloat(value));
                         }}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma marca" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {uniqueFilamentBrands.map((brand) => (
-                            <SelectItem key={brand} value={brand}>
-                              {brand}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={filamentForm.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!selectedFilamentBrand || filamentTypesForSelectedBrand.length === 0}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {filamentTypesForSelectedBrand.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={filamentForm.control}
-                  name="color"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cor (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Preto" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={filamentForm.control}
-                  name="pricePerKg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço por Kg (€)</Label>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={filamentForm.control}
-                  name="purchasePrice" // Novo campo
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Preço de Compra por Kg (€) (Opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                          value={field.value === 0 ? "" : field.value} // Exibe vazio se for 0
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            field.onChange(value === "" ? 0 : parseFloat(value));
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={filamentForm.control}
-                  name="weight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Peso da Bobina (kg)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-            <DialogFooter className="pt-4">
-              <Button type="submit" form="filament-form" className="flex items-center gap-2">
-                Concluir Configuração <Check className="h-4 w-4" />
-              </Button>
-            </DialogFooter>
-          </>
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={filamentForm.control}
+                name="weight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Peso da Bobina (kg)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="pt-4">
+                <Button type="submit" className="flex items-center gap-2">
+                  Concluir Configuração <Check className="h-4 w-4" />
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         )}
       </DialogContent>
     </Dialog>
