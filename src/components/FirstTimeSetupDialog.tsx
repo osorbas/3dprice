@@ -140,7 +140,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
 
         {step === 1 && (
           <Form {...printerForm}>
-            <form onSubmit={printerForm.handleSubmit(handleAddPrinter)} className="grid gap-4 py-4">
+            <form id="printer-form" onSubmit={printerForm.handleSubmit(handleAddPrinter)} className="grid gap-4 py-4">
               <h3 className="text-lg font-semibold">1. Adicionar Impressora</h3>
               <FormField
                 control={printerForm.control}
@@ -237,18 +237,13 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   </FormItem>
                 )}
               />
-              <DialogFooter className="pt-4">
-                <Button type="submit" className="flex items-center gap-2">
-                  Adicionar Impressora <ArrowRight className="h-4 w-4" />
-                </Button>
-              </DialogFooter>
             </form>
           </Form>
         )}
 
         {step === 2 && (
           <Form {...filamentForm}>
-            <form onSubmit={filamentForm.handleSubmit(handleAddFilament)} className="grid gap-4 py-4">
+            <form id="filament-form" onSubmit={filamentForm.handleSubmit(handleAddFilament)} className="grid gap-4 py-4">
               <h3 className="text-lg font-semibold">2. Adicionar Filamento</h3>
               <FormField
                 control={filamentForm.control}
@@ -381,7 +376,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                 name="weight"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Peso da Bobina (kg)</FormLabel>
+                    <FormLabel>Peso da Bobina (kg)</Label>
                     <FormControl>
                       <Input
                         type="number"
@@ -394,13 +389,21 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   </FormItem>
                 )}
               />
-              <DialogFooter className="pt-4">
-                <Button type="submit" className="flex items-center gap-2">
-                  Concluir Configuração <Check className="h-4 w-4" />
-                </Button>
-              </DialogFooter>
             </form>
           </Form>
         )}
+
+        <DialogFooter className="pt-4">
+          {step === 1 && (
+            <Button type="submit" form="printer-form" className="flex items-center gap-2">
+              Adicionar Impressora <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+          {step === 2 && (
+            <Button type="submit" form="filament-form" className="flex items-center gap-2">
+              Concluir Configuração <Check className="h-4 w-4" />
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
