@@ -20,11 +20,12 @@ import {
   isSameDay,
   isSameWeek,
   isSameMonth,
-  isSameYear
+  isSameYear,
+  min
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type Timeframe = "daily" | "weekly" | "biweekly" | "monthly" | "yearly";
+type Timeframe = "daily" | "weekly" | "biweekly" | "monthly" | "yearly" | "always";
 
 export function useDashboardData(timeframe: Timeframe = "daily") {
   const { calculations, clearCalculations } = usePrintCalculations();
@@ -58,12 +59,23 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
         historyStartDate = subYears(startOfYear(today), 4);
         numPeriods = 5;
         break;
+      case "always":
+        // Se houver cálculos, usa a data do mais antigo. Caso contrário, usa 1 ano atrás como padrão.
+        if (calculations.length > 0) {
+          const oldestTimestamp = Math.min(...calculations.map(c => c.timestamp));
+          historyStartDate = startOfMonth(new Date(oldestTimestamp));
+        } else {
+          historyStartDate = subMonths(startOfMonth(today), 11);
+        }
+        // No modo 'Sempre', agrupamos por mês para o gráfico não ficar sobrecarregado
+        numPeriods = Math.max(12, Math.ceil((now.getTime() - historyStartDate.getTime()) / (30 * 24 * 60 * 60 * 1000)) + 1);
+        break;
       default:
         historyStartDate = subDays(today, 29);
         numPeriods = 30;
     }
 
-    // Filtrar cálculos para o gráfico (Histórico completo)
+    // Filtrar cálculos para o gráfico (Histórico completo conforme o período definido)
     const historyCalculations = calculations.filter(calc =>
       isAfter(new Date(calc.timestamp), historyStartDate) || isSameDay(new Date(calc.timestamp), historyStartDate)
     );
@@ -77,6 +89,7 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
         case "biweekly": return isAfter(calcDate, subDays(now, 14));
         case "monthly": return isSameMonth(calcDate, now);
         case "yearly": return isSameYear(calcDate, now);
+        case "always": return true; // Inclui tudo
         default: return isSameDay(calcDate, now);
       }
     });
@@ -113,7 +126,7 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
     const totalCosts = totalMaterialCost + totalElectricityCost + totalLaborCost + totalExtraCost;
     const averageProfitMargin = totalRevenue > 0 ? (totalEstimatedProfit / totalRevenue) * 100 : 0;
 
-    // Gerar dados do gráfico (mantendo a lógica de histórico)
+    // Gerar dados do gráfico
     const periodDataMap = new Map<string, { revenue: number; costs: number; calculations: number }>();
     let currentPeriodStart = historyStartDate;
 
@@ -121,19 +134,22 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
       let periodKey = "";
       let nextPeriodStart: Date;
 
-      if (timeframe === "daily") {
+      // No modo 'Sempre', forçamos agrupamento mensal para clareza
+      const effectiveTimeframe = timeframe === "always" ? "monthly" : timeframe;
+
+      if (effectiveTimeframe === "daily") {
         periodKey = format(currentPeriodStart, "dd/MM", { locale: ptBR });
         nextPeriodStart = addDays(currentPeriodStart, 1);
-      } else if (timeframe === "weekly") {
+      } else if (effectiveTimeframe === "weekly") {
         periodKey = format(currentPeriodStart, "dd/MM", { locale: ptBR }) + " - " + format(addDays(currentPeriodStart, 6), "dd/MM", { locale: ptBR });
         nextPeriodStart = addWeeks(currentPeriodStart, 1);
-      } else if (timeframe === "biweekly") {
+      } else if (effectiveTimeframe === "biweekly") {
         periodKey = format(currentPeriodStart, "dd/MM", { locale: ptBR }) + " - " + format(addDays(currentPeriodStart, 13), "dd/MM", { locale: ptBR });
         nextPeriodStart = addDays(currentPeriodStart, 14);
-      } else if (timeframe === "monthly") {
+      } else if (effectiveTimeframe === "monthly") {
         periodKey = format(currentPeriodStart, "MM/yyyy", { locale: ptBR });
         nextPeriodStart = addMonths(currentPeriodStart, 1);
-      } else if (timeframe === "yearly") {
+      } else if (effectiveTimeframe === "yearly") {
         periodKey = format(currentPeriodStart, "yyyy", { locale: ptBR });
         nextPeriodStart = addYears(currentPeriodStart, 1);
       } else {
@@ -143,25 +159,29 @@ export function useDashboardData(timeframe: Timeframe = "daily") {
 
       periodDataMap.set(periodKey, { revenue: 0, costs: 0, calculations: 0 });
       currentPeriodStart = nextPeriodStart;
+      
+      // Se já passámos a data atual no loop, paramos (apenas para modo Sempre)
+      if (timeframe === "always" && currentPeriodStart > now) break;
     }
 
     historyCalculations.forEach(calc => {
       const calcDate = new Date(calc.timestamp);
       let periodKey = "";
+      const effectiveTimeframe = timeframe === "always" ? "monthly" : timeframe;
 
-      if (timeframe === "daily") {
+      if (effectiveTimeframe === "daily") {
         periodKey = format(startOfDay(calcDate), "dd/MM", { locale: ptBR });
-      } else if (timeframe === "weekly") {
+      } else if (effectiveTimeframe === "weekly") {
         const sw = startOfWeek(calcDate, { locale: ptBR });
         periodKey = format(sw, "dd/MM", { locale: ptBR }) + " - " + format(addDays(sw, 6), "dd/MM", { locale: ptBR });
-      } else if (timeframe === "biweekly") {
+      } else if (effectiveTimeframe === "biweekly") {
         const diffWeeks = Math.floor((startOfWeek(calcDate, { locale: ptBR }).getTime() - historyStartDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
         const biWeekOffset = Math.floor(diffWeeks / 2) * 2;
         const startOfBiWeek = addWeeks(historyStartDate, biWeekOffset);
         periodKey = format(startOfBiWeek, "dd/MM", { locale: ptBR }) + " - " + format(addDays(startOfBiWeek, 13), "dd/MM", { locale: ptBR });
-      } else if (timeframe === "monthly") {
+      } else if (effectiveTimeframe === "monthly") {
         periodKey = format(startOfMonth(calcDate), "MM/yyyy", { locale: ptBR });
-      } else if (timeframe === "yearly") {
+      } else if (effectiveTimeframe === "yearly") {
         periodKey = format(startOfYear(calcDate), "yyyy", { locale: ptBR });
       } else {
         periodKey = format(startOfDay(calcDate), "dd/MM", { locale: ptBR });

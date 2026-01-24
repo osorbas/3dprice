@@ -10,7 +10,7 @@ import { Calculator, Euro, TrendingUp, Clock, Package, BarChart3, Calendar } fro
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
-type Timeframe = "daily" | "weekly" | "biweekly" | "monthly" | "yearly";
+type Timeframe = "daily" | "weekly" | "biweekly" | "monthly" | "yearly" | "always";
 
 const DashboardPage = () => {
   const [selectedTimeframe, setSelectedTimeframe] = React.useState<Timeframe>("daily");
@@ -43,7 +43,7 @@ const DashboardPage = () => {
             <span className="text-sm font-medium">Período:</span>
           </div>
           <Select value={selectedTimeframe} onValueChange={(value: Timeframe) => setSelectedTimeframe(value)}>
-            <SelectTrigger className="w-[160px] border-none shadow-none focus:ring-0">
+            <SelectTrigger className="w-[180px] border-none shadow-none focus:ring-0">
               <SelectValue placeholder="Selecionar Período" />
             </SelectTrigger>
             <SelectContent>
@@ -52,6 +52,7 @@ const DashboardPage = () => {
               <SelectItem value="biweekly">Quinzenal</SelectItem>
               <SelectItem value="monthly">Mensal (12 meses)</SelectItem>
               <SelectItem value="yearly">Anual</SelectItem>
+              <SelectItem value="always">Sempre</SelectItem>
             </SelectContent>
           </Select>
         </div>
