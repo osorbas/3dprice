@@ -26,39 +26,39 @@ interface AddPrinterDialogProps {
 
 // Predefined list of popular 3D printers (used for select options)
 // Omitimos 'id', 'timestamp', 'workingHours' e 'status' (que é definido no hook)
-export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status" | "powerConsumptionWatts">[] = [ // Exportado
-  { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2" },
-  { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE" },
-  { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE" },
-  { name: "Creality K1", brand: "Creality", model: "K1" },
-  { name: "Creality K1 Max", brand: "Creality", model: "K1 Max" },
-  { name: "Creality CR-10 Smart Pro", brand: "Creality", model: "CR-10 Smart Pro" },
-  { name: "Prusa i3 MK3S+", brand: "Prusa Research", model: "i3 MK3S+" },
-  { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+" },
-  { name: "Prusa XL (1 Toolhead)", brand: "Prusa Research", model: "XL (1 Toolhead)" },
-  { name: "Prusa XL (5 Toolheads)", brand: "Prusa Research", model: "XL (5 Toolheads)" },
-  { name: "Bambu Lab P1P", brand: "Bambu Lab", model: "P1P" },
-  { name: "Bambu Lab P1S", brand: "Bambu Lab", model: "P1S" },
-  { name: "Bambu Lab A1", brand: "Bambu Lab", model: "A1" },
-  { name: "Bambu Lab A1 Mini", brand: "Bambu Lab", model: "A1 Mini" },
-  { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon" },
-  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E" },
-  { name: "Bambu Lab P1S Pro", brand: "Bambu Lab", model: "P1S Pro" },
-  { name: "Bambu Lab H2D", brand: "Bambu Lab", model: "H2D" },
-  { name: "Bambu Lab H2S", brand: "Bambu Lab", model: "H2S" },
-  { name: "Bambu Lab H2C", brand: "Bambu Lab", model: "H2C" },
-  { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo" },
-  { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro" },
-  { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus" },
-  { name: "Anycubic Kobra 2 Max", brand: "Anycubic", model: "Kobra 2 Max" },
-  { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper" },
-  { name: "Elegoo Neptune 4", brand: "Elegoo", model: "Neptune 4" },
-  { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro" },
-  { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus" },
-  { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max" },
-  { name: "Blocks Zero", brand: "Blocks", model: "Zero" },
-  { name: "Blocks One", brand: "Blocks", model: "One" },
-  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado" },
+export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [ // Exportado
+  { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2", powerConsumptionWatts: 150 },
+  { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE", powerConsumptionWatts: 200 },
+  { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE", powerConsumptionWatts: 250 },
+  { name: "Creality K1", brand: "Creality", model: "K1", powerConsumptionWatts: 350 },
+  { name: "Creality K1 Max", brand: "Creality", model: "K1 Max", powerConsumptionWatts: 400 },
+  { name: "Creality CR-10 Smart Pro", brand: "Creality", model: "CR-10 Smart Pro", powerConsumptionWatts: 300 },
+  { name: "Prusa i3 MK3S+", brand: "Prusa Research", model: "i3 MK3S+", powerConsumptionWatts: 180 },
+  { name: "Prusa Mini+", brand: "Prusa Research", model: "Mini+", powerConsumptionWatts: 100 },
+  { name: "Prusa XL (1 Toolhead)", brand: "Prusa Research", model: "XL (1 Toolhead)", powerConsumptionWatts: 300 },
+  { name: "Prusa XL (5 Toolheads)", brand: "Prusa Research", model: "XL (5 Toolheads)", powerConsumptionWatts: 450 },
+  { name: "Bambu Lab P1P", brand: "Bambu Lab", model: "P1P", powerConsumptionWatts: 300 },
+  { name: "Bambu Lab P1S", brand: "Bambu Lab", model: "P1S", powerConsumptionWatts: 300 },
+  { name: "Bambu Lab A1", brand: "Bambu Lab", model: "A1", powerConsumptionWatts: 250 },
+  { name: "Bambu Lab A1 Mini", brand: "Bambu Lab", model: "A1 Mini", powerConsumptionWatts: 150 },
+  { name: "Bambu Lab X1 Carbon", brand: "Bambu Lab", model: "X1 Carbon", powerConsumptionWatts: 350 },
+  { name: "Bambu Lab X1E", brand: "Bambu Lab", model: "X1E", powerConsumptionWatts: 400 },
+  { name: "Bambu Lab P1S Pro", brand: "Bambu Lab", model: "P1S Pro", powerConsumptionWatts: 320 },
+  { name: "Bambu Lab H2D", brand: "Bambu Lab", model: "H2D", powerConsumptionWatts: 280 },
+  { name: "Bambu Lab H2S", brand: "Bambu Lab", model: "H2S", powerConsumptionWatts: 280 },
+  { name: "Bambu Lab H2C", brand: "Bambu Lab", model: "H2C", powerConsumptionWatts: 280 },
+  { name: "Anycubic Kobra 2 Neo", brand: "Anycubic", model: "Kobra 2 Neo", powerConsumptionWatts: 200 },
+  { name: "Anycubic Kobra 2 Pro", brand: "Anycubic", model: "Kobra 2 Pro", powerConsumptionWatts: 250 },
+  { name: "Anycubic Kobra 2 Plus", brand: "Anycubic", model: "Kobra 2 Plus", powerConsumptionWatts: 300 },
+  { name: "Anycubic Kobra 2 Max", brand: "Anycubic", model: "Kobra 2 Max", powerConsumptionWatts: 350 },
+  { name: "Anycubic Vyper", brand: "Anycubic", model: "Vyper", powerConsumptionWatts: 220 },
+  { name: "Elegoo Neptune 4", brand: "Elegoo", model: "Neptune 4", powerConsumptionWatts: 200 },
+  { name: "Elegoo Neptune 4 Pro", brand: "Elegoo", model: "Neptune 4 Pro", powerConsumptionWatts: 250 },
+  { name: "Elegoo Neptune 4 Plus", brand: "Elegoo", model: "Neptune 4 Plus", powerConsumptionWatts: 300 },
+  { name: "Elegoo Neptune 4 Max", brand: "Elegoo", model: "Neptune 4 Max", powerConsumptionWatts: 350 },
+  { name: "Blocks Zero", brand: "Blocks", model: "Zero", powerConsumptionWatts: 180 },
+  { name: "Blocks One", brand: "Blocks", model: "One", powerConsumptionWatts: 250 },
+  { name: "Outra Impressora", brand: "Outra", model: "Modelo Personalizado", powerConsumptionWatts: 100 },
 ];
 
 export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => {
@@ -146,6 +146,13 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                     onValueChange={(value) => {
                       field.onChange(value);
                       setSelectedBrand(value);
+                      // Set default power consumption when brand/model changes
+                      const selectedPrinter = predefinedPrinters.find(p => p.brand === value && p.model === form.getValues("model"));
+                      if (selectedPrinter) {
+                        form.setValue("powerConsumptionWatts", selectedPrinter.powerConsumptionWatts);
+                      } else {
+                        form.setValue("powerConsumptionWatts", 50); // Fallback default
+                      }
                     }}
                     value={field.value}
                   >
@@ -173,7 +180,16 @@ export const AddPrinterDialog = ({ /* onSuccess */ }: AddPrinterDialogProps) => 
                 <FormItem>
                   <FormLabel>Modelo</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Set default power consumption when model changes
+                      const selectedPrinter = predefinedPrinters.find(p => p.brand === form.getValues("brand") && p.model === value);
+                      if (selectedPrinter) {
+                        form.setValue("powerConsumptionWatts", selectedPrinter.powerConsumptionWatts);
+                      } else {
+                        form.setValue("powerConsumptionWatts", 50); // Fallback default
+                      }
+                    }}
                     value={field.value}
                     disabled={!selectedBrand || modelsForSelectedBrand.length === 0}
                   >
