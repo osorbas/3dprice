@@ -47,7 +47,7 @@ const DashboardPage = () => {
               <SelectValue placeholder="Selecionar Período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="daily">Diário (30 dias)</SelectItem>
+              <SelectItem value="daily">Diário</SelectItem>
               <SelectItem value="weekly">Semanal</SelectItem>
               <SelectItem value="biweekly">Quinzenal</SelectItem>
               <SelectItem value="monthly">Mensal (12 meses)</SelectItem>
