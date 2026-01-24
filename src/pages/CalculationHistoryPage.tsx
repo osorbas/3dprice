@@ -20,7 +20,7 @@ const CalculationHistoryPage = () => {
   const { printers } = usePrinters();
   const [selectedPrinterId, setSelectedPrinterId] = React.useState<string>("all"); // State for selected printer filter
   const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 10; // 10 items per page
+  const itemsPerPage = 5; // Alterado para 5 itens por página
 
   const filteredCalculations = React.useMemo(() => {
     if (selectedPrinterId === "all") {
