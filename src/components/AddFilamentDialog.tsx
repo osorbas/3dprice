@@ -40,6 +40,8 @@ export const predefinedFilamentOptions = [
   { brand: "Bambu Lab", type: "PETG Basic" },
   { brand: "Sunlu", type: "PLA" },
   { brand: "Sunlu", type: "PETG" },
+  { brand: "Lotactree", type: "PLA" },
+  { brand: "Lotactree", type: "PETG" },
 ];
 
 export const AddFilamentDialog = () => {
