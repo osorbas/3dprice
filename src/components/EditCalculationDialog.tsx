@@ -76,6 +76,20 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
   const [editingPartIndex, setEditingPartIndex] = React.useState<number | null>(null);
 
   const initialDate = new Date(calculation.timestamp);
+  
+  // Função auxiliar para calcular a taxa de eletricidade por hora
+  const getElectricityCostPerHour = (calc: PrintCalculation) => {
+    if (calc.printTimeHours > 0) {
+      return calc.electricityCost / calc.printTimeHours;
+    }
+    // Tenta encontrar a impressora para obter o consumo e calcular uma taxa padrão
+    const printer = printers.find(p => p.id === calc.printerId);
+    if (printer) {
+      // Assumindo um custo de 0.15€/kWh (1000W) como padrão se não houver tempo de impressão
+      return (printer.powerConsumptionWatts / 1000) * 0.15; 
+    }
+    return 0.15; // Fallback
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -87,14 +101,17 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       recordMinute: initialDate.getMinutes(),
       profitMargin: calculation.profitMargin,
       laborCostTotal: calculation.laborCost,
-      extras: calculation.isProject ? [] : (calculation.filaments?.map(() => ({})) || []), // Placeholder for extras if needed, better mapping below
       
-      // Single
+      // Inicialização de Extras: Se calculation.extras existir, usa-o. Caso contrário, array vazio.
+      extras: (calculation.extras as z.infer<typeof extraSchema>[]) || [],
+      
+      // Single Print Fields
       printerId: calculation.printerId || "",
-      filamentsUsed: calculation.isProject ? [] : (calculation.filaments || [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }]),
+      // Inicialização de Filamentos: Se for single print, usa o array detalhado ou cria um a partir dos campos antigos.
+      filamentsUsed: calculation.isProject ? [] : (calculation.filaments && calculation.filaments.length > 0 ? calculation.filaments : [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }]),
       printTimeHours: !calculation.isProject ? Math.floor(calculation.printTimeHours) : 0,
       printTimeMinutes: !calculation.isProject ? Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60) : 0,
-      electricityCostPerHour: !calculation.isProject ? (calculation.printTimeHours > 0 ? calculation.electricityCost / calculation.printTimeHours : 0.15) : 0.15,
+      electricityCostPerHour: !calculation.isProject ? getElectricityCostPerHour(calculation) : 0.15,
       
       // Project
       projectParts: calculation.isProject ? calculation.projectParts?.map(p => ({
@@ -102,20 +119,10 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
         printerId: p.printerId,
         printTimeHours: Math.floor(p.printTimeHours),
         printTimeMinutes: Math.round((p.printTimeHours - Math.floor(p.printTimeHours)) * 60),
-        filamentsUsed: p.filaments || [{ filamentId: p.filamentId || "", filamentGrams: p.filamentGrams || 0 }],
+        filamentsUsed: p.filaments && p.filaments.length > 0 ? p.filaments : [{ filamentId: p.filamentId || "", filamentGrams: p.filamentGrams || 0 }],
       })) : [],
     },
   });
-
-  // Re-mapping complex defaults that use hooks or calculation internals
-  React.useEffect(() => {
-    if (open) {
-      // Carregar Extras para single print (projetos guardam extras de forma diferente ou não guardavam individualmente)
-      // Se tivermos dados de extras no hook do histórico, devemos carregá-los aqui.
-      // Atualmente o hook PrintCalculation guarda extraCost mas não o array detalhado de extras por omissão em versões antigas.
-      // Vamos assumir que se houver extras, eles estão no objeto.
-    }
-  }, [open]);
 
   const { fields: filamentFields, append: appendFilament, remove: removeFilament } = useFieldArray({
     control: form.control,
@@ -145,27 +152,32 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       let totalExtrasCost = 0;
 
       // Calcular Extras (comum a ambos)
-      values.extras?.forEach(ex => {
+      const updatedExtras = values.extras?.map(ex => {
         const material = extraMaterials.find(m => m.id === ex.materialId);
-        if (material) totalExtrasCost += material.costPerUnit * ex.quantity;
-      });
+        const cost = material ? material.costPerUnit * ex.quantity : 0;
+        totalExtrasCost += cost;
+        return { ...ex, cost: parseFloat(cost.toFixed(2)) };
+      }) || [];
 
       if (values.isProject) {
         const updatedParts = (values.projectParts || []).map((part, idx) => {
+          // Para projetos, a taxa de eletricidade por hora é mantida a partir do cálculo original
+          // ou recalculada se o original não tiver tempo.
           const originalPart = calculation.projectParts?.[idx];
           const electricityRate = originalPart && originalPart.printTimeHours > 0 
             ? originalPart.electricityCost / originalPart.printTimeHours 
-            : 0.15;
+            : 0.15; // Fallback rate
 
           const partHours = part.printTimeHours + (part.printTimeMinutes / 60);
           let partMatCost = 0;
           let partGrams = 0;
 
-          part.filamentsUsed.forEach(f => {
+          const updatedFilaments = part.filamentsUsed.map(f => {
             const filament = filaments.find(fil => fil.id === f.filamentId);
             const cost = filament ? (filament.pricePerKg / 1000) * f.filamentGrams : 0;
             partMatCost += cost;
             partGrams += f.filamentGrams;
+            return f;
           });
 
           const partElectricityCost = partHours * electricityRate;
@@ -175,6 +187,8 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
           totalPrintTimeHours += partHours;
           totalFilamentGrams += partGrams;
 
+          const partBaseCost = partMatCost + partElectricityCost;
+          
           return {
             ...originalPart,
             partName: part.partName,
@@ -183,8 +197,8 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
             materialCost: parseFloat(partMatCost.toFixed(2)),
             electricityCost: parseFloat(partElectricityCost.toFixed(2)),
             filamentGrams: partGrams,
-            filaments: part.filamentsUsed,
-            totalPrice: parseFloat((partMatCost + partElectricityCost).toFixed(2)),
+            filaments: updatedFilaments,
+            totalPrice: parseFloat(partBaseCost.toFixed(2)), // Preço total da parte (sem lucro/labor)
           };
         });
 
@@ -195,25 +209,27 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
           projectName: values.displayName,
           timestamp: finalDate.getTime(),
           profitMargin: values.profitMargin,
-          laborCost: values.laborCostTotal,
-          extraCost: totalExtrasCost,
+          laborCost: parseFloat(values.laborCostTotal.toFixed(2)),
+          extraCost: parseFloat(totalExtrasCost.toFixed(2)),
           materialCost: parseFloat(totalMaterialCost.toFixed(2)),
           electricityCost: parseFloat(totalElectricityCost.toFixed(2)),
-          printTimeHours: parseFloat(totalPrintTimeHours.toFixed(1)),
+          printTimeHours: parseFloat(totalPrintTimeHours.toFixed(2)),
           filamentGrams: totalFilamentGrams,
           totalPrice: parseFloat(finalPrice.toFixed(2)),
           projectParts: updatedParts as any,
+          extras: updatedExtras as any, // Guardar extras detalhados
         });
       } else {
         const totalHours = (values.printTimeHours || 0) + ((values.printTimeMinutes || 0) / 60);
         let matCost = 0;
         let grams = 0;
 
-        values.filamentsUsed?.forEach(f => {
+        const updatedFilaments = values.filamentsUsed?.map(f => {
           const filament = filaments.find(fil => fil.id === f.filamentId);
           if (filament) matCost += (filament.pricePerKg / 1000) * f.filamentGrams;
           grams += f.filamentGrams;
-        });
+          return f;
+        }) || [];
 
         const elecCost = totalHours * (values.electricityCostPerHour || 0);
         const baseCost = matCost + elecCost + values.laborCostTotal + totalExtrasCost;
@@ -223,16 +239,17 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
           printName: values.displayName,
           timestamp: finalDate.getTime(),
           printerId: values.printerId,
-          filaments: values.filamentsUsed,
-          filamentId: values.filamentsUsed?.[0]?.filamentId || "",
+          filaments: updatedFilaments,
+          filamentId: updatedFilaments?.[0]?.filamentId || "",
           filamentGrams: grams,
-          printTimeHours: totalHours,
+          printTimeHours: parseFloat(totalHours.toFixed(2)),
           materialCost: parseFloat(matCost.toFixed(2)),
           electricityCost: parseFloat(elecCost.toFixed(2)),
           laborCost: parseFloat(values.laborCostTotal.toFixed(2)),
           extraCost: parseFloat(totalExtrasCost.toFixed(2)),
           profitMargin: values.profitMargin,
           totalPrice: parseFloat(finalPrice.toFixed(2)),
+          extras: updatedExtras as any, // Guardar extras detalhados
         });
       }
       
@@ -240,6 +257,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       setOpen(false);
     } catch (error) {
       showError("Erro ao atualizar cálculo.");
+      console.error("Update calculation error:", error);
     }
   };
 
