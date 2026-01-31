@@ -6,6 +6,12 @@ export interface FilamentUsage {
   grams: number;
 }
 
+export interface ExtraUsageDetail {
+  materialId: string;
+  quantity: number;
+  cost: number;
+}
+
 export interface ProjectPartDetail {
   partName: string;
   printerId: string;
@@ -32,6 +38,7 @@ export interface PrintCalculation {
   filamentGrams: number; // Total for single print or sum for project
   filamentId: string;    // Main filament for single print, or empty/first for project
   filaments?: FilamentUsage[]; // Detailed for single print, or sum for project
+  extras?: ExtraUsageDetail[]; // Added detailed extras
   timestamp: number;
   printName?: string; // Name for single print
   printerId?: string; // Printer for single print
@@ -59,6 +66,7 @@ export function usePrintCalculations() {
           printerId: calc.printerId ?? "",
           extraCost: calc.extraCost ?? 0,
           filaments: calc.filaments ?? [{ filamentId: calc.filamentId || "", grams: calc.filamentGrams || 0 }],
+          extras: calc.extras ?? [], // Added default for extras
           isProject: calc.isProject ?? false,
           projectName: calc.projectName ?? "",
           projectParts: calc.projectParts ?? [],

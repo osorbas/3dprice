@@ -2,11 +2,13 @@
 import React from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { PrintCalculation } from "@/hooks/use-print-calculations";
+import { PrintCalculation, ExtraUsageDetail } from "@/hooks/use-print-calculations";
 import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
-import { Package, Box, Zap, Clock, Printer } from "lucide-react";
+import { Package, Box, Zap, Clock, Printer, Layers } from "lucide-react";
 import { usePrinters } from "@/hooks/use-printers";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface CalculationDetailsDialogProps {
   calculation: PrintCalculation | null;
@@ -48,7 +50,7 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
     );
   };
 
-  const renderExtraDetails = (extrasUsed: PrintCalculation['extras']) => {
+  const renderExtraDetails = (extrasUsed: ExtraUsageDetail[] | undefined) => {
     if (!extrasUsed || extrasUsed.length === 0) {
       return <p className="text-sm text-muted-foreground italic">Nenhum material extra registado.</p>;
     }
@@ -59,7 +61,7 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
           const material = extraMaterials.find(m => m.id === usage.materialId);
           const name = material ? material.name : "Material Desconhecido";
           const unit = material ? material.unit : "unidade";
-          const cost = usage.cost ?? (material ? material.costPerUnit * usage.quantity : 0);
+          const cost = usage.cost; // Cost is now guaranteed to be on ExtraUsageDetail
 
           return (
             <div key={index} className="flex justify-between text-sm border-b border-dashed pb-1 last:border-b-0">
