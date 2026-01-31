@@ -85,7 +85,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     resolver: zodResolver(combinedFormSchema),
     defaultValues: {
       printer: { name: "", brand: "", model: "", powerConsumptionWatts: 50, workingHours: 0 },
-      filament: { name: "", brand: "", type: "", color: "", pricePerKg: 20, purchasePrice: 15, weight: 1 },
+      filament: { name: "", brand: "", type: "", color: "", pricePerKg: 20, purchasePrice: 15, weight: 1 }, // Valores iniciais válidos
     },
   });
 
@@ -175,6 +175,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
         }
       }
     } else {
+      // Validar todos os campos do filamento
       const isValid = await form.trigger("filament");
       if (isValid) {
         try {
@@ -333,6 +334,26 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
               <FormLabel>Peso da Bobina (kg) *</FormLabel>
               <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="filament.name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome Amigável (Opcional)</FormLabel>
+              <FormControl><Input placeholder="Ex: PLA Silk Azul" {...field} /></FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="filament.color"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Cor (Opcional)</FormLabel>
+              <FormControl><Input placeholder="Ex: Azul Marinho" {...field} /></FormControl>
             </FormItem>
           )}
         />
