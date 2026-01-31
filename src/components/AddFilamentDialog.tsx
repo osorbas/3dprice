@@ -13,6 +13,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import { PlusCircle, TrendingUp } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const formSchema = z.object({
   name: z.string().optional(),
