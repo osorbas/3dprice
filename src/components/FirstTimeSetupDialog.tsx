@@ -34,15 +34,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { predefinedPrinters } from "@/components/AddPrinterDialog";
-import { ArrowRight, Check, Plus } from "lucide-react";
-import { Separator } from "@/components/ui/separator"; // Importação corrigida
+import { ArrowRight, Check, Plus, TrendingUp } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 const printerFieldsSchema = z.object({
-  name: z.string().optional(), // Tornar opcional
+  name: z.string().optional(),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
-  powerConsumptionWatts: z.coerce.number().min(0).default(50),
-  workingHours: z.coerce.number().min(0).default(0),
+  powerConsumptionWatts: z.coerce.number().min(0, "Não pode ser negativo.").default(50),
+  workingHours: z.coerce.number().min(0, "Não pode ser negativo.").default(0),
 });
 
 const filamentFieldsSchema = z.object({
@@ -50,9 +51,9 @@ const filamentFieldsSchema = z.object({
   brand: z.string().min(1, "A marca é obrigatória."),
   type: z.string().min(1, "O tipo é obrigatório."),
   color: z.string().optional(),
-  pricePerKg: z.coerce.number().min(0.01, "O preço por kg deve ser positivo."),
-  purchasePrice: z.coerce.number().min(0).optional(),
-  weight: z.coerce.number().min(0.01).default(1),
+  pricePerKg: z.coerce.number().min(0.01, "O preço de venda deve ser positivo."),
+  purchasePrice: z.coerce.number().min(0, "Não pode ser negativo.").optional(),
+  weight: z.coerce.number().min(0.01, "O peso deve ser positivo.").default(1),
 });
 
 const combinedFormSchema = z.object({
@@ -84,12 +85,16 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
     resolver: zodResolver(combinedFormSchema),
     defaultValues: {
       printer: { name: "", brand: "", model: "", powerConsumptionWatts: 50, workingHours: 0 },
-      filament: { name: "", brand: "", type: "", color: "", pricePerKg: 0, purchasePrice: 0, weight: 1 },
+      filament: { name: "", brand: "", type: "", color: "", pricePerKg: 20, purchasePrice: 15, weight: 1 },
     },
   });
 
   const selectedPrinterBrand = form.watch("printer.brand");
   const selectedFilamentBrand = form.watch("filament.brand");
+  
+  const watchedSellingPrice = form.watch("filament.pricePerKg");
+  const watchedPurchasePrice = form.watch("filament.purchasePrice") || 0;
+  const watchedWeight = form.watch("filament.weight");
 
   const printerBrands = useMemo(() => 
     Array.from(new Set(predefinedPrinters.map((p) => p.brand))).sort()
@@ -109,6 +114,20 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
       .map((p) => p.model)
       .sort()
   , [selectedPrinterBrand]);
+
+  const profitMargin = React.useMemo(() => {
+    if (watchedPurchasePrice <= 0 || watchedSellingPrice <= 0) return null;
+    const margin = ((watchedSellingPrice - watchedPurchasePrice) / watchedPurchasePrice) * 100;
+    return margin;
+  }, [watchedSellingPrice, watchedPurchasePrice]);
+
+  const calculatedPrices = React.useMemo(() => {
+    const pricePerGram = watchedSellingPrice / 1000;
+    const purchasePricePerGram = watchedPurchasePrice / 1000;
+    const totalSellingPrice = watchedSellingPrice * watchedWeight;
+    const totalPurchasePrice = watchedPurchasePrice * watchedWeight;
+    return { pricePerGram, purchasePricePerGram, totalSellingPrice, totalPurchasePrice };
+  }, [watchedSellingPrice, watchedPurchasePrice, watchedWeight]);
 
   const handleCreateBrand = () => {
     if (!newBrandName.trim()) return;
@@ -289,12 +308,57 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
           name="filament.pricePerKg"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Preço por Kg (€) *</FormLabel>
+              <FormLabel>Preço Venda por Kg (€) *</FormLabel>
               <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="filament.purchasePrice"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Preço Compra por Kg (€) (Opcional)</FormLabel>
+              <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="filament.weight"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Peso da Bobina (kg) *</FormLabel>
+              <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="bg-muted/30 p-4 rounded-lg space-y-4">
+          <h4 className="text-sm font-semibold flex items-center gap-2">Resumo de Preços</h4>
+          <div className="space-y-1 text-sm">
+            <div className="flex items-center gap-2 font-medium">
+              <TrendingUp className={cn("h-4 w-4", (profitMargin ?? -1) >= 0 ? "text-green-500" : "text-red-500")} />
+              <span>Margem de Lucro: </span>
+              <span className={cn((profitMargin ?? -1) >= 0 ? "text-green-600" : "text-red-600", "font-bold")}>
+                {profitMargin !== null ? `${profitMargin.toFixed(0)}%` : 'N/A'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground pt-2">
+              <p>Preço Venda/g:</p>
+              <p className="text-right font-medium">€{calculatedPrices.pricePerGram.toFixed(4)}</p>
+              <p>Preço Compra/g:</p>
+              <p className="text-right font-medium">€{calculatedPrices.purchasePricePerGram.toFixed(4)}</p>
+              <p>Preço Total Bobina (Venda):</p>
+              <p className="text-right font-medium">€{calculatedPrices.totalSellingPrice.toFixed(2)}</p>
+              <p>Preço Total Bobina (Compra):</p>
+              <p className="text-right font-medium">€{calculatedPrices.totalPurchasePrice.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   };
