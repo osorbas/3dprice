@@ -39,6 +39,7 @@ const SettingsPage = () => {
   const [newBrandName, setNewBrandName] = React.useState("");
   const [isEditingBrands, setIsEditingBrands] = React.useState(false);
   const [isNewBrandDialogOpen, setIsNewBrandDialogOpen] = React.useState(false);
+  const [brandToDelete, setBrandToDelete] = React.useState<string | null>(null);
 
   const [defaultProfitMargin, setDefaultProfitMargin] = React.useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -88,6 +89,14 @@ const SettingsPage = () => {
     setNewBrandName("");
     setIsNewBrandDialogOpen(false);
     showSuccess(`Marca "${newBrandName}" adicionada!`);
+  };
+
+  const handleConfirmDeleteBrand = () => {
+    if (brandToDelete) {
+      removeBrand(brandToDelete);
+      showSuccess(`Marca "${brandToDelete}" eliminada.`);
+      setBrandToDelete(null);
+    }
   };
 
   const handleToggleStock = (checked: boolean) => {
@@ -376,7 +385,7 @@ const SettingsPage = () => {
                         {brand}
                         {isEditingBrands && (
                           <button 
-                            onClick={() => removeBrand(brand)}
+                            onClick={() => setBrandToDelete(brand)}
                             className="ml-1 hover:text-destructive/70 transition-colors"
                           >
                             <X className="h-3 w-3" />
@@ -388,6 +397,24 @@ const SettingsPage = () => {
                 </div>
               </CardContent>
             </Card>
+
+            <AlertDialog open={!!brandToDelete} onOpenChange={(open) => !open && setBrandToDelete(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Eliminar marca de filamento?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tens a certeza que queres eliminar a marca "{brandToDelete}"? Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirmDeleteBrand} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <FilamentsPage />
           </div>
         </TabsContent>
