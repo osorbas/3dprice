@@ -10,7 +10,7 @@ import { useTheme } from "next-themes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download, Upload, Printer as PrinterIcon, Check, Zap, Package, Plus, X } from "lucide-react";
+import { Trash2, Download, Upload, Printer as PrinterIcon, Check, Zap, Package, Plus, X, Pencil } from "lucide-react";
 import { usePrintCalculations } from "@/hooks/use-print-calculations";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
@@ -20,7 +20,7 @@ import { useCustomBrands } from "@/hooks/use-custom-brands";
 import { showError, showSuccess } from "@/utils/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,8 @@ const SettingsPage = () => {
   const { customBrands, addBrand, removeBrand } = useCustomBrands();
 
   const [newBrandName, setNewBrandName] = React.useState("");
+  const [isEditingBrands, setIsEditingBrands] = React.useState(false);
+  const [isNewBrandDialogOpen, setIsNewBrandDialogOpen] = React.useState(false);
 
   const [defaultProfitMargin, setDefaultProfitMargin] = React.useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -84,6 +86,7 @@ const SettingsPage = () => {
     if (!newBrandName.trim()) return;
     addBrand(newBrandName);
     setNewBrandName("");
+    setIsNewBrandDialogOpen(false);
     showSuccess(`Marca "${newBrandName}" adicionada!`);
   };
 
@@ -317,36 +320,68 @@ const SettingsPage = () => {
         <TabsContent value="filaments" className="pt-4">
           <div className="space-y-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
                   Gestão de Marcas de Filamento
                 </CardTitle>
+                <div className="flex gap-2">
+                  <Dialog open={isNewBrandDialogOpen} onOpenChange={setIsNewBrandDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <Plus className="h-4 w-4" /> Novo
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[400px]">
+                      <DialogHeader>
+                        <DialogTitle>Nova Marca Personalizada</DialogTitle>
+                        <DialogDescription>Adicione uma nova marca à lista de seletores.</DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4">
+                        <Input 
+                          placeholder="Ex: Filament 3D" 
+                          value={newBrandName} 
+                          onChange={(e) => setNewBrandName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddCustomBrand()}
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={handleAddCustomBrand}>Adicionar Marca</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Button 
+                    size="sm" 
+                    variant={isEditingBrands ? "default" : "outline"} 
+                    className="gap-2"
+                    onClick={() => setIsEditingBrands(!isEditingBrands)}
+                  >
+                    <Pencil className="h-4 w-4" /> {isEditingBrands ? "Concluir" : "Editar"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input 
-                    placeholder="Nome da marca (ex: Filament 3D)" 
-                    value={newBrandName} 
-                    onChange={(e) => setNewBrandName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddCustomBrand()}
-                  />
-                  <Button onClick={handleAddCustomBrand}><Plus className="h-4 w-4 mr-2" /> Adicionar</Button>
-                </div>
-                
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="flex flex-wrap gap-2">
                   {customBrands.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">Nenhuma marca personalizada adicionada.</p>
+                    <p className="text-sm text-muted-foreground italic">Nenhuma marca personalizada adicionada. Clique em "Novo" para começar.</p>
                   ) : (
                     customBrands.map(brand => (
-                      <div key={brand} className="flex items-center gap-1 bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                      <div 
+                        key={brand} 
+                        className={cn(
+                          "flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-colors",
+                          isEditingBrands ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-secondary text-secondary-foreground"
+                        )}
+                      >
                         {brand}
-                        <button 
-                          onClick={() => removeBrand(brand)}
-                          className="ml-1 hover:text-destructive transition-colors"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
+                        {isEditingBrands && (
+                          <button 
+                            onClick={() => removeBrand(brand)}
+                            className="ml-1 hover:text-destructive/70 transition-colors"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     ))
                   )}
