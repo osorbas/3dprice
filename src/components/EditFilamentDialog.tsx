@@ -118,13 +118,13 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
               <h4 className="text-sm font-semibold flex items-center gap-2">Valores e Margem</h4>
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="pricePerKg" render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col justify-end">
                     <FormLabel>Preço Venda/Kg (€)</FormLabel>
                     <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="purchasePrice" render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col justify-end">
                     <FormLabel>Preço Compra/Kg (€)</FormLabel>
                     <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                   </FormItem>

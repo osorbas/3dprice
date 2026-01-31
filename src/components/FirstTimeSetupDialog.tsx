@@ -310,7 +310,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
             control={form.control}
             name="filament.pricePerKg"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col justify-end">
                 <FormLabel>Preço Venda por Kg (€) *</FormLabel>
                 <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                 <FormMessage />
@@ -321,7 +321,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
             control={form.control}
             name="filament.purchasePrice"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="flex flex-col justify-end">
                 <FormLabel>Preço Compra por Kg (€) (Opcional)</FormLabel>
                 <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                 <FormMessage />
