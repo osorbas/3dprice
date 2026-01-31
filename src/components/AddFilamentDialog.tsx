@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
 import { useFilamentBrands } from "@/hooks/use-filament-brands";
 import { showSuccess, showError } from "@/utils/toast";
-import { PlusCircle, TrendingUp } from "lucide-react";
+import { PlusCircle, TrendingUp, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -30,10 +30,14 @@ type AddFilamentFormValues = z.infer<typeof formSchema>;
 
 export const AddFilamentDialog = () => {
   const { addFilament } = useFilaments();
-  const { brands } = useFilamentBrands();
+  const { brands, addBrand } = useFilamentBrands();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
   
+  // Estado para o mini-diálogo de nova marca
+  const [isAddingNewBrand, setIsAddingNewBrand] = React.useState(false);
+  const [newBrandName, setNewBrandName] = React.useState("");
+
   const form = useForm<AddFilamentFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -59,9 +63,19 @@ export const AddFilamentDialog = () => {
     } catch (err) { showError("Erro ao adicionar."); }
   };
 
+  const handleCreateBrand = () => {
+    if (!newBrandName.trim()) return;
+    addBrand(newBrandName.trim());
+    form.setValue("brand", newBrandName.trim());
+    setSelectedBrand(newBrandName.trim());
+    setIsAddingNewBrand(false);
+    setNewBrandName("");
+    showSuccess(`Marca "${newBrandName}" criada!`);
+  };
+
   const typesForSelectedBrand = React.useMemo(() => {
     if (!selectedBrand) return [];
-    return brands.find(b => b.name === selectedBrand)?.types || [];
+    return brands.find(b => b.name === selectedBrand)?.types || ["PLA", "PETG", "ABS"];
   }, [selectedBrand, brands]);
 
   return (
@@ -71,77 +85,111 @@ export const AddFilamentDialog = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Adicionar Novo Filamento</DialogTitle></DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>Nome Amigável (Opcional)</FormLabel><FormControl><Input placeholder="Ex: PLA Silk Azul" {...field} /></FormControl></FormItem>
-            )} />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="brand" render={({ field }) => (
-                <FormItem><FormLabel>Marca</FormLabel>
-                  <Select onValueChange={(v) => { field.onChange(v); setSelectedBrand(v); }} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="type" render={({ field }) => (
-                <FormItem><FormLabel>Tipo</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!selectedBrand}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )} />
+        
+        {isAddingNewBrand ? (
+          <div className="space-y-4 py-4 border rounded-lg p-4 bg-primary/5">
+            <h4 className="font-semibold text-sm">Nova Marca Personalizada</h4>
+            <div className="flex gap-2">
+              <Input 
+                placeholder="Nome da Marca" 
+                value={newBrandName} 
+                onChange={(e) => setNewBrandName(e.target.value)}
+                autoFocus
+              />
+              <Button onClick={handleCreateBrand} size="sm">Criar</Button>
+              <Button onClick={() => setIsAddingNewBrand(false)} variant="ghost" size="sm">Cancelar</Button>
             </div>
-            <FormField control={form.control} name="color" render={({ field }) => (
-              <FormItem><FormLabel>Cor</FormLabel><FormControl><Input placeholder="Ex: Azul Marinho" {...field} /></FormControl></FormItem>
-            )} />
-            
-            <Separator className="my-2" />
-            <div className="bg-muted/30 p-4 rounded-lg space-y-4">
-              <h4 className="text-sm font-semibold flex items-center gap-2">Valores e Margem</h4>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Nome Amigável (Opcional)</FormLabel><FormControl><Input placeholder="Ex: PLA Silk Azul" {...field} /></FormControl></FormItem>
+              )} />
+              
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="purchasePrice" render={({ field }) => (
+                <FormField control={form.control} name="brand" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Preço Compra/Kg (€)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormLabel>Marca</FormLabel>
+                    <Select 
+                      onValueChange={(v) => { 
+                        if (v === "NEW_BRAND") {
+                          setIsAddingNewBrand(true);
+                        } else {
+                          field.onChange(v); 
+                          setSelectedBrand(v); 
+                        }
+                      }} 
+                      value={field.value}
+                    >
+                      <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
+                        <Separator className="my-1" />
+                        <SelectItem value="NEW_BRAND" className="text-primary font-medium">
+                          <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar nova...</span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="pricePerKg" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço Venda/Kg (€)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                <FormField control={form.control} name="type" render={({ field }) => (
+                  <FormItem><FormLabel>Tipo</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedBrand}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </FormItem>
                 )} />
               </div>
-              {profitMargin !== null && (
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <TrendingUp className={cn("h-4 w-4", profitMargin >= 0 ? "text-green-500" : "text-red-500")} />
-                  <span>Margem de Lucro: </span>
-                  <span className={profitMargin >= 0 ? "text-green-600" : "text-red-600"}>
-                    {profitMargin.toFixed(0)}%
-                  </span>
+
+              <FormField control={form.control} name="color" render={({ field }) => (
+                <FormItem><FormLabel>Cor</FormLabel><FormControl><Input placeholder="Ex: Azul Marinho" {...field} /></FormControl></FormItem>
+              )} />
+              
+              <Separator className="my-2" />
+              <div className="bg-muted/30 p-4 rounded-lg space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">Valores e Margem</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="purchasePrice" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço Compra/Kg (€)</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="pricePerKg" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Preço Venda/Kg (€)</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
                 </div>
-              )}
-            </div>
+                {profitMargin !== null && (
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <TrendingUp className={cn("h-4 w-4", profitMargin >= 0 ? "text-green-500" : "text-red-500")} />
+                    <span>Margem de Lucro: </span>
+                    <span className={profitMargin >= 0 ? "text-green-600" : "text-red-600"}>
+                      {profitMargin.toFixed(0)}%
+                    </span>
+                  </div>
+                )}
+              </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="weight" render={({ field }) => (
-                <FormItem><FormLabel>Peso Total (kg)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
-              )} />
-              <FormField control={form.control} name="currentWeightGrams" render={({ field }) => (
-                <FormItem><FormLabel>Stock Atual (g)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-            </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="weight" render={({ field }) => (
+                  <FormItem><FormLabel>Peso Total (kg)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="currentWeightGrams" render={({ field }) => (
+                  <FormItem><FormLabel>Stock Atual (g)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
 
-            <DialogFooter><Button type="submit" className="w-full">Adicionar Filamento</Button></DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter><Button type="submit" className="w-full">Adicionar Filamento</Button></DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );
