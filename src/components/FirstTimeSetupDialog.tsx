@@ -95,11 +95,11 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
   , [selectedPrinterBrand]);
 
   const filamentBrands = useMemo(() => 
-    brands.map(b => b.name)
+    brands.map(b => b.name).sort() // Garantir que as marcas são ordenadas
   , [brands]);
 
   const filamentTypes = useMemo(() => 
-    brands.find(b => b.name === selectedFilamentBrand)?.types || []
+    brands.find(b => b.name === selectedFilamentBrand)?.types.sort() || [] // Garantir que os tipos são ordenados
   , [selectedFilamentBrand, brands]);
 
   const handleNextStep = async () => {
