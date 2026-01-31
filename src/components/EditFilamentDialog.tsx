@@ -8,10 +8,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useFilaments, Filament } from "@/hooks/use-filaments";
+import { useFilamentBrands } from "@/hooks/use-filament-brands";
 import { showSuccess, showError } from "@/utils/toast";
 import { Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { predefinedFilamentOptions } from "./AddFilamentDialog";
 
 const formSchema = z.object({
   name: z.string().optional(),
@@ -26,14 +26,27 @@ const formSchema = z.object({
 
 export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
   const { updateFilament } = useFilaments();
+  const { brands } = useFilamentBrands();
   const [open, setOpen] = React.useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: filament.name || "", brand: filament.brand, type: filament.type, color: filament.color || "", pricePerKg: filament.pricePerKg, purchasePrice: filament.purchasePrice ?? 0, weight: filament.weight, currentWeightGrams: filament.currentWeightGrams,
+      name: filament.name || "", 
+      brand: filament.brand, 
+      type: filament.type, 
+      color: filament.color || "", 
+      pricePerKg: filament.pricePerKg, 
+      purchasePrice: filament.purchasePrice ?? 0, 
+      weight: filament.weight, 
+      currentWeightGrams: filament.currentWeightGrams,
     },
   });
+
+  const selectedBrand = form.watch("brand");
+  const typesForSelectedBrand = React.useMemo(() => {
+    return brands.find(b => b.name === selectedBrand)?.types || [];
+  }, [selectedBrand, brands]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
@@ -53,6 +66,28 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
             )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="brand" render={({ field }) => (
+                <FormItem><FormLabel>Marca</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="type" render={({ field }) => (
+                <FormItem><FormLabel>Tipo</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="pricePerKg" render={({ field }) => (
                 <FormItem><FormLabel>Preço/Kg (€)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>

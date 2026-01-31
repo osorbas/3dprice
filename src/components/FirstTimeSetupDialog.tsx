@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
+import { useFilamentBrands } from "@/hooks/use-filament-brands";
 import { showSuccess, showError } from "@/utils/toast";
 import {
   Select,
@@ -33,7 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { predefinedPrinters } from "@/components/AddPrinterDialog";
-import { predefinedFilamentOptions } from "@/components/AddFilamentDialog";
 import { ArrowRight, Check } from "lucide-react";
 
 const printerFieldsSchema = z.object({
@@ -69,6 +69,7 @@ interface FirstTimeSetupDialogProps {
 export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialogProps) => {
   const { addPrinter } = usePrinters();
   const { addFilament } = useFilaments();
+  const { brands } = useFilamentBrands();
   const [step, setStep] = useState(1);
 
   const form = useForm<CombinedSetupFormValues>({
@@ -94,16 +95,12 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
   , [selectedPrinterBrand]);
 
   const filamentBrands = useMemo(() => 
-    Array.from(new Set(predefinedFilamentOptions.map((f) => f.brand))).sort()
-  , []);
+    brands.map(b => b.name)
+  , [brands]);
 
   const filamentTypes = useMemo(() => 
-    Array.from(new Set(
-      predefinedFilamentOptions
-        .filter((f) => f.brand === selectedFilamentBrand)
-        .map((f) => f.type)
-    )).sort()
-  , [selectedFilamentBrand]);
+    brands.find(b => b.name === selectedFilamentBrand)?.types || []
+  , [selectedFilamentBrand, brands]);
 
   const handleNextStep = async () => {
     if (step === 1) {
