@@ -102,12 +102,11 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       profitMargin: calculation.profitMargin,
       laborCostTotal: calculation.laborCost,
       
-      // Inicialização de Extras: Se calculation.extras existir, usa-o. Caso contrário, array vazio.
+      // Inicialização de Extras
       extras: (calculation.extras as z.infer<typeof extraSchema>[]) || [],
       
       // Single Print Fields
       printerId: calculation.printerId || "",
-      // Inicialização de Filamentos: Se for single print, usa o array detalhado (mapeando grams para filamentGrams) ou cria um a partir dos campos antigos.
       filamentsUsed: calculation.isProject ? [] : (calculation.filaments && calculation.filaments.length > 0 ? calculation.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams })) : [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }]),
       printTimeHours: !calculation.isProject ? Math.floor(calculation.printTimeHours) : 0,
       printTimeMinutes: !calculation.isProject ? Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60) : 0,
@@ -119,7 +118,6 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
         printerId: p.printerId,
         printTimeHours: Math.floor(p.printTimeHours),
         printTimeMinutes: Math.round((p.printTimeHours - Math.floor(p.printTimeHours)) * 60),
-        // Map grams back to filamentGrams for the form
         filamentsUsed: p.filaments && p.filaments.length > 0 ? p.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams })) : [{ filamentId: p.filamentId || "", filamentGrams: p.filamentGrams || 0 }],
       })) : [],
     },
@@ -155,30 +153,29 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       // Calcular Extras (comum a ambos)
       const updatedExtras = values.extras?.map(ex => {
         const material = extraMaterials.find(m => m.id === ex.materialId);
-        const cost = material ? material.costPerUnit * ex.quantity : 0;
+        const cost = material ? material.costPerUnit * Number(ex.quantity || 0) : 0;
         totalExtrasCost += cost;
         return { ...ex, cost: parseFloat(cost.toFixed(2)) };
       }) || [];
 
       if (values.isProject) {
         const updatedParts = (values.projectParts || []).map((part, idx) => {
-          // Para projetos, a taxa de eletricidade por hora é mantida a partir do cálculo original
-          // ou recalculada se o original não tiver tempo.
           const originalPart = calculation.projectParts?.[idx];
           const electricityRate = originalPart && originalPart.printTimeHours > 0 
             ? originalPart.electricityCost / originalPart.printTimeHours 
-            : 0.15; // Fallback rate
+            : 0.15;
 
-          const partHours = part.printTimeHours + (part.printTimeMinutes / 60);
+          const partHours = Number(part.printTimeHours || 0) + (Number(part.printTimeMinutes || 0) / 60);
           let partMatCost = 0;
           let partGrams = 0;
 
           const updatedFilaments = part.filamentsUsed.map(f => {
             const filament = filaments.find(fil => fil.id === f.filamentId);
-            const cost = filament ? (filament.pricePerKg / 1000) * f.filamentGrams : 0;
+            const grams = Number(f.filamentGrams || 0);
+            const cost = filament ? (filament.pricePerKg / 1000) * grams : 0;
             partMatCost += cost;
-            partGrams += f.filamentGrams;
-            return { filamentId: f.filamentId, grams: f.filamentGrams }; // Fixed mapping for FilamentUsage
+            partGrams += grams;
+            return { filamentId: f.filamentId, grams: grams };
           });
 
           const partElectricityCost = partHours * electricityRate;
@@ -199,18 +196,18 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
             electricityCost: parseFloat(partElectricityCost.toFixed(2)),
             filamentGrams: partGrams,
             filaments: updatedFilaments,
-            totalPrice: parseFloat(partBaseCost.toFixed(2)), // Preço total da parte (sem lucro/labor)
+            totalPrice: parseFloat(partBaseCost.toFixed(2)),
           };
         });
 
-        const baseCost = totalMaterialCost + totalElectricityCost + values.laborCostTotal + totalExtrasCost;
-        const finalPrice = baseCost + (baseCost * (values.profitMargin / 100));
+        const baseCost = totalMaterialCost + totalElectricityCost + Number(values.laborCostTotal || 0) + totalExtrasCost;
+        const finalPrice = baseCost + (baseCost * (Number(values.profitMargin || 0) / 100));
 
         updateCalculation(calculation.id, {
           projectName: values.displayName,
           timestamp: finalDate.getTime(),
-          profitMargin: values.profitMargin,
-          laborCost: parseFloat(values.laborCostTotal.toFixed(2)),
+          profitMargin: Number(values.profitMargin || 0),
+          laborCost: parseFloat(Number(values.laborCostTotal || 0).toFixed(2)),
           extraCost: parseFloat(totalExtrasCost.toFixed(2)),
           materialCost: parseFloat(totalMaterialCost.toFixed(2)),
           electricityCost: parseFloat(totalElectricityCost.toFixed(2)),
@@ -218,23 +215,24 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
           filamentGrams: totalFilamentGrams,
           totalPrice: parseFloat(finalPrice.toFixed(2)),
           projectParts: updatedParts as any,
-          extras: updatedExtras, // Fixed: now 'extras' exists on PrintCalculation
+          extras: updatedExtras,
         });
       } else {
-        const totalHours = (values.printTimeHours || 0) + ((values.printTimeMinutes || 0) / 60);
+        const totalHours = Number(values.printTimeHours || 0) + (Number(values.printTimeMinutes || 0) / 60);
         let matCost = 0;
         let grams = 0;
 
         const updatedFilaments = values.filamentsUsed?.map(f => {
           const filament = filaments.find(fil => fil.id === f.filamentId);
-          if (filament) matCost += (filament.pricePerKg / 1000) * f.filamentGrams;
-          grams += f.filamentGrams;
-          return { filamentId: f.filamentId, grams: f.filamentGrams }; // Fixed mapping for FilamentUsage
+          const fGrams = Number(f.filamentGrams || 0);
+          if (filament) matCost += (filament.pricePerKg / 1000) * fGrams;
+          grams += fGrams;
+          return { filamentId: f.filamentId, grams: fGrams };
         }) || [];
 
-        const elecCost = totalHours * (values.electricityCostPerHour || 0);
-        const baseCost = matCost + elecCost + values.laborCostTotal + totalExtrasCost;
-        const finalPrice = baseCost + (baseCost * (values.profitMargin / 100));
+        const elecCost = totalHours * Number(values.electricityCostPerHour || 0);
+        const baseCost = matCost + elecCost + Number(values.laborCostTotal || 0) + totalExtrasCost;
+        const finalPrice = baseCost + (baseCost * (Number(values.profitMargin || 0) / 100));
         
         updateCalculation(calculation.id, {
           printName: values.displayName,
@@ -246,11 +244,11 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
           printTimeHours: parseFloat(totalHours.toFixed(2)),
           materialCost: parseFloat(matCost.toFixed(2)),
           electricityCost: parseFloat(elecCost.toFixed(2)),
-          laborCost: parseFloat(values.laborCostTotal.toFixed(2)),
+          laborCost: parseFloat(Number(values.laborCostTotal || 0).toFixed(2)),
           extraCost: parseFloat(totalExtrasCost.toFixed(2)),
-          profitMargin: values.profitMargin,
+          profitMargin: Number(values.profitMargin || 0),
           totalPrice: parseFloat(finalPrice.toFixed(2)),
-          extras: updatedExtras, // Fixed: now 'extras' exists on PrintCalculation
+          extras: updatedExtras,
         });
       }
       
@@ -412,7 +410,6 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
                           <Input type="number" placeholder="Horas" value={form.getValues(`projectParts.${editingPartIndex}.printTimeHours`)} onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeHours`, parseInt(e.target.value) || 0)} />
                           <Input type="number" placeholder="Minutos" value={form.getValues(`projectParts.${editingPartIndex}.printTimeMinutes`)} onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeMinutes`, parseInt(e.target.value) || 0)} />
                         </div>
-                        {/* Filamentos da parte poderiam ser editados aqui com um FieldArray aninhado se necessário */}
                       </div>
                     )}
                     <DialogFooter><Button onClick={() => setEditingPartIndex(null)}>OK</Button></DialogFooter>

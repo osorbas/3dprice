@@ -178,35 +178,37 @@ const CalculatorPage = () => {
 
     extrasCost = watchedValues.extras?.reduce((acc, ex) => {
       const material = extraMaterials.find(m => m.id === ex.materialId);
-      return acc + (material ? material.costPerUnit * ex.quantity : 0);
+      return acc + (material ? material.costPerUnit * Number(ex.quantity || 0) : 0);
     }, 0) || 0;
 
     if (activeTab === "single-print") {
       watchedValues.filamentsUsed?.forEach(f => {
         const filament = filaments.find(fil => fil.id === f.filamentId);
-        if (filament) materialCost += (filament.pricePerKg / 1000) * f.filamentGrams;
-        totalFilamentGrams += f.filamentGrams;
+        const grams = Number(f.filamentGrams || 0);
+        if (filament) materialCost += (filament.pricePerKg / 1000) * grams;
+        totalFilamentGrams += grams;
       });
-      const hours = (watchedValues.printTimeHours || 0) + ((watchedValues.printTimeMinutes || 0) / 60);
-      electricityCost = hours * (watchedValues.electricityCostPerHour || 0);
+      const hours = Number(watchedValues.printTimeHours || 0) + (Number(watchedValues.printTimeMinutes || 0) / 60);
+      electricityCost = hours * Number(watchedValues.electricityCostPerHour || 0);
       totalPrintTime = hours;
     } else {
       watchedValues.projectParts?.forEach(part => {
         part.filamentsUsed.forEach(f => {
           const filament = filaments.find(fil => fil.id === f.filamentId);
-          if (filament) materialCost += (filament.pricePerKg / 1000) * f.filamentGrams;
-          totalFilamentGrams += f.filamentGrams;
+          const grams = Number(f.filamentGrams || 0);
+          if (filament) materialCost += (filament.pricePerKg / 1000) * grams;
+          totalFilamentGrams += grams;
         });
-        const hours = (part.printTimeHours || 0) + ((part.printTimeMinutes || 0) / 60);
-        electricityCost += hours * (part.electricityCostPerHour || 0);
+        const hours = Number(part.printTimeHours || 0) + (Number(part.printTimeMinutes || 0) / 60);
+        electricityCost += hours * Number(part.electricityCostPerHour || 0);
         totalPrintTime += hours;
       });
     }
 
-    laborCost = ((watchedValues.laborTimeHours || 0) + ((watchedValues.laborTimeMinutes || 0) / 60)) * (watchedValues.laborCostPerHour || 0);
+    laborCost = (Number(watchedValues.laborTimeHours || 0) + (Number(watchedValues.laborTimeMinutes || 0) / 60)) * Number(watchedValues.laborCostPerHour || 0);
     
     const baseCost = materialCost + electricityCost + laborCost + extrasCost;
-    const profitAmount = baseCost * ((watchedValues.profitMargin || 0) / 100);
+    const profitAmount = baseCost * (Number(watchedValues.profitMargin || 0) / 100);
     const totalPrice = baseCost + profitAmount;
 
     return { materialCost, electricityCost, laborCost, extrasCost, baseCost, profitAmount, totalPrice, totalPrintTime, totalFilamentGrams };
@@ -345,11 +347,12 @@ const CalculatorPage = () => {
       let partGrams = 0;
       part.filamentsUsed.forEach(f => {
         const filament = filaments.find(fil => fil.id === f.filamentId);
-        if (filament) partMatCost += (filament.pricePerKg / 1000) * f.filamentGrams;
-        partGrams += f.filamentGrams;
+        const grams = Number(f.filamentGrams || 0);
+        if (filament) partMatCost += (filament.pricePerKg / 1000) * grams;
+        partGrams += grams;
       });
-      const partHours = part.printTimeHours + (part.printTimeMinutes / 60);
-      const partElecCost = partHours * part.electricityCostPerHour;
+      const partHours = Number(part.printTimeHours || 0) + (Number(part.printTimeMinutes || 0) / 60);
+      const partElecCost = partHours * Number(part.electricityCostPerHour || 0);
 
       return {
         partName: part.partName,
@@ -365,10 +368,10 @@ const CalculatorPage = () => {
 
     if (localStorage.getItem("manage_filament_stock") === "true") {
       if (activeTab === "single-print") {
-        values.filamentsUsed?.forEach(f => subtractStock(f.filamentId, f.filamentGrams));
+        values.filamentsUsed?.forEach(f => subtractStock(f.filamentId, Number(f.filamentGrams || 0)));
       } else {
         values.projectParts?.forEach(part => {
-          part.filamentsUsed.forEach(f => subtractStock(f.filamentId, f.filamentGrams));
+          part.filamentsUsed.forEach(f => subtractStock(f.filamentId, Number(f.filamentGrams || 0)));
         });
       }
     }
@@ -379,7 +382,7 @@ const CalculatorPage = () => {
       electricityCost: totals.electricityCost,
       laborCost: totals.laborCost,
       extraCost: totals.extrasCost,
-      profitMargin: values.profitMargin || 0,
+      profitMargin: Number(values.profitMargin || 0),
       totalPrice: totals.totalPrice,
       filamentGrams: totals.totalFilamentGrams,
       filamentId: values.filamentsUsed?.[0]?.filamentId || "",
@@ -396,7 +399,7 @@ const CalculatorPage = () => {
       id: Date.now().toString(),
       printName: values.printName,
       ...totals,
-      profitMargin: values.profitMargin
+      profitMargin: Number(values.profitMargin || 0)
     });
 
     if (selectedPrinterId && printer?.status === "Pronta") {
