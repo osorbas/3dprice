@@ -128,7 +128,10 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
             <FormField control={form.control} name="color" render={({ field }) => (
               <FormItem>
                 <FormLabel>Cor (Opcional)</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select 
+                  onValueChange={(v) => field.onChange(v === "no-color-selected" ? "" : v)} 
+                  value={field.value || "no-color-selected"}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <div className="flex items-center gap-2">
@@ -143,7 +146,7 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma / Personalizada</SelectItem>
+                    <SelectItem value="no-color-selected">Nenhuma / Personalizada</SelectItem>
                     <Separator className="my-1" />
                     {predefinedColors.map(c => (
                       <SelectItem key={c.hex} value={c.name}>
