@@ -140,14 +140,14 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground pt-2">
-                  <p>Preço Venda/g:</p>
-                  <p className="text-right font-medium">€{calculatedPrices.pricePerGram.toFixed(4)}</p>
                   <p>Preço Compra/g:</p>
                   <p className="text-right font-medium">€{calculatedPrices.purchasePricePerGram.toFixed(4)}</p>
-                  <p>Preço Total Bobina (Venda):</p>
-                  <p className="text-right font-medium">€{calculatedPrices.totalSellingPrice.toFixed(2)}</p>
+                  <p>Preço Venda/g:</p>
+                  <p className="text-right font-medium">€{calculatedPrices.pricePerGram.toFixed(4)}</p>
                   <p>Preço Total Bobina (Compra):</p>
                   <p className="text-right font-medium">€{calculatedPrices.totalPurchasePrice.toFixed(2)}</p>
+                  <p>Preço Total Bobina (Venda):</p>
+                  <p className="text-right font-medium">€{calculatedPrices.totalSellingPrice.toFixed(2)}</p>
                 </div>
               </div>
             </div>
