@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useFilaments, Filament } from "@/hooks/use-filaments";
 import { useFilamentBrands } from "@/hooks/use-filament-brands";
 import { showSuccess, showError } from "@/utils/toast";
-import { Pencil, TrendingUp } from "lucide-react";
+import { Pencil, TrendingUp, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
