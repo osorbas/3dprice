@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePrinters, Printer, PrinterStatus } from "@/hooks/use-printers";
 import { useFilaments, Filament } from "@/hooks/use-filaments";
+import { useFilamentColors } from "@/hooks/use-filament-colors"; // Importado
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,9 @@ import {
   PlusCircle,
   Pencil,
   Palette,
-  AlertTriangle
+  AlertTriangle,
+  ArrowDownUp,
+  Filter
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,12 +44,20 @@ import { AddFilamentDialog } from "@/components/AddFilamentDialog";
 import { EditFilamentDialog } from "@/components/EditFilamentDialog";
 import { AddFilamentStockDialog } from "@/components/AddFilamentStockDialog";
 import { AddPrinterDialog } from "@/components/AddPrinterDialog"; 
+import { FilamentStatsDialog } from "@/components/FilamentStatsDialog"; // Importado
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Importado
+
+type FilamentSortBy = "brand" | "color" | "stock" | "name";
 
 const FarmPage = () => {
   const { printers, updatePrinter } = usePrinters();
   const { filaments } = useFilaments();
+  const { colors: predefinedColors } = useFilamentColors(); // Usar cores predefinidas
   const [now, setNow] = useState(Date.now());
   const [manageStockEnabled, setManageStockEnabled] = useState(false); 
+  const [selectedFilament, setSelectedFilament] = useState<Filament | null>(null);
+  const [sortBy, setSortBy] = useState<FilamentSortBy>("stock");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -114,6 +125,48 @@ const FarmPage = () => {
     "Ocupada": printers.filter(p => p.status === "Ocupada"),
     "Pronta": printers.filter(p => p.status === "Pronta"),
     "Em Manutenção": printers.filter(p => p.status === "Em Manutenção"),
+  };
+
+  const sortedFilaments = useMemo(() => {
+    const sorted = [...filaments].sort((a, b) => {
+      let comparison = 0;
+
+      switch (sortBy) {
+        case "brand":
+          comparison = a.brand.localeCompare(b.brand);
+          break;
+        case "color":
+          comparison = (a.color || "").localeCompare(b.color || "");
+          break;
+        case "stock":
+          comparison = a.currentWeightGrams - b.currentWeightGrams;
+          break;
+        case "name":
+        default:
+          comparison = (a.name || a.type).localeCompare(b.name || b.type);
+          break;
+      }
+
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+    return sorted;
+  }, [filaments, sortBy, sortOrder]);
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => (prev === "asc" ? "desc" : "asc"));
+  };
+
+  const getFilamentColorHex = (colorName: string | undefined): string | undefined => {
+    if (!colorName) return undefined;
+    
+    // Tenta encontrar a cor exata ou por nome
+    const foundColor = predefinedColors.find(c => c.name.toLowerCase() === colorName.toLowerCase() || c.hex.toLowerCase() === colorName.toLowerCase());
+    if (foundColor) return foundColor.hex;
+
+    // Se for um código HEX válido, usa-o diretamente
+    if (/^#[0-9A-F]{6}$/i.test(colorName)) return colorName;
+
+    return undefined;
   };
 
   const renderPrinterCard = (printer: Printer) => {
@@ -302,7 +355,7 @@ const FarmPage = () => {
         {/* Secção de Filamentos - Sempre Visível */}
         <div className="space-y-6 pt-6">
           <Separator />
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
               <h2 className="text-xl font-bold">Filamentos em Stock</h2>
@@ -310,7 +363,26 @@ const FarmPage = () => {
                   <Badge variant="secondary" className="text-xs text-muted-foreground">Gestão de Stock Desativada</Badge>
               )}
             </div>
-            <AddFilamentDialog />
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={sortBy} onValueChange={(v) => setSortBy(v as FilamentSortBy)}>
+                  <SelectTrigger className="w-[120px] h-9">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stock">Stock</SelectItem>
+                    <SelectItem value="brand">Marca</SelectItem>
+                    <SelectItem value="color">Cor</SelectItem>
+                    <SelectItem value="name">Nome</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" className="h-9 w-9" onClick={toggleSortOrder}>
+                  <ArrowDownUp className={cn("h-4 w-4 transition-transform", sortOrder === "asc" ? "rotate-180" : "rotate-0")} />
+                </Button>
+              </div>
+              <AddFilamentDialog />
+            </div>
           </div>
 
           {filaments.length === 0 ? (
@@ -319,7 +391,7 @@ const FarmPage = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {filaments.map((f) => {
+              {sortedFilaments.map((f) => {
                 const currentGrams = f.currentWeightGrams;
                 const totalCapacityGrams = f.weight * 1000;
                 const stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
@@ -345,6 +417,7 @@ const FarmPage = () => {
                 }
 
                 const displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
+                const colorHex = getFilamentColorHex(f.color);
 
                 return (
                   <Card 
@@ -358,7 +431,13 @@ const FarmPage = () => {
                     <CardContent className="p-4 space-y-4">
                       <div className="flex justify-between items-start">
                         <div className="space-y-1 max-w-[70%]">
-                          <p className="font-bold text-sm truncate">{f.name || f.type}</p>
+                          <button 
+                            type="button"
+                            onClick={() => setSelectedFilament(f)}
+                            className="font-bold text-sm truncate text-left hover:text-primary transition-colors"
+                          >
+                            {f.name || f.type}
+                          </button>
                           <div className="flex flex-col">
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
                               {f.brand} {f.type}
@@ -396,11 +475,10 @@ const FarmPage = () => {
                         </div>
                       </div>
 
-                      {/* Removida a linha de Capacidade */}
-                      {f.color && (
+                      {colorHex && (
                         <div 
                           className="h-3 w-3 rounded-full border border-black/10 shadow-sm ml-auto" 
-                          style={{ backgroundColor: f.color.toLowerCase() }} 
+                          style={{ backgroundColor: colorHex }} 
                           title={`Cor: ${f.color}`}
                         />
                       )}
@@ -412,6 +490,14 @@ const FarmPage = () => {
           )}
         </div>
       </div>
+      
+      {selectedFilament && (
+        <FilamentStatsDialog 
+          filament={selectedFilament} 
+          isOpen={!!selectedFilament} 
+          onOpenChange={(open) => !open && setSelectedFilament(null)} 
+        />
+      )}
     </div>
   );
 };

@@ -10,7 +10,7 @@ import { useTheme } from "next-themes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download, Upload, Printer as PrinterIcon, Check, Zap, Package, Plus, X, Pencil } from "lucide-react";
+import { Trash2, Download, Upload, Printer as PrinterIcon, Check, Zap, Package, Plus, X, Pencil, Palette } from "lucide-react";
 import { usePrintCalculations } from "@/hooks/use-print-calculations";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { FilamentColorSettings } from "@/components/settings/FilamentColorSettings"; // Importado
 
 const DEFAULT_PROFIT_MARGIN = 20;
 
@@ -258,12 +259,13 @@ const SettingsPage = () => {
     <div className="space-y-6 p-4">
       <h1 className="text-3xl font-bold">Definições</h1>
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid w-fit grid-cols-5 gap-2">
+        <TabsList className="grid w-fit grid-cols-6 gap-2">
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="printers">Impressoras</TabsTrigger>
           <TabsTrigger value="filaments">Filamentos</TabsTrigger>
           <TabsTrigger value="extras">Extras</TabsTrigger>
           <TabsTrigger value="electricity">Eletricidade</TabsTrigger>
+          <TabsTrigger value="colors">Cores</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4 pt-4">
@@ -506,6 +508,7 @@ const SettingsPage = () => {
         </TabsContent>
         <TabsContent value="extras" className="pt-4"><ExtrasPage /></TabsContent>
         <TabsContent value="electricity" className="pt-4"><ElectricityProfilesPage /></TabsContent>
+        <TabsContent value="colors" className="pt-4"><FilamentColorSettings /></TabsContent>
       </Tabs>
 
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
