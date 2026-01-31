@@ -280,13 +280,14 @@ const FarmPage = () => {
         <AddPrinterDialog />
       </div>
 
-      {printers.length === 0 ? (
-        <Card className="p-12 text-center text-muted-foreground">
-          Nenhuma impressora registada. Adiciona-as para começar a gerir a tua farm.
-        </Card>
-      ) : (
-        <div className="space-y-10">
-          {Object.entries(groupedPrinters).map(([status, items]) => items.length > 0 && (
+      <div className="space-y-10">
+        {/* Secção de Impressoras */}
+        {printers.length === 0 ? (
+          <Card className="p-12 text-center text-muted-foreground">
+            Nenhuma impressora registada. Adiciona-as para começar a gerir a tua farm.
+          </Card>
+        ) : (
+          Object.entries(groupedPrinters).map(([status, items]) => items.length > 0 && (
             <div key={status} className="space-y-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <span className={cn("h-3 w-3 rounded-full", status === "Pronta" ? "bg-green-500" : status === "Ocupada" ? "bg-blue-500" : "bg-red-500")} />
@@ -296,124 +297,129 @@ const FarmPage = () => {
                 {items.map(renderPrinterCard)}
               </div>
             </div>
-          ))}
+          ))
+        )}
 
-          {filaments.length > 0 && (
-            <div className="space-y-6 pt-6">
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold">Filamentos em Stock</h2>
-                  {!manageStockEnabled && (
-                      <Badge variant="secondary" className="text-xs text-muted-foreground">Gestão de Stock Desativada</Badge>
-                  )}
-                </div>
-                <AddFilamentDialog />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {filaments.map((f) => {
-                  const currentGrams = f.currentWeightGrams;
-                  const totalCapacityGrams = f.weight * 1000;
-                  const stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
-                  
-                  // Definir alertas baseados na percentagem
-                  const isCritical = manageStockEnabled && stockPercent <= 10;
-                  const isWarning = manageStockEnabled && stockPercent > 10 && stockPercent <= 25;
-                  
-                  let stockColor = "bg-green-500";
-                  let stockBg = "bg-green-100";
-                  let textColor = "text-green-600";
-                  let borderColor = "border-green-200";
+        {/* Secção de Filamentos - Sempre Visível */}
+        <div className="space-y-6 pt-6">
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-bold">Filamentos em Stock</h2>
+              {!manageStockEnabled && (
+                  <Badge variant="secondary" className="text-xs text-muted-foreground">Gestão de Stock Desativada</Badge>
+              )}
+            </div>
+            <AddFilamentDialog />
+          </div>
 
-                  if (isCritical) {
-                    stockColor = "bg-red-500";
-                    stockBg = "bg-red-100";
-                    textColor = "text-red-600";
-                    borderColor = "border-red-200";
-                  } else if (isWarning) {
-                    stockColor = "bg-orange-500";
-                    stockBg = "bg-orange-100";
-                    textColor = "text-orange-600";
-                    borderColor = "border-orange-200";
-                  }
+          {filaments.length === 0 ? (
+            <Card className="p-8 text-center text-muted-foreground">
+              Nenhum filamento registado em stock. Adiciona o primeiro para monitorizar o uso.
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {filaments.map((f) => {
+                const currentGrams = f.currentWeightGrams;
+                const totalCapacityGrams = f.weight * 1000;
+                const stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
+                
+                const isCritical = manageStockEnabled && stockPercent <= 10;
+                const isWarning = manageStockEnabled && stockPercent > 10 && stockPercent <= 25;
+                
+                let stockColor = "bg-green-500";
+                let stockBg = "bg-green-100";
+                let textColor = "text-green-600";
+                let borderColor = "border-green-200";
 
-                  const displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
+                if (isCritical) {
+                  stockColor = "bg-red-500";
+                  stockBg = "bg-red-100";
+                  textColor = "text-red-600";
+                  borderColor = "border-red-200";
+                } else if (isWarning) {
+                  stockColor = "bg-orange-500";
+                  stockBg = "bg-orange-100";
+                  textColor = "text-orange-600";
+                  borderColor = "border-orange-200";
+                }
 
-                  return (
-                    <Card 
-                      key={f.id} 
-                      className={cn(
-                        "overflow-hidden border-l-4 shadow-sm transition-all",
-                        manageStockEnabled ? borderColor : "border-border"
-                      )} 
-                      style={{ borderLeftColor: manageStockEnabled ? (isCritical ? "#ef4444" : isWarning ? "#f97316" : "#22c55e") : "hsl(var(--border))" }}
-                    >
-                      <CardContent className="p-4 space-y-4">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1 max-w-[70%]">
-                            <p className="font-bold text-sm truncate">{f.name || f.type}</p>
-                            <div className="flex flex-col">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
-                                {f.brand} {f.type}
+                const displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
+
+                return (
+                  <Card 
+                    key={f.id} 
+                    className={cn(
+                      "overflow-hidden border-l-4 shadow-sm transition-all",
+                      manageStockEnabled ? borderColor : "border-border"
+                    )} 
+                    style={{ borderLeftColor: manageStockEnabled ? (isCritical ? "#ef4444" : isWarning ? "#f97316" : "#22c55e") : "hsl(var(--border))" }}
+                  >
+                    <CardContent className="p-4 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1 max-w-[70%]">
+                          <p className="font-bold text-sm truncate">{f.name || f.type}</p>
+                          <div className="flex flex-col">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
+                              {f.brand} {f.type}
+                            </p>
+                            {f.color && (
+                              <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
+                                <Palette className="h-2.5 w-2.5" /> {f.color}
                               </p>
-                              {f.color && (
-                                <p className="text-[10px] text-muted-foreground italic flex items-center gap-1">
-                                  <Palette className="h-2.5 w-2.5" /> {f.color}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <EditFilamentDialog filament={f} />
-                            <AddFilamentStockDialog filament={f} /> 
+                            )}
                           </div>
                         </div>
+                        <div className="flex gap-1">
+                          <EditFilamentDialog filament={f} />
+                          <AddFilamentStockDialog filament={f} /> 
+                        </div>
+                      </div>
 
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-end text-xs">
-                            <div className="flex items-center gap-1">
-                              <span className={cn("font-bold text-sm", manageStockEnabled ? textColor : "text-muted-foreground")}>
-                                {manageStockEnabled ? displayValue : "Stock Off"}
-                              </span>
-                              {isCritical && <AlertTriangle className="h-3 w-3 text-red-500" />}
-                            </div>
-                            <span className="text-muted-foreground font-mono text-[10px]">
-                              {manageStockEnabled ? `${stockPercent.toFixed(0)}%` : "N/A"}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-end text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className={cn("font-bold text-sm", manageStockEnabled ? textColor : "text-muted-foreground")}>
+                              {manageStockEnabled ? displayValue : "Stock Off"}
                             </span>
+                            {isCritical && <AlertTriangle className="h-3 w-3 text-red-500" />}
                           </div>
-                          <div className={cn("h-2.5 w-full rounded-full overflow-hidden", manageStockEnabled ? stockBg : "bg-muted")}>
-                            <div 
-                              className={cn("h-full transition-all duration-500", manageStockEnabled ? stockColor : "bg-muted-foreground/20")}
-                              style={{ width: `${manageStockEnabled ? stockPercent : 0}%` }}
-                            />
-                          </div>
+                          <span className="text-muted-foreground font-mono text-[10px]">
+                            {manageStockEnabled ? `${stockPercent.toFixed(0)}%` : "N/A"}
+                          </span>
                         </div>
+                        <div className={cn("h-2.5 w-full rounded-full overflow-hidden", manageStockEnabled ? stockBg : "bg-muted")}>
+                          <div 
+                            className={cn("h-full transition-all duration-500", manageStockEnabled ? stockColor : "bg-muted-foreground/20")}
+                            style={{ width: `${manageStockEnabled ? stockPercent : 0}%` }}
+                          />
+                        </div>
+                      </div>
 
-                        <div className="flex items-center justify-between pt-1">
-                          <div className="flex items-center gap-1.5 text-muted-foreground">
-                            <Layers className="h-3.5 w-3.5" />
-                            <span className="text-[10px] font-medium">
-                              Capacidade: {f.weight.toFixed(1)}kg
-                            </span>
-                          </div>
-                          {f.color && (
-                            <div 
-                              className="h-3 w-3 rounded-full border border-black/10 shadow-sm" 
-                              style={{ backgroundColor: f.color.toLowerCase() }} 
-                              title={`Cor: ${f.color}`}
-                            />
-                          )}
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Layers className="h-3.5 w-3.5" />
+                          <span className="text-[10px] font-medium">
+                            Capacidade: {f.weight.toFixed(1)}kg
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                        {f.color && (
+                          <div 
+                            className="h-3 w-3 rounded-full border border-black/10 shadow-sm" 
+                            style={{ backgroundColor: f.color.toLowerCase() }} 
+                            title={`Cor: ${f.color}`}
+                          />
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
