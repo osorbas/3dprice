@@ -34,13 +34,14 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
           const filament = filaments.find(f => f.id === usage.filamentId);
           const name = filament ? (filament.name || `${filament.brand} ${filament.type}`) : "Filamento Desconhecido";
           const costPerGram = filament ? filament.pricePerKg / 1000 : 0;
-          const cost = usage.grams * costPerGram;
+          const grams = Number(usage.grams) || 0;
+          const cost = grams * costPerGram;
 
           return (
             <div key={index} className="flex justify-between text-sm border-b border-dashed pb-1 last:border-b-0">
               <span className="font-medium truncate">{name}</span>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">{usage.grams.toFixed(2)} g</span>
+                <span className="text-muted-foreground">{grams.toFixed(2)} g</span>
                 <span className="font-semibold">€{cost.toFixed(2)}</span>
               </div>
             </div>
@@ -61,13 +62,14 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
           const material = extraMaterials.find(m => m.id === usage.materialId);
           const name = material ? material.name : "Material Desconhecido";
           const unit = material ? material.unit : "unidade";
-          const cost = usage.cost; // Cost is now guaranteed to be on ExtraUsageDetail
+          const quantity = Number(usage.quantity) || 0;
+          const cost = Number(usage.cost) || 0;
 
           return (
             <div key={index} className="flex justify-between text-sm border-b border-dashed pb-1 last:border-b-0">
               <span className="font-medium truncate">{name}</span>
               <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">{usage.quantity.toFixed(2)} {unit}</span>
+                <span className="text-muted-foreground">{quantity.toFixed(2)} {unit}</span>
                 <span className="font-semibold">€{cost.toFixed(2)}</span>
               </div>
             </div>
@@ -87,7 +89,7 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
         </h3>
         {parts.map((part, index) => {
           const printer = printers.find(p => p.id === part.printerId);
-          const hours = part.printTimeHours;
+          const hours = Number(part.printTimeHours) || 0;
           const minutes = Math.round((hours - Math.floor(hours)) * 60);
           const displayTime = `${Math.floor(hours)}h ${minutes}m`;
 
@@ -97,8 +99,8 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
               <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1"><Printer className="h-4 w-4" /> {printer?.name || "N/A"}</div>
                 <div className="flex items-center gap-1"><Clock className="h-4 w-4" /> {displayTime}</div>
-                <div className="flex items-center gap-1"><Zap className="h-4 w-4" /> Energia: €{part.electricityCost.toFixed(2)}</div>
-                <div className="flex items-center gap-1"><Package className="h-4 w-4" /> Material: €{part.materialCost.toFixed(2)}</div>
+                <div className="flex items-center gap-1"><Zap className="h-4 w-4" /> Energia: €{(Number(part.electricityCost) || 0).toFixed(2)}</div>
+                <div className="flex items-center gap-1"><Package className="h-4 w-4" /> Material: €{(Number(part.materialCost) || 0).toFixed(2)}</div>
               </div>
               <Separator className="my-2" />
               <h5 className="text-sm font-medium">Filamentos da Parte:</h5>
@@ -132,7 +134,7 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">Preço Total</p>
-              <p className="font-bold text-lg text-primary">€{calculation.totalPrice.toFixed(2)}</p>
+              <p className="font-bold text-lg text-primary">€{(Number(calculation.totalPrice) || 0).toFixed(2)}</p>
             </div>
           </div>
 
@@ -147,7 +149,7 @@ export const CalculationDetailsDialog = ({ calculation, isOpen, onOpenChange }: 
           </div>
 
           {/* Materiais Extras */}
-          {calculation.extraCost > 0 && (
+          {(Number(calculation.extraCost) || 0) > 0 && (
             <>
               <Separator />
               <div className="space-y-3">
