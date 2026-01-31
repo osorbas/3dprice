@@ -30,13 +30,16 @@ type AddFilamentFormValues = z.infer<typeof formSchema>;
 
 export const AddFilamentDialog = () => {
   const { addFilament } = useFilaments();
-  const { brands, addBrand } = useFilamentBrands();
+  const { brands, addBrand, updateBrand } = useFilamentBrands();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
   
-  // Estado para o mini-diálogo de nova marca
+  // Estados para criação de novos itens
   const [isAddingNewBrand, setIsAddingNewBrand] = React.useState(false);
   const [newBrandName, setNewBrandName] = React.useState("");
+  
+  const [isAddingNewType, setIsAddingNewType] = React.useState(false);
+  const [newTypeName, setNewTypeName] = React.useState("");
 
   const form = useForm<AddFilamentFormValues>({
     resolver: zodResolver(formSchema),
@@ -59,6 +62,7 @@ export const AddFilamentDialog = () => {
       addFilament(values as NewFilamentData);
       showSuccess(`Filamento adicionado!`);
       form.reset();
+      setSelectedBrand(undefined);
       setOpen(false);
     } catch (err) { showError("Erro ao adicionar."); }
   };
@@ -73,9 +77,22 @@ export const AddFilamentDialog = () => {
     showSuccess(`Marca "${newBrandName}" criada!`);
   };
 
+  const handleCreateType = () => {
+    if (!newTypeName.trim() || !selectedBrand) return;
+    const currentBrandConfig = brands.find(b => b.name === selectedBrand);
+    if (currentBrandConfig) {
+      const updatedTypes = [...currentBrandConfig.types, newTypeName.trim()];
+      updateBrand(selectedBrand, selectedBrand, updatedTypes);
+      form.setValue("type", newTypeName.trim());
+      setIsAddingNewType(false);
+      setNewTypeName("");
+      showSuccess(`Tipo "${newTypeName}" adicionado à marca ${selectedBrand}!`);
+    }
+  };
+
   const typesForSelectedBrand = React.useMemo(() => {
     if (!selectedBrand) return [];
-    return brands.find(b => b.name === selectedBrand)?.types || ["PLA", "PETG", "ABS"];
+    return brands.find(b => b.name === selectedBrand)?.types || [];
   }, [selectedBrand, brands]);
 
   return (
@@ -95,9 +112,25 @@ export const AddFilamentDialog = () => {
                 value={newBrandName} 
                 onChange={(e) => setNewBrandName(e.target.value)}
                 autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateBrand()}
               />
               <Button onClick={handleCreateBrand} size="sm">Criar</Button>
               <Button onClick={() => setIsAddingNewBrand(false)} variant="ghost" size="sm">Cancelar</Button>
+            </div>
+          </div>
+        ) : isAddingNewType ? (
+          <div className="space-y-4 py-4 border rounded-lg p-4 bg-primary/5">
+            <h4 className="font-semibold text-sm">Novo Tipo para {selectedBrand}</h4>
+            <div className="flex gap-2">
+              <Input 
+                placeholder="Ex: PLA-CF, PETG-HS" 
+                value={newTypeName} 
+                onChange={(e) => setNewTypeName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateType()}
+              />
+              <Button onClick={handleCreateType} size="sm">Adicionar</Button>
+              <Button onClick={() => setIsAddingNewType(false)} variant="ghost" size="sm">Cancelar</Button>
             </div>
           </div>
         ) : (
@@ -118,6 +151,7 @@ export const AddFilamentDialog = () => {
                         } else {
                           field.onChange(v); 
                           setSelectedBrand(v); 
+                          form.setValue("type", ""); // Reset tipo ao mudar marca
                         }
                       }} 
                       value={field.value}
@@ -134,11 +168,30 @@ export const AddFilamentDialog = () => {
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="type" render={({ field }) => (
-                  <FormItem><FormLabel>Tipo</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedBrand}>
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select 
+                      onValueChange={(v) => {
+                        if (v === "NEW_TYPE") {
+                          setIsAddingNewType(true);
+                        } else {
+                          field.onChange(v);
+                        }
+                      }} 
+                      value={field.value} 
+                      disabled={!selectedBrand}
+                    >
                       <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
                       <SelectContent>
                         {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        {selectedBrand && (
+                          <>
+                            <Separator className="my-1" />
+                            <SelectItem value="NEW_TYPE" className="text-primary font-medium">
+                              <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar novo...</span>
+                            </SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                   </FormItem>
