@@ -32,7 +32,8 @@ export function useFilaments() {
           const parsedFilaments: Filament[] = JSON.parse(storedFilaments);
           return parsedFilaments.map(filament => ({
             ...filament,
-            purchasePrice: filament.purchasePrice ?? 0,
+            // Garantir que purchasePrice é um número, tratando undefined, null, ou strings vazias
+            purchasePrice: Number(filament.purchasePrice) || 0,
             currentWeightGrams: filament.currentWeightGrams ?? (filament.weight * 1000),
             name: filament.name ?? `${filament.brand} ${filament.type}`,
             color: filament.color ?? "",
@@ -79,6 +80,7 @@ export function useFilaments() {
       currentWeightGrams: grams,
       name: newFilament.name || `${newFilament.brand} ${newFilament.type}`,
       color: newFilament.color || "",
+      purchasePrice: newFilament.purchasePrice ?? 0, // Ensure default is 0 if missing
     };
 
     const stored = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
@@ -134,7 +136,7 @@ export function useFilaments() {
   const importFilaments = (data: Filament[]) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data.map(filament => ({
       ...filament,
-      purchasePrice: filament.purchasePrice ?? 0,
+      purchasePrice: Number(filament.purchasePrice) || 0, // Ensure import data is also coerced
       currentWeightGrams: filament.currentWeightGrams ?? (filament.weight * 1000)
     }))));
     notifyUpdate();
