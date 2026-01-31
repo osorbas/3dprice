@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
 import { OverviewCard } from "@/components/dashboard/OverviewCard";
 import { RevenueVsCostsChart } from "@/components/dashboard/RevenueVsCostsChart";
@@ -8,7 +8,6 @@ import { CalculationsPerDayChart } from "@/components/dashboard/CalculationsPerD
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calculator, Euro, TrendingUp, Clock, Package, BarChart3, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
 type Timeframe = "daily" | "weekly" | "biweekly" | "monthly" | "yearly" | "always";
 
@@ -27,7 +26,15 @@ const DashboardPage = () => {
     revenueVsCostsData, 
     costDistributionData, 
     calculationsPerPeriodData,
+    rawCalculations // Nova exportação do hook para verificar se há dados totais
   } = useDashboardData(selectedTimeframe);
+
+  // Efeito para mudar automaticamente para "Sempre" se o período diário (padrão) estiver vazio após uma importação ou carga inicial
+  useEffect(() => {
+    if (selectedTimeframe === "daily" && totalCalculations === 0 && rawCalculations.length > 0) {
+      setSelectedTimeframe("always");
+    }
+  }, [totalCalculations, rawCalculations.length, selectedTimeframe]);
 
   return (
     <div className="space-y-6 p-4">
@@ -47,7 +54,7 @@ const DashboardPage = () => {
               <SelectValue placeholder="Selecionar Período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="daily">Diário</SelectItem>
+              <SelectItem value="daily">Diário (30 dias)</SelectItem>
               <SelectItem value="weekly">Semanal</SelectItem>
               <SelectItem value="biweekly">Quinzenal</SelectItem>
               <SelectItem value="monthly">Mensal (12 meses)</SelectItem>
@@ -58,13 +65,22 @@ const DashboardPage = () => {
         </div>
       </div>
       
-      {totalCalculations === 0 ? (
+      {rawCalculations.length === 0 ? (
         <Card className="w-full">
           <CardHeader>
-            <CardTitle>Nenhum dado para o período selecionado</CardTitle>
+            <CardTitle>Nenhum dado registado</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-center text-muted-foreground">Não existem orçamentos registados neste período. Tenta outro período ou faz novos cálculos!</p>
+            <p className="text-center text-muted-foreground">Não existem orçamentos registados na aplicação. Começa a fazer novos cálculos!</p>
+          </CardContent>
+        </Card>
+      ) : totalCalculations === 0 ? (
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Período sem dados</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-center text-muted-foreground">Não existem orçamentos neste período específico. Tenta o filtro "Sempre".</p>
           </CardContent>
         </Card>
       ) : (
