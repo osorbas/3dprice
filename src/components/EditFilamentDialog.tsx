@@ -9,9 +9,9 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useFilaments, Filament } from "@/hooks/use-filaments";
 import { useFilamentBrands } from "@/hooks/use-filament-brands";
-import { useFilamentColors } from "@/hooks/use-filament-colors"; // Importado
+import { useFilamentColors } from "@/hooks/use-filament-colors";
 import { showSuccess, showError } from "@/utils/toast";
-import { Pencil, TrendingUp, Plus } from "lucide-react";
+import { Pencil, TrendingUp, Plus, Palette } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -29,10 +29,20 @@ const formSchema = z.object({
 
 export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
   const { updateFilament } = useFilaments();
-  const { brands } = useFilamentBrands();
-  const { colors: predefinedColors } = useFilamentColors(); // Importado
+  const { brands, updateBrand } = useFilamentBrands();
+  const { colors: predefinedColors, addColor } = useFilamentColors();
   const [open, setOpen] = React.useState(false);
   
+  const [isAddingNewBrand, setIsAddingNewBrand] = React.useState(false);
+  const [newBrandName, setNewBrandName] = React.useState("");
+  
+  const [isAddingNewType, setIsAddingNewType] = React.useState(false);
+  const [newTypeName, setNewTypeName] = React.useState("");
+
+  const [isAddingNewColor, setIsAddingNewColor] = React.useState(false);
+  const [newColorName, setNewColorName] = React.useState("");
+  const [newColorHex, setNewColorHex] = React.useState("#000000");
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -76,6 +86,33 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
     return color ? color.hex : (watchedColor && /^#[0-9A-F]{6}$/i.test(watchedColor) ? watchedColor : undefined);
   }, [watchedColor, predefinedColors]);
 
+  const handleCreateType = () => {
+    if (!newTypeName.trim() || !selectedBrand) return;
+    const currentBrandConfig = brands.find(b => b.name === selectedBrand);
+    if (currentBrandConfig) {
+      const updatedTypes = [...currentBrandConfig.types, newTypeName.trim()];
+      updateBrand(selectedBrand, selectedBrand, updatedTypes);
+      form.setValue("type", newTypeName.trim());
+      setIsAddingNewType(false);
+      setNewTypeName("");
+      showSuccess(`Tipo "${newTypeName}" adicionado à marca ${selectedBrand}!`);
+    }
+  };
+
+  const handleCreateColor = () => {
+    if (!newColorName.trim()) return;
+    try {
+      addColor(newColorName.trim(), newColorHex);
+      form.setValue("color", newColorName.trim());
+      setIsAddingNewColor(false);
+      setNewColorName("");
+      setNewColorHex("#000000");
+      showSuccess(`Cor "${newColorName}" criada!`);
+    } catch (e) {
+      showError("Erro ao criar cor.");
+    }
+  };
+
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
       updateFilament(filament.id, values);
@@ -89,133 +126,202 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
       <DialogTrigger asChild><Button variant="ghost" size="icon"><Pencil className="h-4 w-4" /></Button></DialogTrigger>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Editar Filamento</DialogTitle></DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-              <FormItem><FormLabel>Nome Amigável</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-            )} />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="brand" render={({ field }) => (
-                <FormItem><FormLabel>Marca</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
-                      <Separator className="my-1" />
-                      <SelectItem value="NEW_BRAND" className="text-blue-500 font-medium hover:text-blue-600">
-                        <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar nova...</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="type" render={({ field }) => (
-                <FormItem><FormLabel>Tipo</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                      <Separator className="my-1" />
-                      <SelectItem value="NEW_TYPE" className="text-blue-500 font-medium hover:text-blue-600">
-                        <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar novo...</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )} />
+        
+        {isAddingNewType ? (
+          <div className="space-y-4 py-4 border rounded-lg p-4 bg-primary/5">
+            <h4 className="font-semibold text-sm">Novo Tipo para {selectedBrand}</h4>
+            <div className="flex gap-2">
+              <Input 
+                placeholder="Ex: PLA-CF, PETG-HS" 
+                value={newTypeName} 
+                onChange={(e) => setNewTypeName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateType()}
+              />
+              <Button onClick={handleCreateType} size="sm">Adicionar</Button>
+              <Button onClick={() => setIsAddingNewType(false)} variant="ghost" size="sm">Cancelar</Button>
             </div>
-            
-            <FormField control={form.control} name="color" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cor (Opcional)</FormLabel>
-                <Select 
-                  onValueChange={(v) => field.onChange(v === "no-color-selected" ? "" : v)} 
-                  value={field.value || "no-color-selected"}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <div className="flex items-center gap-2">
-                        {selectedColorHex && (
-                          <div 
-                            className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
-                            style={{ backgroundColor: selectedColorHex }}
-                          />
-                        )}
-                        <SelectValue placeholder="Selecionar cor..." />
-                      </div>
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="no-color-selected">Nenhuma / Personalizada</SelectItem>
-                    <Separator className="my-1" />
-                    {predefinedColors.map(c => (
-                      <SelectItem key={c.hex} value={c.name}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
-                            style={{ backgroundColor: c.hex }}
-                          />
-                          {c.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <Separator className="my-2" />
-            <div className="bg-muted/30 p-4 rounded-lg space-y-4">
-              <h4 className="text-sm font-semibold flex items-center gap-2">Valores e Margem</h4>
+          </div>
+        ) : isAddingNewColor ? (
+          <div className="space-y-4 py-4 border rounded-lg p-4 bg-primary/5">
+            <h4 className="font-semibold text-sm">Nova Cor Personalizada</h4>
+            <div className="grid grid-cols-1 gap-3">
+              <Input 
+                placeholder="Nome da Cor (ex: Vermelho Rubi)" 
+                value={newColorName} 
+                onChange={(e) => setNewColorName(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Input 
+                  type="color" 
+                  value={newColorHex} 
+                  onChange={(e) => setNewColorHex(e.target.value)}
+                  className="w-12 h-10 p-1 cursor-pointer"
+                />
+                <Input 
+                  placeholder="#000000" 
+                  value={newColorHex} 
+                  onChange={(e) => setNewColorHex(e.target.value)}
+                  className="flex-grow font-mono"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button onClick={() => setIsAddingNewColor(false)} variant="ghost" size="sm">Cancelar</Button>
+              <Button onClick={handleCreateColor} size="sm">Criar Cor</Button>
+            </div>
+          </div>
+        ) : (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+              <FormField control={form.control} name="name" render={({ field }) => (
+                <FormItem><FormLabel>Nome Amigável</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              )} />
               <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="pricePerKg" render={({ field }) => (
-                  <FormItem className="flex flex-col justify-end">
-                    <FormLabel>Preço Venda/Kg (€)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                <FormField control={form.control} name="brand" render={({ field }) => (
+                  <FormItem><FormLabel>Marca</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   </FormItem>
                 )} />
-                <FormField control={form.control} name="purchasePrice" render={({ field }) => (
-                  <FormItem className="flex flex-col justify-end">
-                    <FormLabel>Preço Compra/Kg (€)</FormLabel>
-                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                <FormField control={form.control} name="type" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select 
+                      onValueChange={(v) => {
+                        if (v === "NEW_TYPE") {
+                          setIsAddingNewType(true);
+                        } else {
+                          field.onChange(v);
+                        }
+                      }} 
+                      value={field.value} 
+                      disabled={!selectedBrand}
+                    >
+                      <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                        {selectedBrand && (
+                          <>
+                            <Separator className="my-1" />
+                            <SelectItem value="NEW_TYPE" className="text-blue-500 font-medium hover:text-blue-600">
+                              <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar novo...</span>
+                            </SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </FormItem>
                 )} />
               </div>
               
-              <div className="space-y-1 text-sm">
-                <div className="flex items-center gap-2 font-medium">
-                  <TrendingUp className={cn("h-4 w-4", (profitMargin ?? -1) >= 0 ? "text-green-500" : "text-red-500")} />
-                  <span>Margem de Lucro: </span>
-                  <span className={cn((profitMargin ?? -1) >= 0 ? "text-green-600" : "text-red-600", "font-bold")}>
-                    {profitMargin !== null ? `${profitMargin.toFixed(0)}%` : 'N/A'}
-                  </span>
+              <FormField control={form.control} name="color" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cor (Opcional)</FormLabel>
+                  <Select 
+                    onValueChange={(v) => {
+                      if (v === "NEW_COLOR") {
+                        setIsAddingNewColor(true);
+                      } else {
+                        field.onChange(v === "no-color-selected" ? "" : v);
+                      }
+                    }} 
+                    value={field.value || "no-color-selected"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          {selectedColorHex && (
+                            <div 
+                              className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
+                              style={{ backgroundColor: selectedColorHex }}
+                            />
+                          )}
+                          <SelectValue placeholder="Selecionar cor..." />
+                        </div>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="no-color-selected">Nenhuma / Personalizada</SelectItem>
+                      <Separator className="my-1" />
+                      {predefinedColors.map(c => (
+                        <SelectItem key={c.hex} value={c.name}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
+                              style={{ backgroundColor: c.hex }}
+                            />
+                            {c.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                      <Separator className="my-1" />
+                      <SelectItem value="NEW_COLOR" className="text-blue-500 font-medium hover:text-blue-600">
+                        <span className="flex items-center gap-2"><Palette className="h-3 w-3" /> Adicionar nova...</span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <Separator className="my-2" />
+              <div className="bg-muted/30 p-4 rounded-lg space-y-4">
+                <h4 className="text-sm font-semibold flex items-center gap-2">Valores e Margem</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="pricePerKg" render={({ field }) => (
+                    <FormItem className="flex flex-col justify-end">
+                      <FormLabel>Preço Venda/Kg (€)</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="purchasePrice" render={({ field }) => (
+                    <FormItem className="flex flex-col justify-end">
+                      <FormLabel>Preço Compra/Kg (€)</FormLabel>
+                      <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    </FormItem>
+                  )} />
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground pt-2">
-                  <p>Preço Venda/g:</p>
-                  <p className="text-right font-medium">€{calculatedPrices.pricePerGram.toFixed(4)}</p>
-                  <p>Preço Compra/g:</p>
-                  <p className="text-right font-medium">€{calculatedPrices.purchasePricePerGram.toFixed(4)}</p>
-                  <p>Preço Total Bobina (Venda):</p>
-                  <p className="text-right font-medium">€{calculatedPrices.totalSellingPrice.toFixed(2)}</p>
-                  <p>Preço Total Bobina (Compra):</p>
-                  <p className="text-right font-medium">€{calculatedPrices.totalPurchasePrice.toFixed(2)}</p>
+                
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center gap-2 font-medium">
+                    <TrendingUp className={cn("h-4 w-4", (profitMargin ?? -1) >= 0 ? "text-green-500" : "text-red-500")} />
+                    <span>Margem de Lucro: </span>
+                    <span className={cn((profitMargin ?? -1) >= 0 ? "text-green-600" : "text-red-600", "font-bold")}>
+                      {profitMargin !== null ? `${profitMargin.toFixed(0)}%` : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground pt-2">
+                    <p>Preço Venda/g:</p>
+                    <p className="text-right font-medium">€{calculatedPrices.pricePerGram.toFixed(4)}</p>
+                    <p>Preço Compra/g:</p>
+                    <p className="text-right font-medium">€{calculatedPrices.purchasePricePerGram.toFixed(4)}</p>
+                    <p>Preço Total Bobina (Venda):</p>
+                    <p className="text-right font-medium">€{calculatedPrices.totalSellingPrice.toFixed(2)}</p>
+                    <p>Preço Total Bobina (Compra):</p>
+                    <p className="text-right font-medium">€{calculatedPrices.totalPurchasePrice.toFixed(2)}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="weight" render={({ field }) => (
-                <FormItem><FormLabel>Peso Total (kg)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
-              )} />
-              <FormField control={form.control} name="currentWeightGrams" render={({ field }) => (
-                <FormItem><FormLabel>Stock Atual (g)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-            </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="weight" render={({ field }) => (
+                  <FormItem><FormLabel>Peso Total (kg)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
+                )} />
+                <FormField control={form.control} name="currentWeightGrams" render={({ field }) => (
+                  <FormItem><FormLabel>Stock Atual (g)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
 
-            <DialogFooter><Button type="submit" className="w-full">Salvar Alterações</Button></DialogFooter>
-          </form>
-        </Form>
+              <DialogFooter><Button type="submit" className="w-full">Salvar Alterações</Button></DialogFooter>
+            </form>
+          </Form>
+        )}
       </DialogContent>
     </Dialog>
   );

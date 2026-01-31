@@ -9,9 +9,9 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
 import { useFilamentBrands } from "@/hooks/use-filament-brands";
-import { useFilamentColors } from "@/hooks/use-filament-colors"; // Importado
+import { useFilamentColors } from "@/hooks/use-filament-colors";
 import { showSuccess, showError } from "@/utils/toast";
-import { PlusCircle, TrendingUp, Plus, Palette } from "lucide-react";
+import { PlusCircle, TrendingUp, Plus, Palette, Check, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -19,8 +19,8 @@ import { Separator } from "@/components/ui/separator";
 const formSchema = z.object({
   name: z.string().optional(),
   brand: z.string().min(1, "A marca é obrigatória."),
-  type: z.string().min(1, "O tipo é obrigatório."),
-  color: z.string().optional(), // Agora pode ser o nome da cor ou o código HEX
+  type: z.string().min(1, "O tipo é obrigatória."),
+  color: z.string().optional(),
   pricePerKg: z.coerce.number().min(0.01, "O preço de venda deve ser positivo."),
   purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(),
   weight: z.coerce.number().min(0.01, "O peso deve ser positivo."),
@@ -32,16 +32,19 @@ type AddFilamentFormValues = z.infer<typeof formSchema>;
 export const AddFilamentDialog = () => {
   const { addFilament } = useFilaments();
   const { brands, addBrand, updateBrand } = useFilamentBrands();
-  const { colors: predefinedColors } = useFilamentColors(); // Usar cores predefinidas
+  const { colors: predefinedColors, addColor } = useFilamentColors();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
   
-  // Estados para criação de novos itens
   const [isAddingNewBrand, setIsAddingNewBrand] = React.useState(false);
   const [newBrandName, setNewBrandName] = React.useState("");
   
   const [isAddingNewType, setIsAddingNewType] = React.useState(false);
   const [newTypeName, setNewTypeName] = React.useState("");
+
+  const [isAddingNewColor, setIsAddingNewColor] = React.useState(false);
+  const [newColorName, setNewColorName] = React.useState("");
+  const [newColorHex, setNewColorHex] = React.useState("#000000");
 
   const form = useForm<AddFilamentFormValues>({
     resolver: zodResolver(formSchema),
@@ -85,7 +88,7 @@ export const AddFilamentDialog = () => {
     addBrand(trimmedName);
     form.setValue("brand", trimmedName);
     setSelectedBrand(trimmedName);
-    form.setValue("type", ""); // Reset tipo ao mudar marca
+    form.setValue("type", "");
     setIsAddingNewBrand(false);
     setNewBrandName("");
     showSuccess(`Marca "${trimmedName}" criada!`);
@@ -101,6 +104,20 @@ export const AddFilamentDialog = () => {
       setIsAddingNewType(false);
       setNewTypeName("");
       showSuccess(`Tipo "${newTypeName}" adicionado à marca ${selectedBrand}!`);
+    }
+  };
+
+  const handleCreateColor = () => {
+    if (!newColorName.trim()) return;
+    try {
+      addColor(newColorName.trim(), newColorHex);
+      form.setValue("color", newColorName.trim());
+      setIsAddingNewColor(false);
+      setNewColorName("");
+      setNewColorHex("#000000");
+      showSuccess(`Cor "${newColorName}" criada!`);
+    } catch (e) {
+      showError("Erro ao criar cor.");
     }
   };
 
@@ -152,6 +169,36 @@ export const AddFilamentDialog = () => {
               <Button onClick={() => setIsAddingNewType(false)} variant="ghost" size="sm">Cancelar</Button>
             </div>
           </div>
+        ) : isAddingNewColor ? (
+          <div className="space-y-4 py-4 border rounded-lg p-4 bg-primary/5">
+            <h4 className="font-semibold text-sm">Nova Cor Personalizada</h4>
+            <div className="grid grid-cols-1 gap-3">
+              <Input 
+                placeholder="Nome da Cor (ex: Vermelho Rubi)" 
+                value={newColorName} 
+                onChange={(e) => setNewColorName(e.target.value)}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Input 
+                  type="color" 
+                  value={newColorHex} 
+                  onChange={(e) => setNewColorHex(e.target.value)}
+                  className="w-12 h-10 p-1 cursor-pointer"
+                />
+                <Input 
+                  placeholder="#000000" 
+                  value={newColorHex} 
+                  onChange={(e) => setNewColorHex(e.target.value)}
+                  className="flex-grow font-mono"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button onClick={() => setIsAddingNewColor(false)} variant="ghost" size="sm">Cancelar</Button>
+              <Button onClick={handleCreateColor} size="sm">Criar Cor</Button>
+            </div>
+          </div>
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
@@ -170,7 +217,7 @@ export const AddFilamentDialog = () => {
                         } else {
                           field.onChange(v); 
                           setSelectedBrand(v); 
-                          form.setValue("type", ""); // Reset tipo ao mudar marca
+                          form.setValue("type", "");
                         }
                       }} 
                       value={field.value}
@@ -221,7 +268,13 @@ export const AddFilamentDialog = () => {
                 <FormItem>
                   <FormLabel>Cor (Opcional)</FormLabel>
                   <Select 
-                    onValueChange={(v) => field.onChange(v === "no-color-selected" ? "" : v)} 
+                    onValueChange={(v) => {
+                      if (v === "NEW_COLOR") {
+                        setIsAddingNewColor(true);
+                      } else {
+                        field.onChange(v === "no-color-selected" ? "" : v);
+                      }
+                    }} 
                     value={field.value || "no-color-selected"}
                   >
                     <FormControl>
@@ -251,6 +304,10 @@ export const AddFilamentDialog = () => {
                           </div>
                         </SelectItem>
                       ))}
+                      <Separator className="my-1" />
+                      <SelectItem value="NEW_COLOR" className="text-blue-500 font-medium hover:text-blue-600">
+                        <span className="flex items-center gap-2"><Palette className="h-3 w-3" /> Adicionar nova...</span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
