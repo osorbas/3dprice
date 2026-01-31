@@ -7,7 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useFilaments, NewFilamentData } from "@/hooks/use-filaments"; // Import NewFilamentData
+import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
+import { useCustomBrands } from "@/hooks/use-custom-brands";
 import { showSuccess, showError } from "@/utils/toast";
 import { PlusCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,7 +24,6 @@ const formSchema = z.object({
   currentWeightGrams: z.coerce.number().min(0, "O stock não pode ser negativo."),
 });
 
-// Explicitly define the type for the form values
 type AddFilamentFormValues = z.infer<typeof formSchema>;
 
 export const predefinedFilamentOptions = [
@@ -42,34 +42,49 @@ export const predefinedFilamentOptions = [
   { brand: "Sunlu", type: "PETG" },
   { brand: "Lotactree", type: "PLA" },
   { brand: "Lotactree", type: "PETG" },
+  { brand: "Filament 3D", type: "PLA" },
+  { brand: "Filament 3D", type: "PETG" },
 ];
 
 export const AddFilamentDialog = () => {
   const { addFilament } = useFilaments();
+  const { customBrands } = useCustomBrands();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
   
-  const form = useForm<AddFilamentFormValues>({ // Use the explicit type here
+  const form = useForm<AddFilamentFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "", brand: "", type: "", color: "", pricePerKg: 0, purchasePrice: 0, weight: 1, currentWeightGrams: 1000,
     },
   });
 
-  const onSubmit = (values: AddFilamentFormValues) => { // Use the explicit type here
+  const onSubmit = (values: AddFilamentFormValues) => {
     try {
-      // The 'values' type is now AddFilamentFormValues, which is compatible with NewFilamentData
-      addFilament(values as NewFilamentData); // Cast to NewFilamentData for the hook
+      addFilament(values as NewFilamentData);
       showSuccess(`Filamento adicionado!`);
       form.reset();
       setOpen(false);
     } catch (err) { showError("Erro ao adicionar."); }
   };
 
-  const uniqueBrands = Array.from(new Set(predefinedFilamentOptions.map((f) => f.brand))).sort();
-  const typesForSelectedBrand = selectedBrand
-    ? Array.from(new Set(predefinedFilamentOptions.filter((f) => f.brand === selectedBrand).map((f) => f.type))).sort()
-    : [];
+  const allBrands = React.useMemo(() => {
+    const predefinedBrands = Array.from(new Set(predefinedFilamentOptions.map((f) => f.brand)));
+    return Array.from(new Set([...predefinedBrands, ...customBrands])).sort();
+  }, [customBrands]);
+
+  const typesForSelectedBrand = React.useMemo(() => {
+    if (!selectedBrand) return [];
+    const types = predefinedFilamentOptions
+      .filter((f) => f.brand === selectedBrand)
+      .map((f) => f.type);
+    
+    // Se for uma marca personalizada sem tipos predefinidos, sugerimos tipos comuns
+    if (types.length === 0) {
+      return ["PLA", "PETG", "ABS", "ASA", "TPU", "Nylon"];
+    }
+    return Array.from(new Set(types)).sort();
+  }, [selectedBrand]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -85,10 +100,24 @@ export const AddFilamentDialog = () => {
             )} />
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="brand" render={({ field }) => (
-                <FormItem><FormLabel>Marca</FormLabel><Select onValueChange={(v) => { field.onChange(v); setSelectedBrand(v); }} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl><SelectContent>{uniqueBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent></Select></FormItem>
+                <FormItem><FormLabel>Marca</FormLabel>
+                  <Select onValueChange={(v) => { field.onChange(v); setSelectedBrand(v); }} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {allBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
               )} />
               <FormField control={form.control} name="type" render={({ field }) => (
-                <FormItem><FormLabel>Tipo</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!selectedBrand}><FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl><SelectContent>{typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></FormItem>
+                <FormItem><FormLabel>Tipo</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!selectedBrand}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
               )} />
             </div>
             <FormField control={form.control} name="color" render={({ field }) => (

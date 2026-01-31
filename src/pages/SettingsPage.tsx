@@ -10,12 +10,13 @@ import { useTheme } from "next-themes";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Trash2, Download, Upload, Printer as PrinterIcon, Check, Zap, Package } from "lucide-react";
+import { Trash2, Download, Upload, Printer as PrinterIcon, Check, Zap, Package, Plus, X } from "lucide-react";
 import { usePrintCalculations } from "@/hooks/use-print-calculations";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
 import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
+import { useCustomBrands } from "@/hooks/use-custom-brands";
 import { showError, showSuccess } from "@/utils/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,9 @@ const SettingsPage = () => {
   const { filaments, clearFilaments, importFilaments } = useFilaments();
   const { extraMaterials, clearExtraMaterials, importExtraMaterials } = useExtraMaterials();
   const { electricityProfiles, clearElectricityProfiles, importElectricityProfiles } = useElectricityProfiles();
+  const { customBrands, addBrand, removeBrand } = useCustomBrands();
+
+  const [newBrandName, setNewBrandName] = React.useState("");
 
   const [defaultProfitMargin, setDefaultProfitMargin] = React.useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -75,6 +79,13 @@ const SettingsPage = () => {
     electricityProfiles: true,
     appSettings: true,
   });
+
+  const handleAddCustomBrand = () => {
+    if (!newBrandName.trim()) return;
+    addBrand(newBrandName);
+    setNewBrandName("");
+    showSuccess(`Marca "${newBrandName}" adicionada!`);
+  };
 
   const handleToggleStock = (checked: boolean) => {
     setManageStock(checked);
@@ -303,7 +314,48 @@ const SettingsPage = () => {
         </TabsContent>
 
         <TabsContent value="printers" className="pt-4"><PrintersPage /></TabsContent>
-        <TabsContent value="filaments" className="pt-4"><FilamentsPage /></TabsContent>
+        <TabsContent value="filaments" className="pt-4">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Gestão de Marcas de Filamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder="Nome da marca (ex: Filament 3D)" 
+                    value={newBrandName} 
+                    onChange={(e) => setNewBrandName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddCustomBrand()}
+                  />
+                  <Button onClick={handleAddCustomBrand}><Plus className="h-4 w-4 mr-2" /> Adicionar</Button>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {customBrands.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">Nenhuma marca personalizada adicionada.</p>
+                  ) : (
+                    customBrands.map(brand => (
+                      <div key={brand} className="flex items-center gap-1 bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm font-medium">
+                        {brand}
+                        <button 
+                          onClick={() => removeBrand(brand)}
+                          className="ml-1 hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+            <FilamentsPage />
+          </div>
+        </TabsContent>
         <TabsContent value="extras" className="pt-4"><ExtrasPage /></TabsContent>
         <TabsContent value="electricity" className="pt-4"><ElectricityProfilesPage /></TabsContent>
       </Tabs>
