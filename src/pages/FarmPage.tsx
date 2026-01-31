@@ -34,7 +34,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -397,21 +396,14 @@ const FarmPage = () => {
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-1">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Layers className="h-3.5 w-3.5" />
-                          <span className="text-[10px] font-medium">
-                            Capacidade: {f.weight.toFixed(1)}kg
-                          </span>
-                        </div>
-                        {f.color && (
-                          <div 
-                            className="h-3 w-3 rounded-full border border-black/10 shadow-sm" 
-                            style={{ backgroundColor: f.color.toLowerCase() }} 
-                            title={`Cor: ${f.color}`}
-                          />
-                        )}
-                      </div>
+                      {/* Removida a linha de Capacidade */}
+                      {f.color && (
+                        <div 
+                          className="h-3 w-3 rounded-full border border-black/10 shadow-sm ml-auto" 
+                          style={{ backgroundColor: f.color.toLowerCase() }} 
+                          title={`Cor: ${f.color}`}
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 );
