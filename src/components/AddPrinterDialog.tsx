@@ -13,7 +13,7 @@ import { PlusCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatório."),
+  name: z.string().optional(),
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
   powerConsumptionWatts: z.coerce.number().min(0, "O consumo de energia não pode ser negativo.").default(50),
@@ -72,7 +72,6 @@ export const AddPrinterDialog = () => {
     if (selectedBrand !== form.getValues("brand")) {
       form.setValue("model", "");
     }
-    // Ao selecionar um modelo, preenchemos a potência automaticamente
     const currentModel = form.getValues("model");
     if (currentModel) {
       const preset = predefinedPrinters.find(p => p.model === currentModel && p.brand === selectedBrand);
@@ -84,8 +83,17 @@ export const AddPrinterDialog = () => {
 
   const onSubmit = (values: AddPrinterFormValues) => {
     try {
-      addPrinter(values as any);
-      showSuccess(`Impressora "${values.name}" adicionada com sucesso!`);
+      // Se o nome estiver vazio, usamos "Marca Modelo"
+      const finalName = values.name && values.name.trim() !== "" 
+        ? values.name 
+        : `${values.brand} ${values.model}`;
+
+      addPrinter({
+        ...values,
+        name: finalName
+      } as any);
+
+      showSuccess(`Impressora "${finalName}" adicionada com sucesso!`);
       form.reset();
       setSelectedBrand(undefined);
       setOpen(false);
@@ -107,9 +115,6 @@ export const AddPrinterDialog = () => {
     const preset = predefinedPrinters.find(p => p.model === model && p.brand === selectedBrand);
     if (preset) {
       form.setValue("powerConsumptionWatts", preset.powerConsumptionWatts);
-      if (!form.getValues("name")) {
-        form.setValue("name", preset.name);
-      }
     }
   };
 
@@ -195,7 +200,7 @@ export const AddPrinterDialog = () => {
                 <FormItem>
                   <FormLabel>Nome Personalizado (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Minha Ender 3" {...field} />
+                    <Input placeholder="Ex: Impressora da Sala" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
