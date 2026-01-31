@@ -80,7 +80,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
   // Função auxiliar para calcular a taxa de eletricidade por hora
   const getElectricityCostPerHour = (calc: PrintCalculation) => {
     if (calc.printTimeHours > 0) {
-      return calc.electricityCost / calc.printTimeHours;
+      return Number(calc.electricityCost) / Number(calc.printTimeHours);
     }
     // Tenta encontrar a impressora para obter o consumo e calcular uma taxa padrão
     const printer = printers.find(p => p.id === calc.printerId);
@@ -89,6 +89,21 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       return (printer.powerConsumptionWatts / 1000) * 0.15; 
     }
     return 0.15; // Fallback
+  };
+
+  // Função auxiliar para obter os filamentos usados, garantindo que é um array de objetos válidos
+  const getFilamentsUsed = (calc: PrintCalculation) => {
+    if (calc.filaments && calc.filaments.length > 0) {
+      return calc.filaments.map(f => ({ 
+        filamentId: f.filamentId || "", 
+        filamentGrams: Number(f.grams) || 0 
+      }));
+    }
+    // Fallback para cálculos antigos de filamento único
+    if (calc.filamentId && (Number(calc.filamentGrams) || 0) > 0) {
+      return [{ filamentId: calc.filamentId, filamentGrams: Number(calc.filamentGrams) || 0 }];
+    }
+    return [{ filamentId: "", filamentGrams: 0 }];
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -107,18 +122,18 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       
       // Single Print Fields
       printerId: calculation.printerId || "",
-      filamentsUsed: calculation.isProject ? [] : (calculation.filaments && calculation.filaments.length > 0 ? calculation.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams })) : [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }]),
-      printTimeHours: !calculation.isProject ? Math.floor(calculation.printTimeHours) : 0,
-      printTimeMinutes: !calculation.isProject ? Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60) : 0,
+      filamentsUsed: !calculation.isProject ? getFilamentsUsed(calculation) : [], // Usa a função auxiliar
+      printTimeHours: !calculation.isProject ? Math.floor(Number(calculation.printTimeHours) || 0) : 0,
+      printTimeMinutes: !calculation.isProject ? Math.round(((Number(calculation.printTimeHours) || 0) - Math.floor(Number(calculation.printTimeHours) || 0)) * 60) : 0,
       electricityCostPerHour: !calculation.isProject ? getElectricityCostPerHour(calculation) : 0.15,
       
       // Project
       projectParts: calculation.isProject ? calculation.projectParts?.map(p => ({
         partName: p.partName,
         printerId: p.printerId,
-        printTimeHours: Math.floor(p.printTimeHours),
-        printTimeMinutes: Math.round((p.printTimeHours - Math.floor(p.printTimeHours)) * 60),
-        filamentsUsed: p.filaments && p.filaments.length > 0 ? p.filaments.map(f => ({ filamentId: f.filamentId, filamentGrams: f.grams })) : [{ filamentId: p.filamentId || "", filamentGrams: p.filamentGrams || 0 }],
+        printTimeHours: Math.floor(Number(p.printTimeHours) || 0),
+        printTimeMinutes: Math.round(((Number(p.printTimeHours) || 0) - Math.floor(Number(p.printTimeHours) || 0)) * 60),
+        filamentsUsed: getFilamentsUsed(p as any), // Reutiliza a função auxiliar para partes
       })) : [],
     },
   });
@@ -161,8 +176,9 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       if (values.isProject) {
         const updatedParts = (values.projectParts || []).map((part, idx) => {
           const originalPart = calculation.projectParts?.[idx];
+          // Tenta manter a taxa de eletricidade original se possível, senão usa 0.15
           const electricityRate = originalPart && originalPart.printTimeHours > 0 
-            ? originalPart.electricityCost / originalPart.printTimeHours 
+            ? Number(originalPart.electricityCost) / Number(originalPart.printTimeHours) 
             : 0.15;
 
           const partHours = Number(part.printTimeHours || 0) + (Number(part.printTimeMinutes || 0) / 60);
@@ -171,11 +187,11 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
 
           const updatedFilaments = part.filamentsUsed.map(f => {
             const filament = filaments.find(fil => fil.id === f.filamentId);
-            const grams = Number(f.filamentGrams || 0);
-            const cost = filament ? (filament.pricePerKg / 1000) * grams : 0;
+            const fGrams = Number(f.filamentGrams || 0);
+            const cost = filament ? (filament.pricePerKg / 1000) * fGrams : 0;
             partMatCost += cost;
-            partGrams += grams;
-            return { filamentId: f.filamentId, grams: grams };
+            partGrams += fGrams;
+            return { filamentId: f.filamentId, grams: fGrams };
           });
 
           const partElectricityCost = partHours * electricityRate;
@@ -409,6 +425,35 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
                         <div className="grid grid-cols-2 gap-2">
                           <Input type="number" placeholder="Horas" value={form.getValues(`projectParts.${editingPartIndex}.printTimeHours`)} onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeHours`, parseInt(e.target.value) || 0)} />
                           <Input type="number" placeholder="Minutos" value={form.getValues(`projectParts.${editingPartIndex}.printTimeMinutes`)} onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeMinutes`, parseInt(e.target.value) || 0)} />
+                        </div>
+                        
+                        {/* Edição de Filamentos da Parte */}
+                        <div className="space-y-3 border p-3 rounded-md bg-background/50">
+                          <h5 className="font-medium text-sm">Filamentos da Parte</h5>
+                          {/* Nota: O useFieldArray para partes não permite aninhar useFieldArray facilmente. 
+                             Para simplificar a edição, vamos apenas mostrar o primeiro filamento e a quantidade total, 
+                             ou seria necessário um componente de edição de parte mais complexo. 
+                             Como o objetivo é apenas mostrar os campos, vamos usar a estrutura existente. */}
+                          {/* Para fins de edição, vamos usar um campo de input simples para o primeiro filamento da parte */}
+                          {form.getValues(`projectParts.${editingPartIndex}.filamentsUsed`)?.map((f, fIdx) => (
+                            <div key={fIdx} className="flex gap-2 items-end">
+                              <Select 
+                                value={f.filamentId}
+                                onValueChange={(val) => form.setValue(`projectParts.${editingPartIndex}.filamentsUsed.${fIdx}.filamentId`, val)}
+                              >
+                                <SelectTrigger><SelectValue placeholder="Filamento" /></SelectTrigger>
+                                <SelectContent>
+                                  {filaments.map(fil => <SelectItem key={fil.id} value={fil.id}>{fil.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                              <Input 
+                                type="number" 
+                                placeholder="Gramas" 
+                                value={f.filamentGrams} 
+                                onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.filamentsUsed.${fIdx}.filamentGrams`, parseFloat(e.target.value) || 0)}
+                              />
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
