@@ -9,8 +9,9 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
 import { useFilamentBrands } from "@/hooks/use-filament-brands";
+import { useFilamentColors } from "@/hooks/use-filament-colors"; // Importado
 import { showSuccess, showError } from "@/utils/toast";
-import { PlusCircle, TrendingUp, Plus } from "lucide-react";
+import { PlusCircle, TrendingUp, Plus, Palette } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -19,7 +20,7 @@ const formSchema = z.object({
   name: z.string().optional(),
   brand: z.string().min(1, "A marca é obrigatória."),
   type: z.string().min(1, "O tipo é obrigatório."),
-  color: z.string().optional(),
+  color: z.string().optional(), // Agora pode ser o nome da cor ou o código HEX
   pricePerKg: z.coerce.number().min(0.01, "O preço de venda deve ser positivo."),
   purchasePrice: z.coerce.number().min(0, "O preço de compra não pode ser negativo.").optional(),
   weight: z.coerce.number().min(0.01, "O peso deve ser positivo."),
@@ -31,6 +32,7 @@ type AddFilamentFormValues = z.infer<typeof formSchema>;
 export const AddFilamentDialog = () => {
   const { addFilament } = useFilaments();
   const { brands, addBrand, updateBrand } = useFilamentBrands();
+  const { colors: predefinedColors } = useFilamentColors(); // Usar cores predefinidas
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
   
@@ -51,6 +53,7 @@ export const AddFilamentDialog = () => {
   const watchedSellingPrice = form.watch("pricePerKg");
   const watchedPurchasePrice = form.watch("purchasePrice") || 0;
   const watchedWeight = form.watch("weight");
+  const watchedColor = form.watch("color");
 
   const profitMargin = React.useMemo(() => {
     if (watchedPurchasePrice <= 0 || watchedSellingPrice <= 0) return null;
@@ -105,6 +108,11 @@ export const AddFilamentDialog = () => {
     if (!selectedBrand) return [];
     return brands.find(b => b.name === selectedBrand)?.types || [];
   }, [selectedBrand, brands]);
+
+  const selectedColorHex = React.useMemo(() => {
+    const color = predefinedColors.find(c => c.name === watchedColor || c.hex === watchedColor);
+    return color ? color.hex : (watchedColor && /^#[0-9A-F]{6}$/i.test(watchedColor) ? watchedColor : undefined);
+  }, [watchedColor, predefinedColors]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -210,7 +218,40 @@ export const AddFilamentDialog = () => {
               </div>
 
               <FormField control={form.control} name="color" render={({ field }) => (
-                <FormItem><FormLabel>Cor</FormLabel><FormControl><Input placeholder="Ex: Azul Marinho" {...field} /></FormControl></FormItem>
+                <FormItem>
+                  <FormLabel>Cor (Opcional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          {selectedColorHex && (
+                            <div 
+                              className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
+                              style={{ backgroundColor: selectedColorHex }}
+                            />
+                          )}
+                          <SelectValue placeholder="Selecionar cor..." />
+                        </div>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Nenhuma / Personalizada</SelectItem>
+                      <Separator className="my-1" />
+                      {predefinedColors.map(c => (
+                        <SelectItem key={c.hex} value={c.name}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
+                              style={{ backgroundColor: c.hex }}
+                            />
+                            {c.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )} />
               
               <Separator className="my-2" />

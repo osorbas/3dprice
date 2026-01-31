@@ -9,6 +9,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useFilaments, Filament } from "@/hooks/use-filaments";
 import { useFilamentBrands } from "@/hooks/use-filament-brands";
+import { useFilamentColors } from "@/hooks/use-filament-colors"; // Importado
 import { showSuccess, showError } from "@/utils/toast";
 import { Pencil, TrendingUp, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -29,6 +30,7 @@ const formSchema = z.object({
 export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
   const { updateFilament } = useFilaments();
   const { brands } = useFilamentBrands();
+  const { colors: predefinedColors } = useFilamentColors(); // Importado
   const [open, setOpen] = React.useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -49,6 +51,7 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
   const watchedSellingPrice = form.watch("pricePerKg");
   const watchedPurchasePrice = form.watch("purchasePrice") || 0;
   const watchedWeight = form.watch("weight");
+  const watchedColor = form.watch("color");
 
   const profitMargin = React.useMemo(() => {
     if (watchedPurchasePrice <= 0 || watchedSellingPrice <= 0) return null;
@@ -67,6 +70,11 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
   const typesForSelectedBrand = React.useMemo(() => {
     return brands.find(b => b.name === selectedBrand)?.types || [];
   }, [selectedBrand, brands]);
+
+  const selectedColorHex = React.useMemo(() => {
+    const color = predefinedColors.find(c => c.name === watchedColor || c.hex === watchedColor);
+    return color ? color.hex : (watchedColor && /^#[0-9A-F]{6}$/i.test(watchedColor) ? watchedColor : undefined);
+  }, [watchedColor, predefinedColors]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     try {
@@ -118,7 +126,40 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
             </div>
             
             <FormField control={form.control} name="color" render={({ field }) => (
-              <FormItem><FormLabel>Cor</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              <FormItem>
+                <FormLabel>Cor (Opcional)</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        {selectedColorHex && (
+                          <div 
+                            className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
+                            style={{ backgroundColor: selectedColorHex }}
+                          />
+                        )}
+                        <SelectValue placeholder="Selecionar cor..." />
+                      </div>
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="">Nenhuma / Personalizada</SelectItem>
+                    <Separator className="my-1" />
+                    {predefinedColors.map(c => (
+                      <SelectItem key={c.hex} value={c.name}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="h-4 w-4 rounded-full border border-black/20 shadow-sm flex-shrink-0" 
+                            style={{ backgroundColor: c.hex }}
+                          />
+                          {c.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
             )} />
 
             <Separator className="my-2" />
