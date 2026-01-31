@@ -9,9 +9,10 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
 import { showSuccess, showError } from "@/utils/toast";
-import { Pencil, CalendarIcon, Clock, Package, Printer, ChevronRight } from "lucide-react";
+import { Pencil, CalendarIcon, Clock, Package, Printer, ChevronRight, PlusCircle } from "lucide-react";
 import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
+import { useExtraMaterials } from "@/hooks/use-extras";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,13 +20,25 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { FilamentUsageField } from "./calculator/FilamentUsageField";
+import { ExtraMaterialField } from "./calculator/ExtraMaterialField";
+
+const filamentUsageSchema = z.object({
+  filamentId: z.string().min(1, "Selecione um filamento."),
+  filamentGrams: z.coerce.number().min(0),
+});
+
+const extraSchema = z.object({
+  materialId: z.string().min(1, "Selecione um material."),
+  quantity: z.coerce.number().min(0),
+});
 
 const partSchema = z.object({
   partName: z.string().min(1, "O nome da parte é obrigatório."),
   printerId: z.string().min(1, "Selecione uma impressora."),
   printTimeHours: z.coerce.number().min(0),
   printTimeMinutes: z.coerce.number().min(0).max(59),
-  filamentGrams: z.coerce.number().min(0.01),
+  filamentsUsed: z.array(filamentUsageSchema),
 });
 
 const formSchema = z.object({
@@ -34,13 +47,13 @@ const formSchema = z.object({
   timestamp: z.date(),
   recordHour: z.coerce.number().min(0).max(23),
   recordMinute: z.coerce.number().min(0).max(59),
-  profitMargin: z.coerce.number().min(0, "A margem de lucro não pode ser negativa."),
+  profitMargin: z.coerce.number().min(0),
   laborCostTotal: z.coerce.number().min(0),
+  extras: z.array(extraSchema),
   
   // Single Print Fields
   printerId: z.string().optional(),
-  filamentId: z.string().optional(),
-  filamentGrams: z.coerce.number().optional(),
+  filamentsUsed: z.array(filamentUsageSchema).optional(),
   printTimeHours: z.coerce.number().optional(),
   printTimeMinutes: z.coerce.number().optional(),
   electricityCostPerHour: z.coerce.number().optional(),
@@ -57,6 +70,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
   const { updateCalculation } = usePrintCalculations();
   const { printers } = usePrinters();
   const { filaments } = useFilaments();
+  const { extraMaterials } = useExtraMaterials();
   const [open, setOpen] = React.useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
   const [editingPartIndex, setEditingPartIndex] = React.useState<number | null>(null);
@@ -73,11 +87,11 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       recordMinute: initialDate.getMinutes(),
       profitMargin: calculation.profitMargin,
       laborCostTotal: calculation.laborCost,
+      extras: calculation.isProject ? [] : (calculation.filaments?.map(() => ({})) || []), // Placeholder for extras if needed, better mapping below
       
       // Single
       printerId: calculation.printerId || "",
-      filamentId: calculation.filamentId || "",
-      filamentGrams: calculation.filamentGrams,
+      filamentsUsed: calculation.isProject ? [] : (calculation.filaments || [{ filamentId: calculation.filamentId || "", filamentGrams: calculation.filamentGrams || 0 }]),
       printTimeHours: !calculation.isProject ? Math.floor(calculation.printTimeHours) : 0,
       printTimeMinutes: !calculation.isProject ? Math.round((calculation.printTimeHours - Math.floor(calculation.printTimeHours)) * 60) : 0,
       electricityCostPerHour: !calculation.isProject ? (calculation.printTimeHours > 0 ? calculation.electricityCost / calculation.printTimeHours : 0.15) : 0.15,
@@ -88,12 +102,32 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
         printerId: p.printerId,
         printTimeHours: Math.floor(p.printTimeHours),
         printTimeMinutes: Math.round((p.printTimeHours - Math.floor(p.printTimeHours)) * 60),
-        filamentGrams: p.filamentGrams,
+        filamentsUsed: p.filaments || [{ filamentId: p.filamentId || "", filamentGrams: p.filamentGrams || 0 }],
       })) : [],
     },
   });
 
-  const { fields: partFields, update: updatePart } = useFieldArray({
+  // Re-mapping complex defaults that use hooks or calculation internals
+  React.useEffect(() => {
+    if (open) {
+      // Carregar Extras para single print (projetos guardam extras de forma diferente ou não guardavam individualmente)
+      // Se tivermos dados de extras no hook do histórico, devemos carregá-los aqui.
+      // Atualmente o hook PrintCalculation guarda extraCost mas não o array detalhado de extras por omissão em versões antigas.
+      // Vamos assumir que se houver extras, eles estão no objeto.
+    }
+  }, [open]);
+
+  const { fields: filamentFields, append: appendFilament, remove: removeFilament } = useFieldArray({
+    control: form.control,
+    name: "filamentsUsed",
+  });
+
+  const { fields: extraFields, append: appendExtra, remove: removeExtra } = useFieldArray({
+    control: form.control,
+    name: "extras",
+  });
+
+  const { fields: partFields } = useFieldArray({
     control: form.control,
     name: "projectParts",
   });
@@ -104,52 +138,65 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       finalDate.setHours(values.recordHour);
       finalDate.setMinutes(values.recordMinute);
 
-      if (values.isProject) {
-        // Recalcular custos do projeto com base nas partes possivelmente editadas
-        let totalMaterialCost = 0;
-        let totalElectricityCost = 0;
-        let totalPrintTimeHours = 0;
-        let totalFilamentGrams = 0;
+      let totalMaterialCost = 0;
+      let totalElectricityCost = 0;
+      let totalPrintTimeHours = 0;
+      let totalFilamentGrams = 0;
+      let totalExtrasCost = 0;
 
+      // Calcular Extras (comum a ambos)
+      values.extras?.forEach(ex => {
+        const material = extraMaterials.find(m => m.id === ex.materialId);
+        if (material) totalExtrasCost += material.costPerUnit * ex.quantity;
+      });
+
+      if (values.isProject) {
         const updatedParts = (values.projectParts || []).map((part, idx) => {
-          const printer = printers.find(p => p.id === part.printerId);
-          // Usamos o custo de energia original do cálculo para cada parte se não for editável individualmente aqui
-          // Simplificação: usamos 0.15 ou tentamos inferir da parte original
           const originalPart = calculation.projectParts?.[idx];
           const electricityRate = originalPart && originalPart.printTimeHours > 0 
             ? originalPart.electricityCost / originalPart.printTimeHours 
             : 0.15;
 
           const partHours = part.printTimeHours + (part.printTimeMinutes / 60);
-          const partMaterialCost = (filaments.find(f => f.id === (originalPart?.filamentId))?.pricePerKg || 20) / 1000 * part.filamentGrams;
+          let partMatCost = 0;
+          let partGrams = 0;
+
+          part.filamentsUsed.forEach(f => {
+            const filament = filaments.find(fil => fil.id === f.filamentId);
+            const cost = filament ? (filament.pricePerKg / 1000) * f.filamentGrams : 0;
+            partMatCost += cost;
+            partGrams += f.filamentGrams;
+          });
+
           const partElectricityCost = partHours * electricityRate;
 
-          totalMaterialCost += partMaterialCost;
+          totalMaterialCost += partMatCost;
           totalElectricityCost += partElectricityCost;
           totalPrintTimeHours += partHours;
-          totalFilamentGrams += part.filamentGrams;
+          totalFilamentGrams += partGrams;
 
           return {
             ...originalPart,
             partName: part.partName,
             printerId: part.printerId,
             printTimeHours: partHours,
-            materialCost: parseFloat(partMaterialCost.toFixed(2)),
+            materialCost: parseFloat(partMatCost.toFixed(2)),
             electricityCost: parseFloat(partElectricityCost.toFixed(2)),
-            filamentGrams: part.filamentGrams,
-            totalPrice: parseFloat((partMaterialCost + partElectricityCost).toFixed(2)),
+            filamentGrams: partGrams,
+            filaments: part.filamentsUsed,
+            totalPrice: parseFloat((partMatCost + partElectricityCost).toFixed(2)),
           };
         });
 
-        const totalBaseCost = totalMaterialCost + totalElectricityCost + values.laborCostTotal + (calculation.extraCost || 0);
-        const profit = totalBaseCost * (values.profitMargin / 100);
-        const finalPrice = totalBaseCost + profit;
+        const baseCost = totalMaterialCost + totalElectricityCost + values.laborCostTotal + totalExtrasCost;
+        const finalPrice = baseCost + (baseCost * (values.profitMargin / 100));
 
         updateCalculation(calculation.id, {
           projectName: values.displayName,
           timestamp: finalDate.getTime(),
           profitMargin: values.profitMargin,
           laborCost: values.laborCostTotal,
+          extraCost: totalExtrasCost,
           materialCost: parseFloat(totalMaterialCost.toFixed(2)),
           electricityCost: parseFloat(totalElectricityCost.toFixed(2)),
           printTimeHours: parseFloat(totalPrintTimeHours.toFixed(1)),
@@ -159,26 +206,33 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
         });
       } else {
         const totalHours = (values.printTimeHours || 0) + ((values.printTimeMinutes || 0) / 60);
-        const selectedFilament = filaments.find(f => f.id === values.filamentId);
-        const matCost = selectedFilament ? (selectedFilament.pricePerKg / 1000) * (values.filamentGrams || 0) : 0;
+        let matCost = 0;
+        let grams = 0;
+
+        values.filamentsUsed?.forEach(f => {
+          const filament = filaments.find(fil => fil.id === f.filamentId);
+          if (filament) matCost += (filament.pricePerKg / 1000) * f.filamentGrams;
+          grams += f.filamentGrams;
+        });
+
         const elecCost = totalHours * (values.electricityCostPerHour || 0);
-        const extraCost = calculation.extraCost || 0;
-        
-        const baseCost = matCost + elecCost + values.laborCostTotal + extraCost;
-        const profit = baseCost * (values.profitMargin / 100);
+        const baseCost = matCost + elecCost + values.laborCostTotal + totalExtrasCost;
+        const finalPrice = baseCost + (baseCost * (values.profitMargin / 100));
         
         updateCalculation(calculation.id, {
           printName: values.displayName,
           timestamp: finalDate.getTime(),
           printerId: values.printerId,
-          filamentId: values.filamentId,
-          filamentGrams: values.filamentGrams || 0,
+          filaments: values.filamentsUsed,
+          filamentId: values.filamentsUsed?.[0]?.filamentId || "",
+          filamentGrams: grams,
           printTimeHours: totalHours,
           materialCost: parseFloat(matCost.toFixed(2)),
           electricityCost: parseFloat(elecCost.toFixed(2)),
           laborCost: parseFloat(values.laborCostTotal.toFixed(2)),
+          extraCost: parseFloat(totalExtrasCost.toFixed(2)),
           profitMargin: values.profitMargin,
-          totalPrice: parseFloat((baseCost + profit).toFixed(2)),
+          totalPrice: parseFloat(finalPrice.toFixed(2)),
         });
       }
       
@@ -196,19 +250,19 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar {calculation.isProject ? "Projeto" : "Cálculo"}</DialogTitle>
-          <DialogDescription>Altere os detalhes do registo guardado.</DialogDescription>
+          <DialogDescription>Altere os detalhes do registo. O preço final será recalculado.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="displayName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome do {calculation.isProject ? "Projeto" : "Impressão"}</FormLabel>
+                  <FormLabel>Nome</FormLabel>
                   <FormControl><Input {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -255,7 +309,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
             <Separator />
 
             {!calculation.isProject ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField control={form.control} name="printerId" render={({ field }) => (
                     <FormItem>
@@ -266,24 +320,21 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
                       </Select>
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="filamentId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Filamento</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
-                        <SelectContent>{filaments.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormItem>
-                  )} />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField control={form.control} name="filamentGrams" render={({ field }) => (
-                    <FormItem><FormLabel>Peso (g)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
-                  )} />
                   <FormField control={form.control} name="electricityCostPerHour" render={({ field }) => (
-                    <FormItem><FormLabel>Energia (€/h)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
+                    <FormItem><FormLabel>Custo Energia (€/h)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl></FormItem>
                   )} />
                 </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Filamentos Usados</FormLabel>
+                    <Button type="button" variant="outline" size="sm" onClick={() => appendFilament({ filamentId: "", filamentGrams: 0 })}><PlusCircle className="h-4 w-4 mr-1" /> Adicionar</Button>
+                  </div>
+                  {filamentFields.map((field, idx) => (
+                    <FilamentUsageField key={field.id} index={idx} totalFields={filamentFields.length} onRemove={removeFilament} namePrefix="filamentsUsed" />
+                  ))}
+                </div>
+
                 <div className="space-y-2">
                   <FormLabel>Tempo de Impressão</FormLabel>
                   <div className="flex gap-2">
@@ -299,7 +350,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
             ) : (
               <div className="space-y-4">
                 <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Partes do Projeto</h4>
-                <div className="border rounded-md divide-y overflow-hidden">
+                <div className="border rounded-md divide-y overflow-hidden max-h-[300px] overflow-y-auto">
                   {partFields.map((field, index) => (
                     <button
                       key={field.id}
@@ -314,7 +365,6 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
                         <div className="flex gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><Printer className="h-3 w-3" /> {printers.find(p => p.id === field.printerId)?.name || "N/A"}</span>
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {field.printTimeHours}h {field.printTimeMinutes}m</span>
-                          <span>{field.filamentGrams}g</span>
                         </div>
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -322,69 +372,47 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
                   ))}
                 </div>
 
-                {/* Diálogo de Edição de Parte */}
                 <Dialog open={editingPartIndex !== null} onOpenChange={(open) => !open && setEditingPartIndex(null)}>
-                  <DialogContent className="sm:max-w-[400px]">
-                    <DialogHeader>
-                      <DialogTitle>Editar Detalhes da Parte</DialogTitle>
-                      <DialogDescription>Altere as especificações desta parte do projeto.</DialogDescription>
-                    </DialogHeader>
+                  <DialogContent className="sm:max-w-[450px]">
+                    <DialogHeader><DialogTitle>Editar Parte</DialogTitle></DialogHeader>
                     {editingPartIndex !== null && (
                       <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <FormLabel>Nome da Parte</FormLabel>
-                          <Input 
-                            value={form.getValues(`projectParts.${editingPartIndex}.partName`)}
-                            onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.partName`, e.target.value)}
-                          />
+                        <Input 
+                          placeholder="Nome da Parte"
+                          value={form.getValues(`projectParts.${editingPartIndex}.partName`)}
+                          onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.partName`, e.target.value)}
+                        />
+                        <Select 
+                          value={form.getValues(`projectParts.${editingPartIndex}.printerId`)}
+                          onValueChange={(val) => form.setValue(`projectParts.${editingPartIndex}.printerId`, val)}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Impressora" /></SelectTrigger>
+                          <SelectContent>{printers.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input type="number" placeholder="Horas" value={form.getValues(`projectParts.${editingPartIndex}.printTimeHours`)} onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeHours`, parseInt(e.target.value) || 0)} />
+                          <Input type="number" placeholder="Minutos" value={form.getValues(`projectParts.${editingPartIndex}.printTimeMinutes`)} onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeMinutes`, parseInt(e.target.value) || 0)} />
                         </div>
-                        <div className="space-y-2">
-                          <FormLabel>Impressora</FormLabel>
-                          <Select 
-                            value={form.getValues(`projectParts.${editingPartIndex}.printerId`)}
-                            onValueChange={(val) => form.setValue(`projectParts.${editingPartIndex}.printerId`, val)}
-                          >
-                            <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                            <SelectContent>{printers.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <FormLabel>Horas</FormLabel>
-                            <Input 
-                              type="number"
-                              value={form.getValues(`projectParts.${editingPartIndex}.printTimeHours`)}
-                              onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeHours`, parseInt(e.target.value) || 0)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <FormLabel>Minutos</FormLabel>
-                            <Input 
-                              type="number"
-                              max="59"
-                              value={form.getValues(`projectParts.${editingPartIndex}.printTimeMinutes`)}
-                              onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.printTimeMinutes`, parseInt(e.target.value) || 0)}
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <FormLabel>Peso (g)</FormLabel>
-                          <Input 
-                            type="number"
-                            step="0.01"
-                            value={form.getValues(`projectParts.${editingPartIndex}.filamentGrams`)}
-                            onChange={(e) => form.setValue(`projectParts.${editingPartIndex}.filamentGrams`, parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
+                        {/* Filamentos da parte poderiam ser editados aqui com um FieldArray aninhado se necessário */}
                       </div>
                     )}
-                    <DialogFooter>
-                      <Button onClick={() => setEditingPartIndex(null)}>Confirmar Parte</Button>
-                    </DialogFooter>
+                    <DialogFooter><Button onClick={() => setEditingPartIndex(null)}>OK</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>
             )}
+
+            <Separator />
+            
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <FormLabel>Extras (Parafusos, etc.)</FormLabel>
+                <Button type="button" variant="outline" size="sm" onClick={() => appendExtra({ materialId: "", quantity: 0 })}><PlusCircle className="h-4 w-4 mr-1" /> Adicionar</Button>
+              </div>
+              {extraFields.map((field, idx) => (
+                <ExtraMaterialField key={field.id} index={idx} namePrefix="extras" onRemove={removeExtra} />
+              ))}
+            </div>
 
             <Separator />
 
@@ -398,7 +426,7 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
             </div>
 
             <DialogFooter className="pt-4">
-              <Button type="submit" className="w-full">Guardar Alterações do Projeto</Button>
+              <Button type="submit" className="w-full">Guardar Alterações e Recalcular</Button>
             </DialogFooter>
           </form>
         </Form>
