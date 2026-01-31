@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useFilaments, NewFilamentData } from "@/hooks/use-filaments";
-import { useCustomBrands } from "@/hooks/use-custom-brands";
+import { useFilamentBrands } from "@/hooks/use-filament-brands";
 import { showSuccess, showError } from "@/utils/toast";
 import { PlusCircle } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -26,29 +26,9 @@ const formSchema = z.object({
 
 type AddFilamentFormValues = z.infer<typeof formSchema>;
 
-export const predefinedFilamentOptions = [
-  { brand: "Genérico", type: "PLA" },
-  { brand: "Genérico", type: "PETG" },
-  { brand: "Genérico", type: "ABS" },
-  { brand: "Prusament", type: "PLA" },
-  { brand: "Prusament", type: "PETG" },
-  { brand: "ESUN", type: "PLA+" },
-  { brand: "ESUN", type: "PETG" },
-  { brand: "Polymaker", type: "PLA Pro" },
-  { brand: "Polymaker", type: "PETG" },
-  { brand: "Bambu Lab", type: "PLA Basic" },
-  { brand: "Bambu Lab", type: "PETG Basic" },
-  { brand: "Sunlu", type: "PLA" },
-  { brand: "Sunlu", type: "PETG" },
-  { brand: "Lotactree", type: "PLA" },
-  { brand: "Lotactree", type: "PETG" },
-  { brand: "Filament 3D", type: "PLA" },
-  { brand: "Filament 3D", type: "PETG" },
-];
-
 export const AddFilamentDialog = () => {
   const { addFilament } = useFilaments();
-  const { customBrands } = useCustomBrands();
+  const { brands } = useFilamentBrands();
   const [open, setOpen] = React.useState(false);
   const [selectedBrand, setSelectedBrand] = React.useState<string | undefined>(undefined);
   
@@ -68,23 +48,10 @@ export const AddFilamentDialog = () => {
     } catch (err) { showError("Erro ao adicionar."); }
   };
 
-  const allBrands = React.useMemo(() => {
-    const predefinedBrands = Array.from(new Set(predefinedFilamentOptions.map((f) => f.brand)));
-    return Array.from(new Set([...predefinedBrands, ...customBrands])).sort();
-  }, [customBrands]);
-
   const typesForSelectedBrand = React.useMemo(() => {
     if (!selectedBrand) return [];
-    const types = predefinedFilamentOptions
-      .filter((f) => f.brand === selectedBrand)
-      .map((f) => f.type);
-    
-    // Se for uma marca personalizada sem tipos predefinidos, sugerimos tipos comuns
-    if (types.length === 0) {
-      return ["PLA", "PETG", "ABS", "ASA", "TPU", "Nylon"];
-    }
-    return Array.from(new Set(types)).sort();
-  }, [selectedBrand]);
+    return brands.find(b => b.name === selectedBrand)?.types || [];
+  }, [selectedBrand, brands]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -104,7 +71,7 @@ export const AddFilamentDialog = () => {
                   <Select onValueChange={(v) => { field.onChange(v); setSelectedBrand(v); }} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {allBrands.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                      {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </FormItem>

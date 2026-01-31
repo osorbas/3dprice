@@ -16,7 +16,7 @@ import { usePrinters } from "@/hooks/use-printers";
 import { useFilaments } from "@/hooks/use-filaments";
 import { useExtraMaterials } from "@/hooks/use-extras";
 import { useElectricityProfiles } from "@/hooks/use-electricity-profiles";
-import { useCustomBrands } from "@/hooks/use-custom-brands";
+import { useFilamentBrands, BrandConfig } from "@/hooks/use-filament-brands";
 import { showError, showSuccess } from "@/utils/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -34,12 +34,17 @@ const SettingsPage = () => {
   const { filaments, clearFilaments, importFilaments } = useFilaments();
   const { extraMaterials, clearExtraMaterials, importExtraMaterials } = useExtraMaterials();
   const { electricityProfiles, clearElectricityProfiles, importElectricityProfiles } = useElectricityProfiles();
-  const { customBrands, addBrand, removeBrand } = useCustomBrands();
+  const { brands, addBrand, updateBrand, removeBrand } = useFilamentBrands();
 
   const [newBrandName, setNewBrandName] = React.useState("");
   const [isEditingBrands, setIsEditingBrands] = React.useState(false);
   const [isNewBrandDialogOpen, setIsNewBrandDialogOpen] = React.useState(false);
   const [brandToDelete, setBrandToDelete] = React.useState<string | null>(null);
+  
+  // Estado para edição de marca específica
+  const [editingBrand, setEditingBrand] = React.useState<BrandConfig | null>(null);
+  const [editingBrandName, setEditingBrandName] = React.useState("");
+  const [newTypeForBrand, setNewTypeForBrand] = React.useState("");
 
   const [defaultProfitMargin, setDefaultProfitMargin] = React.useState<number>(() => {
     if (typeof window !== "undefined") {
@@ -96,6 +101,35 @@ const SettingsPage = () => {
       removeBrand(brandToDelete);
       showSuccess(`Marca "${brandToDelete}" eliminada.`);
       setBrandToDelete(null);
+    }
+  };
+
+  const openBrandEditor = (brand: BrandConfig) => {
+    setEditingBrand(brand);
+    setEditingBrandName(brand.name);
+    setNewTypeForBrand("");
+  };
+
+  const handleSaveBrandEdits = () => {
+    if (editingBrand && editingBrandName.trim()) {
+      updateBrand(editingBrand.name, editingBrandName.trim(), editingBrand.types);
+      setEditingBrand(null);
+      showSuccess("Alterações na marca guardadas!");
+    }
+  };
+
+  const handleAddTypeToBrand = () => {
+    if (editingBrand && newTypeForBrand.trim()) {
+      const updatedTypes = [...editingBrand.types, newTypeForBrand.trim()];
+      setEditingBrand({ ...editingBrand, types: updatedTypes });
+      setNewTypeForBrand("");
+    }
+  };
+
+  const handleRemoveTypeFromBrand = (typeToRemove: string) => {
+    if (editingBrand) {
+      const updatedTypes = editingBrand.types.filter(t => t !== typeToRemove);
+      setEditingBrand({ ...editingBrand, types: updatedTypes });
     }
   };
 
@@ -365,31 +399,39 @@ const SettingsPage = () => {
                     className="gap-2"
                     onClick={() => setIsEditingBrands(!isEditingBrands)}
                   >
-                    <Pencil className="h-4 w-4" /> {isEditingBrands ? "Concluir" : "Editar"}
+                    {isEditingBrands ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+                    {isEditingBrands ? "Concluir" : "Editar"}
                   </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  {customBrands.length === 0 ? (
-                    <p className="text-sm text-muted-foreground italic">Nenhuma marca personalizada adicionada. Clique em "Novo" para começar.</p>
+                  {brands.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">Nenhuma marca configurada.</p>
                   ) : (
-                    customBrands.map(brand => (
+                    brands.map(brand => (
                       <div 
-                        key={brand} 
+                        key={brand.name} 
                         className={cn(
-                          "flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-colors",
-                          isEditingBrands ? "bg-destructive/10 text-destructive border border-destructive/20" : "bg-secondary text-secondary-foreground"
+                          "flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium transition-all group",
+                          isEditingBrands ? "bg-primary/10 text-primary border border-primary/20" : "bg-secondary text-secondary-foreground"
                         )}
                       >
-                        {brand}
+                        <span 
+                          className={cn("cursor-pointer", isEditingBrands && "hover:underline")}
+                          onClick={() => isEditingBrands && openBrandEditor(brand)}
+                        >
+                          {brand.name}
+                        </span>
                         {isEditingBrands && (
-                          <button 
-                            onClick={() => setBrandToDelete(brand)}
-                            className="ml-1 hover:text-destructive/70 transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          <div className="flex items-center ml-1 border-l pl-1 border-primary/20">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setBrandToDelete(brand.name); }}
+                              className="p-0.5 hover:text-destructive transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     ))
@@ -398,12 +440,56 @@ const SettingsPage = () => {
               </CardContent>
             </Card>
 
+            {/* Editor de Marca e Tipos */}
+            <Dialog open={!!editingBrand} onOpenChange={(open) => !open && setEditingBrand(null)}>
+              <DialogContent className="sm:max-w-[450px]">
+                <DialogHeader>
+                  <DialogTitle>Editar Marca: {editingBrand?.name}</DialogTitle>
+                  <DialogDescription>Altera o nome da marca ou gere a lista de tipos de filamento disponíveis.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                  <div className="space-y-2">
+                    <Label>Nome da Marca</Label>
+                    <Input 
+                      value={editingBrandName} 
+                      onChange={(e) => setEditingBrandName(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Label>Tipos de Filamento</Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        placeholder="Ex: PLA, PETG-CF" 
+                        value={newTypeForBrand} 
+                        onChange={(e) => setNewTypeForBrand(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddTypeToBrand()}
+                      />
+                      <Button size="icon" onClick={handleAddTypeToBrand}><Plus className="h-4 w-4" /></Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2 max-h-[150px] overflow-y-auto p-1">
+                      {editingBrand?.types.map(type => (
+                        <div key={type} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-xs">
+                          {type}
+                          <button onClick={() => handleRemoveTypeFromBrand(type)} className="hover:text-destructive"><X className="h-3 w-3" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setEditingBrand(null)}>Cancelar</Button>
+                  <Button onClick={handleSaveBrandEdits}>Guardar Alterações</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <AlertDialog open={!!brandToDelete} onOpenChange={(open) => !open && setBrandToDelete(null)}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Eliminar marca de filamento?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tens a certeza que queres eliminar a marca "{brandToDelete}"? Esta ação não pode ser desfeita.
+                    Tens a certeza que queres eliminar a marca "{brandToDelete}"? Esta ação removerá a marca de todas as listas de seleção.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
