@@ -34,7 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { predefinedPrinters } from "@/components/AddPrinterDialog";
-import { ArrowRight, Check, Plus, Separator } from "lucide-react";
+import { ArrowRight, Check, Plus } from "lucide-react";
+import { Separator } from "@/components/ui/separator"; // Importação corrigida
 
 const printerFieldsSchema = z.object({
   name: z.string().optional(), // Tornar opcional
