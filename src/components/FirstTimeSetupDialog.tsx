@@ -37,7 +37,7 @@ import { predefinedPrinters } from "@/components/AddPrinterDialog";
 import { ArrowRight, Check } from "lucide-react";
 
 const printerFieldsSchema = z.object({
-  name: z.string().min(1, "O nome é obrigatório."),
+  name: z.string().optional(), // Tornar opcional
   brand: z.string().min(1, "A marca é obrigatória."),
   model: z.string().min(1, "O modelo é obrigatório."),
   powerConsumptionWatts: z.coerce.number().min(0).default(50),
@@ -104,12 +104,19 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
 
   const handleNextStep = async () => {
     if (step === 1) {
-      const isValid = await form.trigger("printer");
+      // Validar apenas os campos obrigatórios (marca e modelo)
+      const isValid = await form.trigger(["printer.brand", "printer.model"]);
       if (isValid) {
         try {
           const printerValues = form.getValues("printer");
-          addPrinter(printerValues as any);
-          showSuccess(`Impressora "${printerValues.name}" adicionada!`);
+          
+          // Gerar nome se estiver vazio
+          const finalName = printerValues.name && printerValues.name.trim() !== "" 
+            ? printerValues.name 
+            : `${printerValues.brand} ${printerValues.model}`;
+
+          addPrinter({ ...printerValues, name: finalName } as any);
+          showSuccess(`Impressora "${finalName}" adicionada!`);
           setStep(2);
         } catch (error) {
           showError("Erro ao adicionar impressora.");
@@ -151,21 +158,10 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                 <h3 className="text-lg font-semibold">1. A tua Impressora</h3>
                 <FormField
                   control={form.control}
-                  name="printer.name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome</FormLabel>
-                      <FormControl><Input placeholder="Ex: Minha P1S" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
                   name="printer.brand"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Marca</FormLabel>
+                      <FormLabel>Marca *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
@@ -183,7 +179,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   name="printer.model"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Modelo</FormLabel>
+                      <FormLabel>Modelo *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!selectedPrinterBrand}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
@@ -192,6 +188,17 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                           {printerModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="printer.name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome (Opcional)</FormLabel>
+                      <FormControl><Input placeholder="Ex: Minha P1S" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -205,7 +212,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   name="filament.brand"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Marca</FormLabel>
+                      <FormLabel>Marca *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
@@ -223,7 +230,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   name="filament.type"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Tipo</FormLabel>
+                      <FormLabel>Tipo *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} disabled={!selectedFilamentBrand}>
                         <FormControl>
                           <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
@@ -241,7 +248,7 @@ export const FirstTimeSetupDialog = ({ open, onOpenChange }: FirstTimeSetupDialo
                   name="filament.pricePerKg"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Preço por Kg (€)</FormLabel>
+                      <FormLabel>Preço por Kg (€) *</FormLabel>
                       <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
