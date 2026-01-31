@@ -19,7 +19,8 @@ import {
   CheckCircle,
   PlusCircle,
   Pencil,
-  Palette
+  Palette,
+  AlertTriangle
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -314,33 +315,46 @@ const FarmPage = () => {
                 {filaments.map((f) => {
                   const currentGrams = f.currentWeightGrams;
                   const totalCapacityGrams = f.weight * 1000;
+                  const stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
                   
-                  let isLowStock = false;
-                  let displayValue = "N/A";
-                  let stockPercent = 0;
-                  let stockGramsDisplay = "N/A";
-                  let stockColorClass = "text-muted-foreground";
+                  // Definir alertas baseados na percentagem
+                  const isCritical = manageStockEnabled && stockPercent <= 10;
+                  const isWarning = manageStockEnabled && stockPercent > 10 && stockPercent <= 25;
+                  
+                  let stockColor = "bg-green-500";
+                  let stockBg = "bg-green-100";
+                  let textColor = "text-green-600";
+                  let borderColor = "border-green-200";
 
-                  if (manageStockEnabled) {
-                    isLowStock = currentGrams < 1000;
-                    displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
-                    stockPercent = Math.min(100, Math.max(0, (currentGrams / totalCapacityGrams) * 100));
-                    stockGramsDisplay = `${currentGrams.toFixed(0)}g restantes`;
-                    stockColorClass = isLowStock ? "text-orange-600" : "text-green-600";
+                  if (isCritical) {
+                    stockColor = "bg-red-500";
+                    stockBg = "bg-red-100";
+                    textColor = "text-red-600";
+                    borderColor = "border-red-200";
+                  } else if (isWarning) {
+                    stockColor = "bg-orange-500";
+                    stockBg = "bg-orange-100";
+                    textColor = "text-orange-600";
+                    borderColor = "border-orange-200";
                   }
+
+                  const displayValue = currentGrams >= 1000 ? `${(currentGrams / 1000).toFixed(2)}kg` : `${currentGrams.toFixed(0)}g`;
 
                   return (
                     <Card 
                       key={f.id} 
-                      className="overflow-hidden border-l-4 shadow-sm" 
-                      style={{ borderLeftColor: manageStockEnabled && isLowStock ? "#f97316" : manageStockEnabled ? "#22c55e" : "hsl(var(--border))" }}
+                      className={cn(
+                        "overflow-hidden border-l-4 shadow-sm transition-all",
+                        manageStockEnabled ? borderColor : "border-border"
+                      )} 
+                      style={{ borderLeftColor: manageStockEnabled ? (isCritical ? "#ef4444" : isWarning ? "#f97316" : "#22c55e") : "hsl(var(--border))" }}
                     >
                       <CardContent className="p-4 space-y-4">
                         <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <p className="font-bold text-sm truncate max-w-[140px]">{f.name || f.type}</p>
+                          <div className="space-y-1 max-w-[70%]">
+                            <p className="font-bold text-sm truncate">{f.name || f.type}</p>
                             <div className="flex flex-col">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold truncate">
                                 {f.brand} {f.type}
                               </p>
                               {f.color && (
@@ -358,27 +372,34 @@ const FarmPage = () => {
 
                         <div className="space-y-2">
                           <div className="flex justify-between items-end text-xs">
-                            <span className={cn("font-bold", stockColorClass)}>
-                              {displayValue}
-                            </span>
+                            <div className="flex items-center gap-1">
+                              <span className={cn("font-bold text-sm", manageStockEnabled ? textColor : "text-muted-foreground")}>
+                                {manageStockEnabled ? displayValue : "Stock Off"}
+                              </span>
+                              {isCritical && <AlertTriangle className="h-3 w-3 text-red-500" />}
+                            </div>
                             <span className="text-muted-foreground font-mono text-[10px]">
                               {manageStockEnabled ? `${stockPercent.toFixed(0)}%` : "N/A"}
                             </span>
                           </div>
-                          <Progress 
-                            value={manageStockEnabled ? stockPercent : 0} 
-                            className={cn("h-2", manageStockEnabled ? (isLowStock ? "bg-orange-100" : "bg-green-100") : "bg-muted")} 
-                          />
+                          <div className={cn("h-2.5 w-full rounded-full overflow-hidden", manageStockEnabled ? stockBg : "bg-muted")}>
+                            <div 
+                              className={cn("h-full transition-all duration-500", manageStockEnabled ? stockColor : "bg-muted-foreground/20")}
+                              style={{ width: `${manageStockEnabled ? stockPercent : 0}%` }}
+                            />
+                          </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-1">
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Layers className="h-3.5 w-3.5" />
-                            <span className="text-[11px] font-medium">{stockGramsDisplay}</span>
+                            <span className="text-[10px] font-medium">
+                              Capacidade: {f.weight.toFixed(1)}kg
+                            </span>
                           </div>
                           {f.color && (
                             <div 
-                              className="h-2.5 w-2.5 rounded-full border border-black/10" 
+                              className="h-3 w-3 rounded-full border border-black/10 shadow-sm" 
                               style={{ backgroundColor: f.color.toLowerCase() }} 
                               title={`Cor: ${f.color}`}
                             />
