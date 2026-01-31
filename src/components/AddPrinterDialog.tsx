@@ -22,7 +22,7 @@ const formSchema = z.object({
 
 type AddPrinterFormValues = z.infer<typeof formSchema>;
 
-export const predefinedPrinters: Omit<Printer, "id" | "timestamp" | "workingHours" | "status">[] = [
+export const predefinedPrinters: Omit<Printer, "id" | "status" | "timestamp" | "workingHours">[] = [
   { name: "Creality Ender 3 V2", brand: "Creality", model: "Ender 3 V2", powerConsumptionWatts: 100 },
   { name: "Creality Ender 3 V3 SE", brand: "Creality", model: "Ender 3 V3 SE", powerConsumptionWatts: 110 },
   { name: "Creality Ender 3 V3 KE", brand: "Creality", model: "Ender 3 V3 KE", powerConsumptionWatts: 130 },
