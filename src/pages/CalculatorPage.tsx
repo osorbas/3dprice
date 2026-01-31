@@ -97,6 +97,7 @@ const CalculatorPage = () => {
   const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const projectNameInputRef = useRef<HTMLInputElement>(null);
 
   // Carregar predefinições
   const defaults = useMemo(() => {
@@ -153,6 +154,13 @@ const CalculatorPage = () => {
   });
 
   const watchedValues = form.watch();
+
+  // Focar o nome do projeto ao mudar de tab
+  useEffect(() => {
+    if (activeTab === "project") {
+      setTimeout(() => projectNameInputRef.current?.focus(), 100);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (projectPartFields.length !== openPartStates.length) {
@@ -504,7 +512,11 @@ const CalculatorPage = () => {
                       <FormItem>
                         <FormLabel>Nome do Projeto *</FormLabel>
                         <FormControl>
-                          <Input placeholder="ex: Armadura Iron Man" {...field} />
+                          <Input 
+                            ref={projectNameInputRef}
+                            placeholder="ex: Armadura Iron Man" 
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
