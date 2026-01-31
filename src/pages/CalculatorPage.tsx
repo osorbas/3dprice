@@ -63,7 +63,7 @@ const projectPartSchema = z.object({
 });
 
 const formSchema = z.object({
-  printName: z.string().optional(),
+  printName: z.string().min(1, "O nome é obrigatório."),
   printerId: z.string().optional(),
   filamentsUsed: z.array(filamentUsageSchema).optional(),
   printTimeHours: z.coerce.number().optional(),
@@ -75,7 +75,6 @@ const formSchema = z.object({
   laborTimeMinutes: z.coerce.number().optional(),
   profitMargin: z.coerce.number().optional(),
   extras: z.array(extraSchema).optional(),
-  projectName: z.string().optional(), 
   projectParts: z.array(projectPartSchema).optional(),
 });
 
@@ -97,7 +96,6 @@ const CalculatorPage = () => {
   const [openPartStates, setOpenPartStates] = useState<boolean[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const projectNameInputRef = useRef<HTMLInputElement>(null);
 
   // Carregar predefinições
   const defaults = useMemo(() => {
@@ -133,7 +131,6 @@ const CalculatorPage = () => {
       laborTimeMinutes: 0, 
       profitMargin: defaults.profitMargin,
       extras: [], 
-      projectName: "", 
       projectParts: [],
     },
   });
@@ -154,13 +151,6 @@ const CalculatorPage = () => {
   });
 
   const watchedValues = form.watch();
-
-  // Focar o nome do projeto ao mudar de tab
-  useEffect(() => {
-    if (activeTab === "project") {
-      setTimeout(() => projectNameInputRef.current?.focus(), 100);
-    }
-  }, [activeTab]);
 
   useEffect(() => {
     if (projectPartFields.length !== openPartStates.length) {
@@ -293,7 +283,6 @@ const CalculatorPage = () => {
           laborTimeMinutes: 0, 
           profitMargin: defaults.profitMargin,
           extras: [], 
-          projectName: "", 
           projectParts: [],
         });
         setOpenPartStates([]);
@@ -325,7 +314,6 @@ const CalculatorPage = () => {
       laborTimeMinutes: 0, 
       profitMargin: defaults.profitMargin,
       extras: [], 
-      projectName: "", 
       projectParts: [],
     });
     setOpenPartStates([]);
@@ -333,10 +321,6 @@ const CalculatorPage = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (activeTab === "project") {
-      if (!values.projectName || values.projectName.trim() === "") {
-        showError("O nome do projeto é obrigatório.");
-        return;
-      }
       if (!values.projectParts || values.projectParts.length === 0) {
         showError("Adicione pelo menos uma parte ao projeto.");
         return;
@@ -344,11 +328,6 @@ const CalculatorPage = () => {
       const allPartsConfirmed = values.projectParts.every(part => part.isConfirmed);
       if (!allPartsConfirmed) {
         showError("Confirme todas as partes do projeto antes de guardar.");
-        return;
-      }
-    } else {
-      if (!values.printName || values.printName.trim() === "") {
-        showError("O nome da impressão é obrigatório.");
         return;
       }
     }
@@ -406,7 +385,7 @@ const CalculatorPage = () => {
       filamentId: values.filamentsUsed?.[0]?.filamentId || "",
       isProject: activeTab === "project",
       printName: values.printName,
-      projectName: values.projectName,
+      projectName: activeTab === "project" ? values.printName : undefined,
       printerId: values.printerId,
       projectParts: projectPartsDetails as any,
     };
@@ -415,7 +394,7 @@ const CalculatorPage = () => {
 
     setSummaryData({
       id: Date.now().toString(),
-      printName: activeTab === "single-print" ? values.printName : values.projectName,
+      printName: values.printName,
       ...totals,
       profitMargin: values.profitMargin
     });
@@ -448,15 +427,20 @@ const CalculatorPage = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  {activeTab === "single-print" ? "Detalhes da Impressão" : "Detalhes do Projeto"}
+                  Detalhes do {activeTab === "single-print" ? "Cálculo" : "Projeto"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <FormField control={form.control} name="printName" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome {activeTab === "single-print" ? "da Impressão" : "do Projeto"} *</FormLabel>
+                    <FormControl><Input placeholder={activeTab === "single-print" ? "ex: Darth Vader" : "ex: Armadura Iron Man"} {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
                 {activeTab === "single-print" ? (
                   <>
-                    <FormField control={form.control} name="printName" render={({ field }) => (
-                      <FormItem><FormLabel>Nome da Impressão *</FormLabel><FormControl><Input placeholder="ex: Darth Vader" {...field} /></FormControl><FormMessage /></FormItem>
-                    )} />
                     <div className="grid grid-cols-2 gap-4">
                       <FormField control={form.control} name="printerId" render={({ field }) => (
                         <FormItem>
@@ -507,42 +491,27 @@ const CalculatorPage = () => {
                     </div>
                   </>
                 ) : (
-                  <>
-                    <FormField control={form.control} name="projectName" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nome do Projeto *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            ref={projectNameInputRef}
-                            placeholder="ex: Armadura Iron Man" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    <div className="space-y-4">
-                      {projectPartFields.map((field, idx) => (
-                        <ProjectPartField
-                          key={field.id}
-                          index={idx}
-                          namePrefix="projectParts"
-                          onRemove={removeProjectPart}
-                          printers={printers}
-                          filaments={filaments}
-                          electricityProfiles={electricityProfiles}
-                          defaultFilamentId={defaults.filamentId || filaments[0]?.id || ""}
-                          isConfirmed={watchedValues.projectParts?.[idx]?.isConfirmed || false}
-                          onConfirmPart={handleConfirmPart}
-                          isAccordionOpen={openPartStates[idx] || false}
-                          setIsAccordionOpen={(open) => { const s = [...openPartStates]; s[idx] = open; setOpenPartStates(s); }}
-                        />
-                      ))}
-                      <Button type="button" variant="outline" className="w-full gap-2" onClick={() => { appendProjectPart({ partName: "", printerId: defaults.printerId, filamentsUsed: [{ filamentId: defaults.filamentId, filamentGrams: 0 }], printTimeHours: 0, printTimeMinutes: 0, electricityCostPerHour: defaults.electricityCostPerHour, isConfirmed: false }); setOpenPartStates([...openPartStates, true]); }}>
-                        <PlusCircle className="h-4 w-4" /> Adicionar Parte
-                      </Button>
-                    </div>
-                  </>
+                  <div className="space-y-4">
+                    {projectPartFields.map((field, idx) => (
+                      <ProjectPartField
+                        key={field.id}
+                        index={idx}
+                        namePrefix="projectParts"
+                        onRemove={removeProjectPart}
+                        printers={printers}
+                        filaments={filaments}
+                        electricityProfiles={electricityProfiles}
+                        defaultFilamentId={defaults.filamentId || filaments[0]?.id || ""}
+                        isConfirmed={watchedValues.projectParts?.[idx]?.isConfirmed || false}
+                        onConfirmPart={handleConfirmPart}
+                        isAccordionOpen={openPartStates[idx] || false}
+                        setIsAccordionOpen={(open) => { const s = [...openPartStates]; s[idx] = open; setOpenPartStates(s); }}
+                      />
+                    ))}
+                    <Button type="button" variant="outline" className="w-full gap-2" onClick={() => { appendProjectPart({ partName: "", printerId: defaults.printerId, filamentsUsed: [{ filamentId: defaults.filamentId, filamentGrams: 0 }], printTimeHours: 0, printTimeMinutes: 0, electricityCostPerHour: defaults.electricityCostPerHour, isConfirmed: false }); setOpenPartStates([...openPartStates, true]); }}>
+                      <PlusCircle className="h-4 w-4" /> Adicionar Parte
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -629,7 +598,6 @@ const CalculatorPage = () => {
               laborTimeMinutes: 0, 
               profitMargin: defaults.profitMargin,
               extras: [], 
-              projectName: "", 
               projectParts: [],
             });
             setOpenPartStates([]);
