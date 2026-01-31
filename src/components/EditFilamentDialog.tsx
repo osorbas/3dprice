@@ -48,12 +48,21 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
   const selectedBrand = form.watch("brand");
   const watchedSellingPrice = form.watch("pricePerKg");
   const watchedPurchasePrice = form.watch("purchasePrice") || 0;
+  const watchedWeight = form.watch("weight");
 
   const profitMargin = React.useMemo(() => {
     if (watchedPurchasePrice <= 0 || watchedSellingPrice <= 0) return null;
     const margin = ((watchedSellingPrice - watchedPurchasePrice) / watchedPurchasePrice) * 100;
     return margin;
   }, [watchedSellingPrice, watchedPurchasePrice]);
+
+  const calculatedPrices = React.useMemo(() => {
+    const pricePerGram = watchedSellingPrice / 1000;
+    const purchasePricePerGram = watchedPurchasePrice / 1000;
+    const totalSellingPrice = watchedSellingPrice * watchedWeight;
+    const totalPurchasePrice = watchedPurchasePrice * watchedWeight;
+    return { pricePerGram, purchasePricePerGram, totalSellingPrice, totalPurchasePrice };
+  }, [watchedSellingPrice, watchedPurchasePrice, watchedWeight]);
 
   const typesForSelectedBrand = React.useMemo(() => {
     return brands.find(b => b.name === selectedBrand)?.types || [];
@@ -121,15 +130,26 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
                   </FormItem>
                 )} />
               </div>
-              {profitMargin !== null && (
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <TrendingUp className={cn("h-4 w-4", profitMargin >= 0 ? "text-green-500" : "text-red-500")} />
+              
+              <div className="space-y-1 text-sm">
+                <div className="flex items-center gap-2 font-medium">
+                  <TrendingUp className={cn("h-4 w-4", (profitMargin ?? -1) >= 0 ? "text-green-500" : "text-red-500")} />
                   <span>Margem de Lucro: </span>
-                  <span className={profitMargin >= 0 ? "text-green-600" : "text-red-600"}>
-                    {profitMargin.toFixed(0)}%
+                  <span className={cn((profitMargin ?? -1) >= 0 ? "text-green-600" : "text-red-600", "font-bold")}>
+                    {profitMargin !== null ? `${profitMargin.toFixed(0)}%` : 'N/A'}
                   </span>
                 </div>
-              )}
+                <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground pt-2">
+                  <p>Preço Venda/g:</p>
+                  <p className="text-right font-medium">€{calculatedPrices.pricePerGram.toFixed(4)}</p>
+                  <p>Preço Compra/g:</p>
+                  <p className="text-right font-medium">€{calculatedPrices.purchasePricePerGram.toFixed(4)}</p>
+                  <p>Preço Total Bobina (Venda):</p>
+                  <p className="text-right font-medium">€{calculatedPrices.totalSellingPrice.toFixed(2)}</p>
+                  <p>Preço Total Bobina (Compra):</p>
+                  <p className="text-right font-medium">€{calculatedPrices.totalPurchasePrice.toFixed(2)}</p>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
