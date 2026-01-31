@@ -93,6 +93,10 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
                     <FormControl><SelectTrigger><SelectValue placeholder="Marca" /></SelectTrigger></FormControl>
                     <SelectContent>
                       {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
+                      <Separator className="my-1" />
+                      <SelectItem value="NEW_BRAND" className="text-blue-500 font-medium hover:text-blue-600">
+                        <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar nova...</span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
@@ -103,6 +107,10 @@ export const EditFilamentDialog = ({ filament }: { filament: Filament }) => {
                     <FormControl><SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger></FormControl>
                     <SelectContent>
                       {typesForSelectedBrand.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      <Separator className="my-1" />
+                      <SelectItem value="NEW_TYPE" className="text-blue-500 font-medium hover:text-blue-600">
+                        <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar novo...</span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>

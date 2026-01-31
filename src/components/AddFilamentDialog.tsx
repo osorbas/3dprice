@@ -171,7 +171,7 @@ export const AddFilamentDialog = () => {
                       <SelectContent>
                         {brands.map(b => <SelectItem key={b.name} value={b.name}>{b.name}</SelectItem>)}
                         <Separator className="my-1" />
-                        <SelectItem value="NEW_BRAND" className="text-primary font-medium">
+                        <SelectItem value="NEW_BRAND" className="text-blue-500 font-medium hover:text-blue-600">
                           <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar nova...</span>
                         </SelectItem>
                       </SelectContent>
@@ -198,7 +198,7 @@ export const AddFilamentDialog = () => {
                         {selectedBrand && (
                           <>
                             <Separator className="my-1" />
-                            <SelectItem value="NEW_TYPE" className="text-primary font-medium">
+                            <SelectItem value="NEW_TYPE" className="text-blue-500 font-medium hover:text-blue-600">
                               <span className="flex items-center gap-2"><Plus className="h-3 w-3" /> Adicionar novo...</span>
                             </SelectItem>
                           </>
