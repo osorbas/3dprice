@@ -98,13 +98,42 @@ const CalculatorPage = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Carregar predefinições
+  const defaults = useMemo(() => {
+    if (typeof window === "undefined") return { printerId: "", filamentId: "", profitMargin: DEFAULT_PROFIT_MARGIN, electricityProfileId: "", electricityCostPerHour: 0.15 };
+    const pId = localStorage.getItem("default_printer_id");
+    const fId = localStorage.getItem("default_filament_id");
+    const eId = localStorage.getItem("default_electricity_profile_id");
+    const margin = localStorage.getItem("default_profit_margin");
+    
+    const eProfile = electricityProfiles.find(p => p.id === eId);
+    
+    return {
+      printerId: pId && pId !== "none" ? pId : "",
+      filamentId: fId && fId !== "none" ? fId : "",
+      profitMargin: margin ? parseFloat(margin) : DEFAULT_PROFIT_MARGIN,
+      electricityProfileId: eId && eId !== "none" ? eId : "",
+      electricityCostPerHour: eProfile ? eProfile.costPerHour : 0.15,
+    };
+  }, [electricityProfiles]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
-      printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
-      laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
-      extras: [], projectName: "", projectParts: [],
+      printName: "", 
+      printerId: defaults.printerId, 
+      filamentsUsed: [{ filamentId: defaults.filamentId, filamentGrams: 0 }],
+      printTimeHours: 0, 
+      printTimeMinutes: 0, 
+      electricityProfileId: defaults.electricityProfileId, 
+      electricityCostPerHour: defaults.electricityCostPerHour,
+      laborCostPerHour: 10, 
+      laborTimeHours: 0, 
+      laborTimeMinutes: 0, 
+      profitMargin: defaults.profitMargin,
+      extras: [], 
+      projectName: "", 
+      projectParts: [],
     },
   });
 
@@ -244,10 +273,20 @@ const CalculatorPage = () => {
         setIsTimerDialogOpen(true);
       } else {
         form.reset({
-          printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
-          printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
-          laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
-          extras: [], projectName: "", projectParts: [],
+          printName: "", 
+          printerId: defaults.printerId, 
+          filamentsUsed: [{ filamentId: defaults.filamentId, filamentGrams: 0 }],
+          printTimeHours: 0, 
+          printTimeMinutes: 0, 
+          electricityProfileId: defaults.electricityProfileId, 
+          electricityCostPerHour: defaults.electricityCostPerHour,
+          laborCostPerHour: 10, 
+          laborTimeHours: 0, 
+          laborTimeMinutes: 0, 
+          profitMargin: defaults.profitMargin,
+          extras: [], 
+          projectName: "", 
+          projectParts: [],
         });
         setOpenPartStates([]);
       }
@@ -266,10 +305,20 @@ const CalculatorPage = () => {
     }
     setPendingTimerData(null);
     form.reset({
-      printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
-      printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
-      laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
-      extras: [], projectName: "", projectParts: [],
+      printName: "", 
+      printerId: defaults.printerId, 
+      filamentsUsed: [{ filamentId: defaults.filamentId, filamentGrams: 0 }],
+      printTimeHours: 0, 
+      printTimeMinutes: 0, 
+      electricityProfileId: defaults.electricityProfileId, 
+      electricityCostPerHour: defaults.electricityCostPerHour,
+      laborCostPerHour: 10, 
+      laborTimeHours: 0, 
+      laborTimeMinutes: 0, 
+      profitMargin: defaults.profitMargin,
+      extras: [], 
+      projectName: "", 
+      projectParts: [],
     });
     setOpenPartStates([]);
   };
@@ -424,7 +473,7 @@ const CalculatorPage = () => {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <FormLabel>Filamentos Usados</FormLabel>
-                        <Button type="button" variant="outline" size="sm" onClick={() => appendSingleFilament({ filamentId: "", filamentGrams: 0 })}><PlusCircle className="h-4 w-4 mr-1" /> Adicionar</Button>
+                        <Button type="button" variant="outline" size="sm" onClick={() => appendSingleFilament({ filamentId: defaults.filamentId, filamentGrams: 0 })}><PlusCircle className="h-4 w-4 mr-1" /> Adicionar</Button>
                       </div>
                       {singleFilamentFields.map((field, idx) => (
                         <FilamentUsageField key={field.id} index={idx} totalFields={singleFilamentFields.length} onRemove={removeSingleFilament} namePrefix="filamentsUsed" />
@@ -470,14 +519,14 @@ const CalculatorPage = () => {
                           printers={printers}
                           filaments={filaments}
                           electricityProfiles={electricityProfiles}
-                          defaultFilamentId={filaments[0]?.id || ""}
+                          defaultFilamentId={defaults.filamentId || filaments[0]?.id || ""}
                           isConfirmed={watchedValues.projectParts?.[idx]?.isConfirmed || false}
                           onConfirmPart={handleConfirmPart}
                           isAccordionOpen={openPartStates[idx] || false}
                           setIsAccordionOpen={(open) => { const s = [...openPartStates]; s[idx] = open; setOpenPartStates(s); }}
                         />
                       ))}
-                      <Button type="button" variant="outline" className="w-full gap-2" onClick={() => { appendProjectPart({ partName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }], printTimeHours: 0, printTimeMinutes: 0, electricityCostPerHour: 0.15, isConfirmed: false }); setOpenPartStates([...openPartStates, true]); }}>
+                      <Button type="button" variant="outline" className="w-full gap-2" onClick={() => { appendProjectPart({ partName: "", printerId: defaults.printerId, filamentsUsed: [{ filamentId: defaults.filamentId, filamentGrams: 0 }], printTimeHours: 0, printTimeMinutes: 0, electricityCostPerHour: defaults.electricityCostPerHour, isConfirmed: false }); setOpenPartStates([...openPartStates, true]); }}>
                         <PlusCircle className="h-4 w-4" /> Adicionar Parte
                       </Button>
                     </div>
@@ -556,10 +605,20 @@ const CalculatorPage = () => {
           if (!open) {
             setPendingTimerData(null);
             form.reset({
-              printName: "", printerId: "", filamentsUsed: [{ filamentId: "", filamentGrams: 0 }],
-              printTimeHours: 0, printTimeMinutes: 0, electricityProfileId: "", electricityCostPerHour: 0.15,
-              laborCostPerHour: 10, laborTimeHours: 0, laborTimeMinutes: 0, profitMargin: DEFAULT_PROFIT_MARGIN,
-              extras: [], projectName: "", projectParts: [],
+              printName: "", 
+              printerId: defaults.printerId, 
+              filamentsUsed: [{ filamentId: defaults.filamentId, filamentGrams: 0 }],
+              printTimeHours: 0, 
+              printTimeMinutes: 0, 
+              electricityProfileId: defaults.electricityProfileId, 
+              electricityCostPerHour: defaults.electricityCostPerHour,
+              laborCostPerHour: 10, 
+              laborTimeHours: 0, 
+              laborTimeMinutes: 0, 
+              profitMargin: defaults.profitMargin,
+              extras: [], 
+              projectName: "", 
+              projectParts: [],
             });
             setOpenPartStates([]);
           }

@@ -54,19 +54,16 @@ const SettingsPage = () => {
     if (typeof window !== "undefined") return localStorage.getItem("default_printer_id");
     return null;
   });
-  const [tempPrinterId, setTempPrinterId] = React.useState<string | null>(null);
 
   const [defaultFilamentId, setDefaultFilamentId] = React.useState<string | null>(() => {
     if (typeof window !== "undefined") return localStorage.getItem("default_filament_id");
     return null;
   });
-  const [tempFilamentId, setTempFilamentId] = React.useState<string | null>(null);
 
   const [defaultElectricityProfileId, setDefaultElectricityProfileId] = React.useState<string | null>(() => {
     if (typeof window !== "undefined") return localStorage.getItem("default_electricity_profile_id");
     return null;
   });
-  const [tempElectricityProfileId, setTempElectricityProfileId] = React.useState<string | null>(null);
 
   const [importDialogOpen, setImportDialogOpen] = React.useState(false);
   const [importFile, setImportFile] = React.useState<File | null>(null);
@@ -124,72 +121,39 @@ const SettingsPage = () => {
     reader.onload = (e) => {
       let data: any;
       try {
-        // Tenta analisar o JSON
         data = JSON.parse(e.target?.result as string);
       } catch (err) {
-        // Se falhar, regista o erro exato e mostra a mensagem genérica
         console.error("JSON Parsing Error during import:", err);
         showError("Erro ao processar o ficheiro. Certifique-se de que é um ficheiro de backup JSON válido.");
         return;
       }
       
       try {
-        // Helper function for validation
         const isValidArray = (arr: any) => Array.isArray(arr);
 
         if (selectedImportTypes.calculations) {
           const calcs = data.calculations;
-          if (calcs && isValidArray(calcs)) {
-            importCalculations(calcs);
-          } else if (calcs) {
-            console.error("Invalid calculations data:", calcs);
-            showError("Erro: Dados de cálculos inválidos.");
-            return;
-          }
+          if (calcs && isValidArray(calcs)) importCalculations(calcs);
         }
         
         if (selectedImportTypes.printers) {
           const prts = data.printers;
-          if (prts && isValidArray(prts)) {
-            importPrinters(prts);
-          } else if (prts) {
-            console.error("Invalid printers data:", prts);
-            showError("Erro: Dados de impressoras inválidos.");
-            return;
-          }
+          if (prts && isValidArray(prts)) importPrinters(prts);
         }
         
         if (selectedImportTypes.filaments) {
           const fils = data.filaments;
-          if (fils && isValidArray(fils)) {
-            importFilaments(fils);
-          } else if (fils) {
-            console.error("Invalid filaments data:", fils);
-            showError("Erro: Dados de filamentos inválidos.");
-            return;
-          }
+          if (fils && isValidArray(fils)) importFilaments(fils);
         }
         
         if (selectedImportTypes.extraMaterials) {
           const extras = data.extraMaterials;
-          if (extras && isValidArray(extras)) {
-            importExtraMaterials(extras);
-          } else if (extras) {
-            console.error("Invalid extra materials data:", extras);
-            showError("Erro: Dados de materiais extras inválidos.");
-            return;
-          }
+          if (extras && isValidArray(extras)) importExtraMaterials(extras);
         }
         
         if (selectedImportTypes.electricityProfiles) {
           const elec = data.electricityProfiles;
-          if (elec && isValidArray(elec)) {
-            importElectricityProfiles(elec);
-          } else if (elec) {
-            console.error("Invalid electricity profiles data:", elec);
-            showError("Erro: Dados de perfis de eletricidade inválidos.");
-            return;
-          }
+          if (elec && isValidArray(elec)) importElectricityProfiles(elec);
         }
         
         if (selectedImportTypes.appSettings && data.appSettings) {
@@ -215,16 +179,22 @@ const SettingsPage = () => {
     showSuccess("Margem de lucro atualizada!");
   };
 
-  const handleConfirmPrinter = () => {
-    if (tempPrinterId) { setDefaultPrinterId(tempPrinterId); localStorage.setItem("default_printer_id", tempPrinterId); showSuccess("Impressora predefinida guardada!"); }
+  const updateDefaultPrinter = (id: string) => {
+    setDefaultPrinterId(id);
+    localStorage.setItem("default_printer_id", id);
+    showSuccess("Impressora predefinida atualizada!");
   };
 
-  const handleConfirmFilament = () => {
-    if (tempFilamentId) { setDefaultFilamentId(tempFilamentId); localStorage.setItem("default_filament_id", tempFilamentId); showSuccess("Filamento predefinido guardado!"); }
+  const updateDefaultFilament = (id: string) => {
+    setDefaultFilamentId(id);
+    localStorage.setItem("default_filament_id", id);
+    showSuccess("Filamento predefinido atualizado!");
   };
 
-  const handleConfirmElectricityProfile = () => {
-    if (tempElectricityProfileId) { setDefaultElectricityProfileId(tempElectricityProfileId); localStorage.setItem("default_electricity_profile_id", tempElectricityProfileId); showSuccess("Perfil de energia guardado!"); }
+  const updateDefaultElectricityProfile = (id: string) => {
+    setDefaultElectricityProfileId(id);
+    localStorage.setItem("default_electricity_profile_id", id);
+    showSuccess("Perfil de energia predefinido atualizado!");
   };
 
   return (
@@ -268,6 +238,46 @@ const SettingsPage = () => {
                 <div className="flex gap-2">
                   <Input type="number" value={tempProfitMargin} onChange={(e) => setTempProfitMargin(parseFloat(e.target.value))} className="w-[180px]" />
                   <Button variant="outline" onClick={handleConfirmProfitMargin}><Check className="h-4 w-4 mr-2" /> Confirmar</Button>
+                </div>
+              </div>
+
+              <div className="border-t pt-6 space-y-6">
+                <h3 className="text-lg font-medium">Predefinições de Cálculo</h3>
+                <p className="text-sm text-muted-foreground -mt-4">Escolha os valores que aparecerão preenchidos ao abrir a calculadora.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><PrinterIcon className="h-4 w-4" /> Impressora</Label>
+                    <Select value={defaultPrinterId || "none"} onValueChange={updateDefaultPrinter}>
+                      <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhuma</SelectItem>
+                        {printers.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Package className="h-4 w-4" /> Filamento</Label>
+                    <Select value={defaultFilamentId || "none"} onValueChange={updateDefaultFilament}>
+                      <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {filaments.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><Zap className="h-4 w-4" /> Perfil Energia</Label>
+                    <Select value={defaultElectricityProfileId || "none"} onValueChange={updateDefaultElectricityProfile}>
+                      <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {electricityProfiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
