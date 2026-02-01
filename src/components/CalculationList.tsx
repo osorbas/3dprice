@@ -11,7 +11,7 @@ import { usePrintCalculations } from "@/hooks/use-print-calculations";
 import { showError, showSuccess } from "@/utils/toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EditCalculationDialog } from "@/components/EditCalculationDialog";
-import { CalculationDetailsDialog } from "@/components/CalculationDetailsDialog"; // Importado
+import { CalculationDetailsDialog } from "@/components/CalculationDetailsDialog";
 import { usePrinters } from "@/hooks/use-printers";
 import { exportCalculationToPDF } from "@/utils/pdf-export";
 
@@ -77,6 +77,12 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
     );
   }
 
+  const formatPrintTime = (decimalHours: number) => {
+    const h = Math.floor(decimalHours);
+    const m = Math.round((decimalHours - h) * 60);
+    return `${h}h ${m}m`;
+  };
+
   return (
     <>
       <Card className="w-full">
@@ -92,7 +98,7 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
                   <TableHead>Nome</TableHead>
                   <TableHead>Impressora</TableHead>
                   <TableHead>Material (€)</TableHead>
-                  <TableHead>Tempo (h)</TableHead>
+                  <TableHead>Tempo</TableHead>
                   <TableHead>Eletricidade (€)</TableHead>
                   <TableHead>Mão de Obra (€)</TableHead>
                   <TableHead>Lucro (%)</TableHead>
@@ -131,7 +137,7 @@ export const CalculationList = ({ calculations }: CalculationListProps) => {
                       <TableCell>{calc.isProject ? calc.projectName : calc.printName || "N/A"}</TableCell>
                       <TableCell>{printerDisplay}</TableCell>
                       <TableCell>{matCost.toFixed(2)}</TableCell>
-                      <TableCell>{hours.toFixed(1)}</TableCell>
+                      <TableCell>{formatPrintTime(hours)}</TableCell>
                       <TableCell>{elecCost.toFixed(2)}</TableCell>
                       <TableCell>{labCost.toFixed(2)}</TableCell>
                       <TableCell>{profMarg.toFixed(0)}</TableCell>

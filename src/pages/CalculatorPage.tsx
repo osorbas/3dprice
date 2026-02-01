@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { FileText, Save, PlusCircle, History, Eraser, FileCode, Upload, Trash2, AlertTriangle } from "lucide-react"; 
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,22 +43,22 @@ const DEFAULT_PROFIT_MARGIN = 20;
 
 const extraSchema = z.object({
   materialId: z.string().min(1, "Selecione um material extra."),
-  quantity: z.coerce.number().min(0, "A quantidade não pode ser negativa."),
+  quantity: z.coerce.number().min(0, "A quantidade deve ser igual ou superior a 0."),
 });
 
 const filamentUsageSchema = z.object({
   filamentId: z.string().min(1, "Selecione um filamento."),
-  filamentGrams: z.coerce.number().min(0, "A quantidade não pode ser negativa."),
+  filamentGrams: z.coerce.number().min(0, "O peso deve ser igual ou superior a 0."),
 });
 
 const projectPartSchema = z.object({
   partName: z.string().min(1, "O nome da parte é obrigatório."),
   printerId: z.string().min(1, "Selecione uma impressora."),
   filamentsUsed: z.array(filamentUsageSchema).min(1, "Adicione filamento."),
-  printTimeHours: z.coerce.number().min(0),
-  printTimeMinutes: z.coerce.number().min(0).max(59),
+  printTimeHours: z.coerce.number().min(0, "O tempo deve ser igual ou superior a 0."),
+  printTimeMinutes: z.coerce.number().min(0, "O tempo deve ser igual ou superior a 0.").max(59),
   electricityProfileId: z.string().optional(),
-  electricityCostPerHour: z.coerce.number().min(0),
+  electricityCostPerHour: z.coerce.number().min(0, "O custo deve ser igual ou superior a 0."),
   isConfirmed: z.boolean().default(false),
 });
 
@@ -66,14 +66,14 @@ const formSchema = z.object({
   printName: z.string().min(1, "O nome é obrigatório."),
   printerId: z.string().optional(),
   filamentsUsed: z.array(filamentUsageSchema).optional(),
-  printTimeHours: z.coerce.number().optional(),
-  printTimeMinutes: z.coerce.number().optional(),
+  printTimeHours: z.coerce.number().min(0, "O tempo deve ser igual ou superior a 0."),
+  printTimeMinutes: z.coerce.number().min(0, "O tempo deve ser igual ou superior a 0.").max(59),
   electricityProfileId: z.string().optional(), 
-  electricityCostPerHour: z.coerce.number().optional(),
-  laborCostPerHour: z.coerce.number().optional(),
-  laborTimeHours: z.coerce.number().optional(),
-  laborTimeMinutes: z.coerce.number().optional(),
-  profitMargin: z.coerce.number().optional(),
+  electricityCostPerHour: z.coerce.number().min(0, "O custo deve ser igual ou superior a 0."),
+  laborCostPerHour: z.coerce.number().min(0, "O custo deve ser igual ou superior a 0."),
+  laborTimeHours: z.coerce.number().min(0, "O tempo deve ser igual ou superior a 0."),
+  laborTimeMinutes: z.coerce.number().min(0, "O tempo deve ser igual ou superior a 0.").max(59),
+  profitMargin: z.coerce.number().min(0, "A margem deve ser igual ou superior a 0."),
   extras: z.array(extraSchema).optional(),
   projectParts: z.array(projectPartSchema).optional(),
 });
@@ -488,10 +488,10 @@ const CalculatorPage = () => {
                         <FormLabel>Tempo de Impressão</FormLabel>
                         <div className="flex gap-2">
                           <FormField control={form.control} name="printTimeHours" render={({ field }) => (
-                            <FormItem className="flex-1"><FormControl><Input type="number" placeholder="Horas" {...field} /></FormControl></FormItem>
+                            <FormItem className="flex-1"><FormControl><Input type="number" min="0" placeholder="Horas" {...field} /></FormControl><FormMessage /></FormItem>
                           )} />
                           <FormField control={form.control} name="printTimeMinutes" render={({ field }) => (
-                            <FormItem className="flex-1"><FormControl><Input type="number" max="59" placeholder="Min" {...field} /></FormControl></FormItem>
+                            <FormItem className="flex-1"><FormControl><Input type="number" min="0" max="59" placeholder="Min" {...field} /></FormControl><FormMessage /></FormItem>
                           )} />
                         </div>
                       </div>
@@ -532,13 +532,13 @@ const CalculatorPage = () => {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField control={form.control} name="laborCostPerHour" render={({ field }) => (
-                    <FormItem><FormLabel>Custo Mão de Obra (€/h)</FormLabel><FormControl><Input type="number" step="0.5" {...field} /></FormControl></FormItem>
+                    <FormItem><FormLabel>Custo Mão de Obra (€/h)</FormLabel><FormControl><Input type="number" min="0" step="0.5" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="laborTimeHours" render={({ field }) => (
-                    <FormItem><FormLabel>Horas Mão de Obra</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                    <FormItem><FormLabel>Horas Mão de Obra</FormLabel><FormControl><Input type="number" min="0" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="laborTimeMinutes" render={({ field }) => (
-                    <FormItem><FormLabel>Min Mão de Obra</FormLabel><FormControl><Input type="number" max="59" {...field} /></FormControl></FormItem>
+                    <FormItem><FormLabel>Min Mão de Obra</FormLabel><FormControl><Input type="number" min="0" max="59" {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
                 </div>
 
@@ -571,7 +571,8 @@ const CalculatorPage = () => {
                 <FormField control={form.control} name="profitMargin" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Margem de Lucro (%)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
+                    <FormMessage />
                   </FormItem>
                 )} />
 
