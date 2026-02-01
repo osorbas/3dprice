@@ -363,7 +363,10 @@ const CalculatorPage = () => {
         filamentGrams: parseFloat(partGrams.toFixed(2)),
         filamentId: part.filamentsUsed[0]?.filamentId || "",
         totalPrice: parseFloat((partMatCost + partElecCost).toFixed(2)),
-        filaments: part.filamentsUsed, // Save detailed filament usage for project parts
+        filaments: part.filamentsUsed.map(f => ({
+          filamentId: f.filamentId,
+          grams: Number(f.filamentGrams || 0)
+        })),
       };
     }) : [];
 
@@ -392,8 +395,10 @@ const CalculatorPage = () => {
       projectName: activeTab === "project" ? values.printName : undefined,
       printerId: values.printerId,
       projectParts: projectPartsDetails as any,
-      // Adicionado o array completo de filamentos para cálculos individuais
-      filaments: activeTab === "single-print" ? values.filamentsUsed : undefined,
+      filaments: activeTab === "single-print" ? values.filamentsUsed?.map(f => ({
+        filamentId: f.filamentId,
+        grams: Number(f.filamentGrams || 0)
+      })) : undefined,
     };
 
     addCalculation(calculationData);
