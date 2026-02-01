@@ -7,7 +7,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { usePrintCalculations, PrintCalculation } from "@/hooks/use-print-calculations";
+import { usePrintCalculations, PrintCalculation, ExtraUsageDetail } from "@/hooks/use-print-calculations";
 import { showSuccess, showError } from "@/utils/toast";
 import { Pencil, CalendarIcon, Clock, Package, Printer, ChevronRight, PlusCircle } from "lucide-react";
 import { usePrinters } from "@/hooks/use-printers";
@@ -166,11 +166,15 @@ export const EditCalculationDialog = ({ calculation }: EditCalculationDialogProp
       let totalExtrasCost = 0;
 
       // Calcular Extras (comum a ambos)
-      const updatedExtras = values.extras?.map(ex => {
+      const updatedExtras: ExtraUsageDetail[] = values.extras?.map(ex => {
         const material = extraMaterials.find(m => m.id === ex.materialId);
         const cost = material ? material.costPerUnit * Number(ex.quantity || 0) : 0;
         totalExtrasCost += cost;
-        return { ...ex, cost: parseFloat(cost.toFixed(2)) };
+        return { 
+          materialId: ex.materialId,
+          quantity: Number(ex.quantity),
+          cost: parseFloat(cost.toFixed(2)) 
+        };
       }) || [];
 
       if (values.isProject) {
