@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useFilaments } from "@/hooks/use-filaments";
+import { useFilamentColors } from "@/hooks/use-filament-colors";
 import { Plus, XCircle } from "lucide-react";
 
 interface FilamentUsageFieldProps {
@@ -14,8 +15,8 @@ interface FilamentUsageFieldProps {
   onAdd?: () => void;
   showAdd?: boolean;
   totalFields: number;
-  namePrefix: FieldPath<FieldValues>; // Add namePrefix
-  disabled?: boolean; // Adicionado
+  namePrefix: FieldPath<FieldValues>;
+  disabled?: boolean;
 }
 
 export const FilamentUsageField = ({
@@ -24,14 +25,28 @@ export const FilamentUsageField = ({
   onAdd,
   showAdd = false,
   totalFields,
-  namePrefix, // Use namePrefix
-  disabled = false, // Adicionado
+  namePrefix,
+  disabled = false,
 }: FilamentUsageFieldProps) => {
-  const { control } = useFormContext<FieldValues>();
+  const { control, watch } = useFormContext<FieldValues>();
   const { filaments } = useFilaments();
+  const { colors: predefinedColors } = useFilamentColors();
   
   const filamentIdName = `${namePrefix}.${index}.filamentId` as FieldPath<FieldValues>;
   const gramsName = `${namePrefix}.${index}.filamentGrams` as FieldPath<FieldValues>;
+
+  const currentFilamentId = watch(filamentIdName);
+
+  const getFilamentColorHex = (colorName: string | undefined): string | undefined => {
+    if (!colorName) return undefined;
+    const foundColor = predefinedColors.find(c => c.name.toLowerCase() === colorName.toLowerCase() || c.hex.toLowerCase() === colorName.toLowerCase());
+    if (foundColor) return foundColor.hex;
+    if (/^#[0-9A-F]{6}$/i.test(colorName)) return colorName;
+    return undefined;
+  };
+
+  const selectedFilament = filaments.find(f => f.id === currentFilamentId);
+  const selectedColorHex = selectedFilament ? getFilamentColorHex(selectedFilament.color) : undefined;
 
   return (
     <div className="flex gap-2 items-end">
@@ -44,15 +59,32 @@ export const FilamentUsageField = ({
             <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Tipo..." />
+                  <div className="flex items-center gap-2">
+                    {selectedColorHex && (
+                      <div 
+                        className="h-3 w-3 rounded-full border border-black/10 shadow-sm flex-shrink-0" 
+                        style={{ backgroundColor: selectedColorHex }}
+                      />
+                    )}
+                    <SelectValue placeholder="Tipo..." />
+                  </div>
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 {filaments.map((f) => {
                   const baseName = f.name && f.name.trim() !== "" ? f.name : `${f.brand} - ${f.type}`;
+                  const colorHex = getFilamentColorHex(f.color);
                   return (
                     <SelectItem key={f.id} value={f.id}>
-                      {baseName} {f.color ? `(${f.color})` : ""}
+                      <div className="flex items-center gap-2">
+                        {colorHex && (
+                          <div 
+                            className="h-3 w-3 rounded-full border border-black/10 shadow-sm flex-shrink-0" 
+                            style={{ backgroundColor: colorHex }}
+                          />
+                        )}
+                        <span>{baseName} {f.color ? `(${f.color})` : ""}</span>
+                      </div>
                     </SelectItem>
                   );
                 })}
